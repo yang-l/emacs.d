@@ -252,7 +252,8 @@ The default =set-mark-command= config conflicts with chinese input trigger
 Emacs GUI under Windows
 
 #+BEGIN_SRC emacs-lisp
-(set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100)
+(if (eq system-type 'windows-nt)
+    (set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100))
 #+END_SRC
 
 **** Theme
@@ -313,7 +314,7 @@ Zenburn theme
 **** magit
 
 #+BEGIN_SRC emacs-lisp
-(eval-after-load "magit" '(diminish 'magit-auto-revert-mode " ±"))
+(eval-after-load "magit" '(diminish 'magit-auto-revert-mode " Â±"))
 #+END_SRC
 
 *** Web / JS
