@@ -51,7 +51,7 @@
 current session"
   (and erc-sasl-use-sasl
        (boundp 'erc-session-server)
-       (loop for re in erc-sasl-server-regexp-list
+       (cl-loop for re in erc-sasl-server-regexp-list
              thereis (integerp (string-match re erc-session-server)))))
 
 (define-erc-response-handler (CAP)
@@ -75,7 +75,7 @@ current session"
                    (base64-encode-string
                     (concat "\0" (erc-current-nick)
                             "\0" erc-session-password) t)))))
-    (progn 
+    (progn
       (erc-display-message
        parsed 'error
        (if erc-server-connected 'active proc)
