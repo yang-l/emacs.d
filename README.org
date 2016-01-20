@@ -619,6 +619,7 @@ shorten mode-line
 
 #+BEGIN_SRC emacs-lisp
 (setq speedbar-show-unknown-files t             ; show all files
+      speedbar-directory-unshown-regexp "^$"
       speedbar-use-images nil                   ; no icon
     )
 #+END_SRC
