@@ -65,14 +65,7 @@ Define packages and install them in case of they are missing
 *** UTF-8 on everything
 
 #+BEGIN_SRC emacs-lisp
-(prefer-coding-system 'utf-8)                   ; UTF-8 on everything
-(set-default-coding-systems 'utf-8)
-(set-language-environment   'utf-8)
-(set-keyboard-coding-system 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(setq coding-system-for-read 'utf-8
-      coding-system-for-write 'utf-8)
-(setq locale-coding-system 'utf-8)
+(prefer-coding-system 'utf-8-unix)              ; UTF-8 on everything
 (unless (eq system-type 'windows-nt)
     (set-selection-coding-system 'utf-8))
 (setq-default buffer-file-coding-system
