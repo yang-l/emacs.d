@@ -448,7 +448,7 @@ Zenburn theme
 
 #+BEGIN_SRC emacs-lisp
 (require 'company)
-(with-eval-after-load 'company
+(with-eval-after-load 'company (progn
     (defun modes/company-mode ()
         "company mode hook"
         (company-mode)                          ; enable only under specific modes
@@ -481,7 +481,7 @@ Zenburn theme
             ))
     (add-hook 'prog-mode-hook 'modes/company-mode)
     (diminish 'company-mode)
-    )
+    ))
 #+END_SRC
 
 *** diminish
@@ -705,7 +705,7 @@ buffers switching
 
 *** AUCTex
 #+BEGIN_SRC emacs-lisp
-(when (locate-library "auctex")
+(when (locate-library "auctex") (progn
     (defun modes/auctex-mode ()
         "undo-tree-mode hook"
         ;; set latexmk the default LaTeX compiler
@@ -873,7 +873,7 @@ buffers switching
     (setq TeX-view-program-selection '())
     (add-to-list 'TeX-view-program-selection
                  '(output-pdf "EvinceForward"))
-    )))
+    ))))
 #+END_SRC
 
 *** Maxima
@@ -893,24 +893,21 @@ buffers switching
 
 (with-eval-after-load 'octave-mod
     '(progn
-        (defun modes/web-mode ()
-            "web-mode hook"
+        (abbrev-mode 1)
+        (auto-fill-mode 1)
+        (if (eq window-system 'x)
+            (font-lock-mode 1))
 
-            (abbrev-mode 1)
-            (auto-fill-mode 1)
-            (if (eq window-system 'x)
-                (font-lock-mode 1))
+        (run-octave)
 
-            (run-octave)
-
-            (add-hook 'inferior-octave-mode-hook
-                (lambda ()
-                    (turn-on-font-lock)
-                    (define-key inferior-octave-mode-map [up]
-                      'comint-previous-input)
-                    (define-key inferior-octave-mode-map [down]
-                      'comint-next-input)))
-        )))
+        (add-hook 'inferior-octave-mode-hook
+            (lambda ()
+                (turn-on-font-lock)
+                (define-key inferior-octave-mode-map [up]
+                  'comint-previous-input)
+                (define-key inferior-octave-mode-map [down]
+                  'comint-next-input)))
+        ))
 #+END_SRC
 
 ** Useful Functions
