@@ -24,7 +24,7 @@ Path to non ELPA included lisp files
 
 Path to personal/credential info
 #+BEGIN_SRC emacs-lisp
-(load "~/.emacs.d/private.el")
+(load (expand-file-name "private.el" user-emacs-directory))
 #+END_SRC
 
 The contains of =~/.emacs.d/private.el= should include
@@ -80,6 +80,7 @@ Define packages and install them in case of they are missing
 (setq-default
     column-number-mode t                        ; show cursor position
     default-major-mode 'text-mode               ; set new buffers as test files
+    initial-major-mode 'text-mode
     display-time-24hr-format t                  ; 24h time timeformat
     display-time-day-and-date t                 ; show time and date
     enable-recursive-minibuffers t              ; enable minibuffer recursive
@@ -91,6 +92,7 @@ Define packages and install them in case of they are missing
     inhibit-startup-message t
     initial-scratch-message nil
     kill-ring-max 500                           ; kill ring size
+    mouse-wheel-scroll-amount '(1 ((shift) .1)) ; scroll one line at a time
     read-buffer-completion-ignore-case t        ; ignore case-sensitivity
     read-file-name-completion-ignore-case t
     require-final-newline t                     ; always add a new line at the end of a file
@@ -98,6 +100,7 @@ Define packages and install them in case of they are missing
     scroll-step 1                               ; line-by-line scrolling
     tab-width 4                                 ; 4 space indentation
     visible-bell 1                              ; no bell in windows
+    x-stretch-cursor t                          ; stretch cursor to cover wide characters
     )
 #+END_SRC
 
@@ -131,9 +134,11 @@ The default =set-mark-command= config conflicts with chinese input trigger
         (delete-selection-mode t)               ; delete marked text on typing
         (display-time-mode 1)                   ; display time
         (global-hl-line-mode +1)                ; highlight current line
+        (global-subword-mode 1)                 ; navigate into CamelCaseWords
         (menu-bar-mode -1)                      ; hide menu bar
         (mouse-avoidance-mode 'animate)         ; mouse avoidance
         (scroll-bar-mode -1)                    ; no scroll bars
+        (show-paren-mode 1)                     ; show matched parentheses
         (toggle-frame-maximized)                ; fullscreen
         (tool-bar-mode -1)                      ; hide toolbar
         (visual-line-mode)                      ; soft line warp
@@ -328,7 +333,23 @@ Zenburn theme
 **** magit
 
 #+BEGIN_SRC emacs-lisp
-(eval-after-load "magit" '(diminish 'magit-auto-revert-mode " ±"))
+(eval-after-load "magit"
+    '(progn
+        ;; full screen magit-status
+        (defadvice magit-status (around magit-fullscreen activate)
+          (window-configuration-to-register :magit-fullscreen)
+          ad-do-it
+          (delete-other-windows))
+
+        ;; Restore windows after exiting magit
+        (defun magit-quit-session ()
+          "Restores the previous window configuration and kills the magit buffer"
+          (interactive)
+          (kill-buffer)
+          (jump-to-register :magit-fullscreen))
+
+        (diminish 'magit-auto-revert-mode " ±")
+    ))
 #+END_SRC
 
 *** Web / JS
