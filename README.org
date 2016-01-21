@@ -863,6 +863,34 @@ buffers switching
     )
 #+END_SRC
 
+*** Octave
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'octave-mode "octave-mod" nil t)
+(setq auto-mode-alist (append '(("\\.m$" . octave-mode)) auto-mode-alist))
+
+(with-eval-after-load 'octave-mod
+    '(progn
+        (defun modes/web-mode ()
+            "web-mode hook"
+
+            (abbrev-mode 1)
+            (auto-fill-mode 1)
+            (if (eq window-system 'x)
+                (font-lock-mode 1))
+
+            (run-octave)
+
+            (add-hook 'inferior-octave-mode-hook
+                (lambda ()
+                    (turn-on-font-lock)
+                    (define-key inferior-octave-mode-map [up]
+                      'comint-previous-input)
+                    (define-key inferior-octave-mode-map [down]
+                      'comint-next-input)))
+        )))
+#+END_SRC
+
 ** Useful Functions
 
 *** Indentation
