@@ -129,12 +129,13 @@ The default =set-mark-command= config conflicts with chinese input trigger
 
 #+BEGIN_SRC emacs-lisp
 (add-hook 'window-setup-hook
-    (lambda ()
+    (lambda () (progn
         (auto-compression-mode 1)               ; open compressed files on the fly
         (delete-selection-mode t)               ; delete marked text on typing
         (display-time-mode 1)                   ; display time
         (global-hl-line-mode +1)                ; highlight current line
         (global-subword-mode 1)                 ; navigate into CamelCaseWords
+        (diminish 'subword-mode)
         (menu-bar-mode -1)                      ; hide menu bar
         (mouse-avoidance-mode 'animate)         ; mouse avoidance
         (scroll-bar-mode -1)                    ; no scroll bars
@@ -142,11 +143,11 @@ The default =set-mark-command= config conflicts with chinese input trigger
         (toggle-frame-maximized)                ; fullscreen
         (tool-bar-mode -1)                      ; hide toolbar
         (visual-line-mode)                      ; soft line warp
+        (diminish 'visual-line-mode)
         (when (fboundp                          ; windmove
             'windmove-default-keybindings)
             (windmove-default-keybindings))
-    ))
-(diminish 'visual-line-mode)
+    )))
 #+END_SRC
 
 *** Folder
