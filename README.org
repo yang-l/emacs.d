@@ -854,6 +854,15 @@ buffers switching
     )))
 #+END_SRC
 
+*** Maxima
+
+#+BEGIN_SRC emacs-lisp
+(when (locate-library "maxima")
+    (autoload 'maxima-mode "maxima" nil t)
+    (setq auto-mode-alist (cons '("\\.ma?[cx]" . maxima-mode) auto-mode-alist))
+    )
+#+END_SRC
+
 ** Useful Functions
 
 *** Indentation
