@@ -911,6 +911,34 @@ buffers switching
     (indent-region (region-beginning) (region-end) nil)))
 #+END_SRC
 
+*** Line Indent
+
+#+BEGIN_SRC emacs-lisp
+(defun indent-text (distance)
+  (if (use-region-p)
+      (let ((mark (mark)))
+        (save-excursion
+          (indent-rigidly (region-beginning)
+                          (region-end)
+                          distance)
+          (push-mark mark t t)
+          (setq deactivate-mark nil)))
+    (indent-rigidly (line-beginning-position)
+                    (line-end-position)
+                    distance)))
+
+(defun inc-line-indent (count)
+  (interactive "p")
+  (indent-text count))
+
+(defun dec-line-indent (count)
+  (interactive "p")
+  (indent-text (- count)))
+
+(global-set-key (kbd "C-c > >") (lambda () (interactive) (inc-line-indent 4)))
+(global-set-key (kbd "C-c < <") (lambda () (interactive) (dec-line-indent 4)))
+#+END_SRC
+
 *** File Format Convertion
 
 #+BEGIN_SRC emacs-lisp
@@ -954,3 +982,12 @@ buffers switching
         (call-interactively 'emr-lisp-uncomment-block)
       (call-interactively 'emr-lisp-comment-form))))
 #+END_SRC
+
+* Tips
+
+** Keybindings
+
+| keybindings                       | alternative | description                        |
+|-----------------------------------+-------------+------------------------------------|
+| =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | indent the region by =4= spaces    |
+| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C=c < <=   | un-indent the region by =4= spaces |
