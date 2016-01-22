@@ -56,6 +56,7 @@ Define packages and install them in case of they are missing
     zenburn-theme diminish                      ; UI
     sr-speedbar undo-tree window-numbering      ; Editing
     helm evil
+    which-key                                   ; Misc
     ))
 (dolist (p my-packages)                         ; install the missing packages
     (when (not (package-installed-p p))
@@ -664,6 +665,21 @@ shorten mode-line
     )
 (add-hook 'undo-tree-mode-hook 'modes/undo-tree-mode)
 (eval-after-load "undo-tree" '(diminish 'undo-tree-mode))
+#+END_SRC
+
+
+*** which-key
+
+Display the key bindings in a popup.
+
+#+BEGIN_SRC emacs-lisp
+(require 'which-key)
+(eval-after-load "which-key"
+    '(progn
+        (which-key-mode)
+        (setq which-key-idle-delay 2.0)         ; popup delay
+        (diminish 'which-key-mode)
+    ))
 #+END_SRC
 
 *** whitespace
