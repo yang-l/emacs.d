@@ -55,7 +55,7 @@ Define packages and install them in case of they are missing
     elpy                                        ; Python
     zenburn-theme diminish                      ; UI
     sr-speedbar undo-tree window-numbering      ; Editing
-    helm evil
+    helm evil mwim
     which-key                                   ; Misc
     ))
 (dolist (p my-packages)                         ; install the missing packages
@@ -631,6 +631,17 @@ shorten mode-line
 (add-hook 'prog-mode-hook #'modes/projectile-mode)
 #+END_SRC
 
+
+*** mwim
+
+move where I mean
+
+#+BEGIN_SRC emacs-lisp
+(require 'mwim)
+(global-set-key (kbd "C-a") #'mwim-beginning-of-code-or-line)
+(global-set-key (kbd "C-e") #'mwim-end-of-code-or-line)
+#+END_SRC
+
 *** speedbar / sr-speedbar
 
 #+BEGIN_SRC emacs-lisp
@@ -666,7 +677,6 @@ shorten mode-line
 (add-hook 'undo-tree-mode-hook 'modes/undo-tree-mode)
 (eval-after-load "undo-tree" '(diminish 'undo-tree-mode))
 #+END_SRC
-
 
 *** which-key
 
