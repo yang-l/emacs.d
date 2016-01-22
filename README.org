@@ -261,7 +261,7 @@ The default =set-mark-command= config conflicts with chinese input trigger
 *** Shell
 
 #+BEGIN_SRC emacs-lisp
-(setq shell-file-name "/bin/bash")
+;;(setq shell-file-name "/bin/bash")
 (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
 #+END_SRC
@@ -623,6 +623,7 @@ shorten mode-line
             'helm-projectile
         projectile-cache-file (expand-file-name         ; Projectile cache file
             "projectile.cache" backup-directory)
+        projectile-sort-order 'modification-time
     )
     (if (eq system-type 'windows-nt)                    ; external indexing under windows
             (setq projectile-indexing-method 'alien))
@@ -733,7 +734,7 @@ buffers switching
 #+BEGIN_SRC emacs-lisp
 (when (locate-library "auctex") (progn
     (defun modes/auctex-mode ()
-        "undo-tree-mode hook"
+        "auctex-mode hook"
         ;; set latexmk the default LaTeX compiler
         (push
          '("Latexmk" "latexmk -outdir=/tmp/emacs/latex -bibtex -pdf -pv %s" TeX-run-command nil t
