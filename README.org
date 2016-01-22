@@ -258,14 +258,6 @@ The default =set-mark-command= config conflicts with chinese input trigger
 (setq tramp-default-method "ssh")               ; faster than the default scp
 #+END_SRC
 
-*** Shell
-
-#+BEGIN_SRC emacs-lisp
-;;(setq shell-file-name "/bin/bash")
-(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
-(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on t)
-#+END_SRC
-
 *** UI
 
 **** Font
@@ -335,8 +327,13 @@ Zenburn theme
 **** magit
 
 #+BEGIN_SRC emacs-lisp
+(require 'magit)
 (eval-after-load "magit"
     '(progn
+        ;; key bindings
+        (global-set-key (kbd "C-x g") 'magit-status)
+        (global-set-key (kbd "C-x G") 'magit-quit-session)
+
         ;; full screen magit-status
         (defadvice magit-status (around magit-fullscreen activate)
           (window-configuration-to-register :magit-fullscreen)
@@ -349,8 +346,6 @@ Zenburn theme
           (interactive)
           (kill-buffer)
           (jump-to-register :magit-fullscreen))
-
-        (diminish 'magit-auto-revert-mode " ±")
     ))
 #+END_SRC
 
