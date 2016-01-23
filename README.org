@@ -87,7 +87,7 @@ Define packages and install them in case of they are missing
     enable-recursive-minibuffers t              ; enable minibuffer recursive
     fill-column 80                              ; column space
     frame-title-format "emacs@%b"               ; show on title
-    gc-cons-threshold 20000000                  ; GC
+    gc-cons-threshold (* 1024 1024 64)          ; GC
     indent-tabs-mode nil                        ; space instead of tab
     inhibit-splash-screen t                     ; no splash
     inhibit-startup-message t
@@ -114,7 +114,7 @@ Use the stock key bindings when possible.
 The default =set-mark-command= config conflicts with chinese input trigger
 #+BEGIN_SRC emacs-lisp
 (global-unset-key (kbd "C-SPC"))                ; mark trigger
-(global-set-key "\M- " 'set-mark-command)
+(global-set-key "\M- " #'set-mark-command)
 #+END_SRC
 
 *** Browse URL
@@ -350,7 +350,7 @@ Zenburn theme
 (eval-after-load "magit"
     '(progn
         ;; key bindings
-        (global-set-key (kbd "C-x g") 'magit-status)
+        (global-set-key (kbd "C-x g") #'magit-status)
 
         ;; full screen magit-status
         (defadvice magit-status (around magit-fullscreen activate)
@@ -666,11 +666,6 @@ move where I mean
 #+BEGIN_SRC emacs-lisp
 (require 'sr-speedbar)
 (sr-speedbar-refresh-turn-off)                  ; not refresh speedbar content
-(sr-speedbar-open)                              ; open sr-speedbar window
-(with-current-buffer sr-speedbar-buffer-name
-    (setq window-size-fixed 'width              ; keep windows size
-        ))
-(setq sr-speedbar-skip-other-window-p t)        ; skip sr-speedbar when cyclic windows
 #+END_SRC
 
 *** undo-tree
