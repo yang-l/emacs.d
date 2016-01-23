@@ -55,7 +55,7 @@ Define packages and install them in case of they are missing
     elpy                                        ; Python
     zenburn-theme diminish                      ; UI
     sr-speedbar undo-tree window-numbering      ; Editing
-    helm evil mwim
+    helm evil mwim multiple-cursors
     which-key                                   ; Misc
     ))
 (dolist (p my-packages)                         ; install the missing packages
@@ -646,6 +646,11 @@ shorten mode-line
 (add-hook 'prog-mode-hook #'modes/projectile-mode)
 #+END_SRC
 
+*** multiple-cursors
+
+#+BEGIN_SRC emacs-lisp
+(require 'multiple-cursors)
+#+END_SRC
 
 *** mwim
 
@@ -1052,3 +1057,5 @@ buffers switching
 |-----------------------------------+-------------+------------------------------------|
 | =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | indent the region by =4= spaces    |
 | =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C=c < <=   | un-indent the region by =4= spaces |
+| =C-x SPC=                         |             | rectangular selection              |
+| =C-x r t=                         |             | replace rectangule content         |
