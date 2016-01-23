@@ -252,6 +252,25 @@ The default =set-mark-command= config conflicts with chinese input trigger
         do (put fn 'disabled nil))
 #+END_SRC
 
+**** Shell & Term
+
+***** ansi-term
+
+#+BEGIN_SRC emacs-lisp
+(defadvice ansi-term                            ; utf-8
+    (after advise-ansi-term-coding-system)
+    (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))
+(ad-activate 'ansi-term)
+
+(defadvice term-sentinel
+    (around my-advice-term-sentinel (proc msg) activate)
+    (if (memq (process-status proc) '(signal exit))
+        (let ((buffer (process-buffer proc)))
+            ad-do-it
+            (kill-buffer buffer))
+        ad-do-it))
+#+END_SRC
+
 **** Tramp
 
 #+BEGIN_SRC emacs-lisp
@@ -403,7 +422,7 @@ Zenburn theme
 (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
 #+END_SRC
 
-*** Shell Script
+*** Scripting
 
 #+BEGIN_SRC emacs-lisp
 (add-hook 'after-save-hook                      ; make shell script executable on save
@@ -654,6 +673,7 @@ move where I mean
 (with-current-buffer sr-speedbar-buffer-name
     (setq window-size-fixed 'width              ; keep windows size
         ))
+(setq sr-speedbar-skip-other-window-p t)        ; skip sr-speedbar when cyclic windows
 #+END_SRC
 
 *** undo-tree
