@@ -54,8 +54,8 @@ Define packages and install them in case of they are missing
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
     elpy                                        ; Python
     zenburn-theme diminish                      ; UI
-    sr-speedbar undo-tree window-numbering      ; Editing
-    helm evil mwim multiple-cursors
+    sr-speedbar undo-tree window-numbering helm ; Editing
+    evil mwim multiple-cursors expand-region
     which-key                                   ; Misc
     ))
 (dolist (p my-packages)                         ; install the missing packages
@@ -568,6 +568,13 @@ shorten mode-line
 (require 'evil)
 (evil-mode 1)
 (setq evil-default-state 'emacs)                ; default to emacs
+#+END_SRC
+
+*** expand-region
+
+#+BEGIN_SRC emacs-lisp
+(require 'expand-region)
+(global-set-key (kbd "C-=") 'er/expand-region)
 #+END_SRC
 
 *** flycheck
