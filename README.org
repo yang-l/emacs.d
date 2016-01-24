@@ -622,7 +622,16 @@ shorten mode-line
 (defun modes/org-mode ()
     "org-mode hook"
     (progn
-        (setq truncate-lines nil)               ; line wrap
+        (setq truncate-lines nil                ; line wrap
+              org-edit-src-content-indentation 0; no indentation in SRC block
+              org-src-preserve-indentation t
+              org-src-fontify-natively t        ; native fontification
+              org-src-tab-acts-natively t       ; mative tab in SRC block
+              )
+        (org-indent-mode t)                     ; list-oriented
+        (setq org-startup-indented t
+              org-hide-leading-stars t
+              )
         (linum-mode)
     ))
 (add-hook 'org-mode-hook 'modes/org-mode)
@@ -1055,9 +1064,10 @@ buffers switching
 
 ** Keybindings
 
-| keybindings                       | alternative | description                        |
-|-----------------------------------+-------------+------------------------------------|
-| =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | indent the region by =4= spaces    |
-| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C=c < <=   | un-indent the region by =4= spaces |
-| =C-x SPC=                         |             | rectangular selection              |
-| =C-x r t=                         |             | replace rectangule content         |
+| keybindings                       | alternative | mode    | description                        |
+|-----------------------------------+-------------+---------+------------------------------------|
+| =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | buildin | indent the region by =4= spaces    |
+| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C=c < <=   | buildin | un-indent the region by =4= spaces |
+| =C-x SPC=                         |             | buildin | rectangular selection              |
+| =C-x r t=                         |             | buildin | replace rectangule content         |
+| =C-c '=                           |             | org     | edit SRC block in separate buffer  |
