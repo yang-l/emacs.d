@@ -621,8 +621,10 @@ shorten mode-line
 #+BEGIN_SRC emacs-lisp
 (defun modes/org-mode ()
     "org-mode hook"
-    (setq truncate-lines nil)                   ; line wrap
-    )
+    (progn
+        (setq truncate-lines nil)               ; line wrap
+        (linum-mode)
+    ))
 (add-hook 'org-mode-hook 'modes/org-mode)
 #+END_SRC
 
