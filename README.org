@@ -637,9 +637,14 @@ shorten mode-line
         (setq org-startup-indented t
               org-hide-leading-stars t
               )
-        (linum-mode)
+        (linum-mode)                            ; show line number
     ))
 (add-hook 'org-mode-hook 'modes/org-mode)
+(add-hook 'org-shiftup-final-hook 'windmove-up) ; active windmove
+(add-hook 'org-shiftleft-final-hook 'windmove-left)
+(add-hook 'org-shiftdown-final-hook 'windmove-down)
+(add-hook 'org-shiftright-final-hook 'windmove-right)
+
 #+END_SRC
 
 *** (helm-)projectile
@@ -1072,7 +1077,8 @@ buffers switching
 | keybindings                       | alternative | mode    | description                        |
 |-----------------------------------+-------------+---------+------------------------------------|
 | =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | buildin | indent the region by =4= spaces    |
-| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C=c < <=   | buildin | un-indent the region by =4= spaces |
+| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C-c < <=   | buildin | un-indent the region by =4= spaces |
 | =C-x SPC=                         |             | buildin | rectangular selection              |
 | =C-x r t=                         |             | buildin | replace rectangule content         |
 | =C-c '=                           |             | org     | edit SRC block in separate buffer  |
+| =S-<arrow>=                       | =C-x o=     | buildin | move point between windows         |
