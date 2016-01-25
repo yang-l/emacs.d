@@ -143,6 +143,7 @@ The default =set-mark-command= config conflicts with chinese input trigger
         (show-paren-mode 1)                     ; show matched parentheses
         (toggle-frame-maximized)                ; fullscreen
         (tool-bar-mode -1)                      ; hide toolbar
+        (tooltip-mode -1)
         (visual-line-mode)                      ; soft line warp
         (diminish 'visual-line-mode)
         (which-function-mode)                   ; which-function-mode
@@ -624,9 +625,13 @@ shorten mode-line
     (progn
         (setq truncate-lines nil                ; line wrap
               org-edit-src-content-indentation 0; no indentation in SRC block
+              org-export-with-smart-quotes t
+              org-log-done 'time
+              org-html-doctype "html5"
               org-src-preserve-indentation t
               org-src-fontify-natively t        ; native fontification
               org-src-tab-acts-natively t       ; mative tab in SRC block
+              org-use-speed-commands t          ; speed keys
               )
         (org-indent-mode t)                     ; list-oriented
         (setq org-startup-indented t
