@@ -4,4 +4,6 @@
     (error "Emacs v%s or higher is required!" minver)))
 
 (setq load-prefer-newer t)                      ; always load newest byte code
-(org-babel-load-file "~/.emacs.d/README.org")   ; org-mode style init
+(require 'org)                                  ; init via org-mode
+(org-babel-load-file
+    (concat user-emacs-directory "README.org"))
