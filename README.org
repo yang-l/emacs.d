@@ -26,7 +26,7 @@ Path to personal/credential info
 #+BEGIN_SRC emacs-lisp
 (if (file-exists-p (concat user-emacs-directory "private.el"))
     (load (expand-file-name "private.el" user-emacs-directory))
-(defvar my-win-default-directory "")            ; default value
+(defvar my-win-default-directory "")            ; default
 (defvar my-lin-default-directory "")
 (defvar my-erc-nick "")
 (defvar my-erc-user-full-name "")
@@ -62,6 +62,8 @@ Define packages and install them in case of they are missing
     zenburn-theme diminish                      ; UI
     sr-speedbar undo-tree window-numbering helm ; Editing
     evil mwim multiple-cursors expand-region
+    dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
+    ansible-doc
     which-key                                   ; Misc
     ))
 (dolist (p my-packages)                         ; install the missing packages
@@ -460,6 +462,32 @@ Zenburn theme
         )
     )
 (add-hook 'python-mode-hook 'modes/python-mode)
+#+END_SRC
+
+*** Infrastructure
+
+**** dockerfile
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
+#+END_SRC
+
+**** yaml
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
+#+END_SRC
+
+**** js2
+
+#+BEGIN_SRC emacs-lisp
+(setq auto-mode-alist (cons '("\\.j2" . jinja2-mode) auto-mode-alist))
+#+END_SRC
+
+**** Ansiable
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'yaml-mode-hook #'ansible-doc-mode)
 #+END_SRC
 
 ** Mode Setting
