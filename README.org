@@ -627,6 +627,7 @@ shorten mode-line
 (require 'helm-config)
 (with-eval-after-load 'helm-config
     (helm-mode 1)
+    (helm-adaptive-mode 1)
     (helm-autoresize-mode 1)                    ; buffer window resizing
     (setq helm-buffers-fuzzy-matching t         ; fuzzy matching when non-nil
         helm-imenu-fuzzy-match t
@@ -672,6 +673,7 @@ shorten mode-line
               org-use-speed-commands t          ; speed keys
               )
         (org-indent-mode t)                     ; list-oriented
+        (diminish 'org-indent-mode)
         (setq org-startup-indented t
               org-hide-leading-stars t
               )
