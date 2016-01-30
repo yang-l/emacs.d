@@ -331,6 +331,9 @@ Zenburn theme
       )
     (goto-address-prog-mode)                    ; highlight URL
     (linum-mode)                                ; show line number
+    (push '(">=" . ?≥) prettify-symbols-alist)  ; prettify symbols
+    (push '("<=" . ?≤) prettify-symbols-alist)
+    (push '("delta" . ?Δ) prettify-symbols-alist)
     (prettify-symbols-mode)
     (setq yas-snippet-dirs backup-directory)    ; snippet collections
     )
