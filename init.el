@@ -1,6 +1,6 @@
 ;;;;  INIT
-(let ((minver 24))
-  (unless (>= emacs-major-version minver)
+(let ((minver "24.4"))
+  (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
 
 (setq load-prefer-newer t)                      ; always load newest byte code
