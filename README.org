@@ -686,13 +686,13 @@ shorten mode-line
               org-hide-leading-stars t
               )
         (linum-mode)                            ; show line number
+        (global-set-key (kbd "C-c o b") 'org-switchb)
     ))
 (add-hook 'org-mode-hook 'modes/org-mode)
 (add-hook 'org-shiftup-final-hook 'windmove-up) ; active windmove
 (add-hook 'org-shiftleft-final-hook 'windmove-left)
 (add-hook 'org-shiftdown-final-hook 'windmove-down)
 (add-hook 'org-shiftright-final-hook 'windmove-right)
-
 #+END_SRC
 
 *** (helm-)projectile
@@ -1037,7 +1037,7 @@ buffers switching
   (delete-trailing-whitespace)
   (indent-region (point-min) (point-max) nil)
   (untabify (point-min) (point-max)))
-(defun indent-current-paragraph ()
+(defun indent-current-paragraph ()              ; code cleanup
   "indent current paragraph"
   (interactive)
   (save-excursion
