@@ -662,6 +662,7 @@ shorten mode-line
               org-export-with-smart-quotes t
               org-log-done 'time
               org-html-doctype "html5"
+              org-pretty-entities t             ; show symbols without math delimiters
               org-src-preserve-indentation t
               org-src-fontify-natively t        ; native fontification
               org-src-tab-acts-natively t       ; mative tab in SRC block
