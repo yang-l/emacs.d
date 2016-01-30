@@ -493,6 +493,14 @@ Zenburn theme
 (add-hook 'yaml-mode-hook #'ansible-doc-mode)
 #+END_SRC
 
+*** DB
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'sql-interactive-mode-hook
+          (lambda ()
+            (toggle-truncate-lines t)))         ; no line wrap when working on DB
+#+END_SRC
+
 ** Mode Setting
 
 *** company mode
