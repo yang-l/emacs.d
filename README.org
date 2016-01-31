@@ -367,6 +367,7 @@ Zenburn theme
     (diminish 'git-gutter-mode)
     )
 (dolist (mode-hook '(web-mode-hook
+                     org-mode-hook
                     ))
     (add-hook mode-hook #'git-gutter-mode)
     )
