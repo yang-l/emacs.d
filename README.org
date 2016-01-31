@@ -113,6 +113,17 @@ Define packages and install them in case of they are missing
     )
 #+END_SRC
 
+*** PATH
+
+#+BEGIN_SRC emacs-lisp
+(setenv "PATH"
+  (concat
+;   "~/:"
+   (getenv "PATH")
+  )
+)
+#+END_SRC
+
 ** Customisation
 
 *** Key binding
