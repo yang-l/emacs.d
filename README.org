@@ -124,6 +124,16 @@ Define packages and install them in case of they are missing
 )
 #+END_SRC
 
+*** Server mode
+
+Run Emacs as a daemon, and edit via =emacsclient=. =emacsclient -t= for terminal / =emacsclient -c= for graphic
+
+#+BEGIN_SRC emacs-lisp
+(when (require 'server nil t)
+  (unless (server-running-p)
+    (server-start)))
+#+END_SRC
+
 ** Customisation
 
 *** Key binding
