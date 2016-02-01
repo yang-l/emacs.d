@@ -266,7 +266,7 @@ The default =set-mark-command= config conflicts with chinese input trigger
     'comint-watch-for-password-prompt)          ; hide password in shell
 #+END_SRC
 
-**** Dried                                      :FILE:
+**** Dired                                      :FILE:
 
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'dired (progn
@@ -1263,7 +1263,7 @@ Selective copy and paste
   )
 #+END_SRC
 
-*** Dried                                       :FILE:
+*** Dired                                       :FILE:
 
 File manager
 
