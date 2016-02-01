@@ -266,11 +266,69 @@ The default =set-mark-command= config conflicts with chinese input trigger
     'comint-watch-for-password-prompt)          ; hide password in shell
 #+END_SRC
 
-**** Dried
+**** Dried                                      :FILE:
 
 #+BEGIN_SRC emacs-lisp
-(setq dired-recursive-deletes 'top              ; recursive delection
-      dired-recursive-copies 'always)           ; recursive copy
+(eval-after-load 'dired (progn
+  (defun modes/dired-mode ()
+    "direc mode hook"
+    (load "dired-x")
+    ;; http://emacswiki.org/emacs/DiredOmitMode
+    (setq-default dired-omit-files-p t)
+    (setq dired-omit-files
+          (concat dired-omit-files "\\|^\\..+$"))
+
+    ;; http://ann77.emacser.com/Emacs/EmacsDiredExt.html
+    ;; 排序功能
+    (interactive)
+    (make-local-variable  'dired-sort-map)
+    (setq dired-sort-map (make-sparse-keymap))
+    (define-key dired-mode-map "s" dired-sort-map)
+    (define-key dired-sort-map "s"
+      '(lambda () "sort by Size"
+         (interactive) (dired-sort-other (concat dired-listing-switches "S"))))
+    (define-key dired-sort-map "x"
+      '(lambda () "sort by eXtension"
+         (interactive) (dired-sort-other (concat dired-listing-switches "X"))))
+    (define-key dired-sort-map "t"
+      '(lambda () "sort by Time"
+         (interactive) (dired-sort-other (concat dired-listing-switches "t"))))
+    (define-key dired-sort-map "n"
+      '(lambda () "sort by Name"
+         (interactive) (dired-sort-other (concat dired-listing-switches ""))))
+
+    ;; http://www.emacswiki.org/emacs/DiredSortDirectoriesFirst
+    (defun mydired-sort ()
+      "Sort dired listings with directories first."
+      (save-excursion
+        (let (buffer-read-only)
+          (forward-line 2) ;; beyond dir. header
+          (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max)))
+        (set-buffer-modified-p nil)))
+    (defadvice dired-readin
+        (after dired-after-updating-hook first () activate)
+      "Sort dired listings with directories first before adding marks."
+      (mydired-sort))
+
+    ;; single buffer
+    (put 'dired-find-alternate-file 'disabled nil)
+    ;; http://www.emacswiki.org/emacs/DiredReuseDirectoryBuffer
+    (define-key dired-mode-map (kbd "^")
+      (lambda () (interactive) (find-alternate-file "..")))
+    ;; http://ergoemacs.org/emacs/emacs_dired_tips.html
+    (define-key dired-mode-map (kbd "<return>")
+      'dired-find-alternate-file)
+
+    ;; copy split windows
+    ;; C-o / C-0 o to paste the original filename
+    ;: https://appsmth.appspot.com/smth/subject/Emacs/94609
+    (setq dired-dwim-target t)
+
+    (setq dired-recursive-deletes 'top          ; recursive delection
+          dired-recursive-copies 'always)       ; recursive copy
+    )
+  (add-hook 'dired-load-hook 'modes/dired-mode)
+  ))
 #+END_SRC
 
 **** Imenu
@@ -1177,6 +1235,16 @@ Selective copy and paste
   )
 #+END_SRC
 
+*** Dired                                       :FILE:
+
+File manager
+
+#+BEGIN_SRC emacs-lisp
+(defun dired-open-home ()
+  (interactive)
+  (dired "~/")
+  )
+#+END_SRC
 * Tips
 
 ** Keybindings
