@@ -525,7 +525,7 @@ Zenburn theme
 **** web-mode
 
 #+BEGIN_SRC emacs-lisp
-(require 'web-mode)
+(autoload 'web-mode "web-mode" nil t)
 (defun modes/web-mode ()
     "web-mode hook"
     (setq web-mode-indent-style 4               ; indentation
@@ -865,19 +865,20 @@ move where I mean
 *** undo-tree
 
 #+BEGIN_SRC emacs-lisp
-(require 'undo-tree)
-(global-undo-tree-mode)
-(defun modes/undo-tree-mode ()
+(autoload 'undo-tree-mode "undo-tree" nil t)
+(eval-after-load "undo-tree" '(progn
+  (global-undo-tree-mode)
+  (defun modes/undo-tree-mode ()
     "undo-tree-mode hook"
     (setq undo-tree-visualizer-diff t
           undo-tree-visualizer-timestamps t
           undo-tree-history-directory-alist
             `((".*" . ,backup-directory))
           undo-tree-auto-save-history t
-        )
-    )
-(add-hook 'undo-tree-mode-hook 'modes/undo-tree-mode)
-(eval-after-load "undo-tree" '(diminish 'undo-tree-mode))
+          ))
+  (add-hook 'undo-tree-mode-hook 'modes/undo-tree-mode)
+  (diminish 'undo-tree-mode)
+  ))
 #+END_SRC
 
 *** which-key
@@ -912,7 +913,6 @@ Display the key bindings in a popup.
 buffers switching
 
 #+BEGIN_SRC emacs-lisp
-(require 'window-numbering)
 (window-numbering-mode 1)
 #+END_SRC
 
@@ -1277,11 +1277,12 @@ File manager
 
 ** Keybindings
 
-| keybindings                       | alternative | mode    | description                        |
-|-----------------------------------+-------------+---------+------------------------------------|
-| =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | buildin | indent the region by =4= spaces    |
-| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C-c < <=   | buildin | un-indent the region by =4= spaces |
-| =C-x SPC=                         |             | buildin | rectangular selection              |
-| =C-x r t=                         |             | buildin | replace rectangule content         |
-| =C-c '​=                           |             | org     | edit SRC block in separate buffer  |
-| =S-<arrow>=                       | =C-x o=     | buildin | move point between windows         |
+| keybindings                       | alternative | mode          | description                        |
+|-----------------------------------+-------------+---------------+------------------------------------|
+| =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | buildin       | indent the region by =4= spaces    |
+| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C-c < <=   | buildin       | un-indent the region by =4= spaces |
+| =C-x SPC=                         |             | buildin       | rectangular selection              |
+| =C-x r t=                         |             | buildin       | replace rectangule content         |
+| =C-c '​=                           |             | org           | edit SRC block in separate buffer  |
+| =S-<arrow>=                       | =C-x o=     | buildin       | move point between windows         |
+| =M-<num>=                         |             | window-number | jump to window by number           |
