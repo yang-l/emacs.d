@@ -269,7 +269,7 @@ The default =set-mark-command= config conflicts with chinese input trigger
 **** Dried                                      :FILE:
 
 #+BEGIN_SRC emacs-lisp
-(eval-after-load 'dired (progn
+(with-eval-after-load 'dired (progn
   (defun modes/dired-mode ()
     "direc mode hook"
     (load "dired-x")
@@ -328,6 +328,34 @@ The default =set-mark-command= config conflicts with chinese input trigger
           dired-recursive-copies 'always)       ; recursive copy
     )
   (add-hook 'dired-load-hook 'modes/dired-mode)
+  ))
+#+END_SRC
+
+**** Ediff                                      :FILE:
+
+Call =ediff= or =ediff3= in Emace for file comparisons
+
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'ediff (progn
+  (defun modes/ediff-mode ()
+    "direc mode hook"
+    ;; http://emacswiki.org/emacs/EdiffMode
+    ;; save windows configurations
+    (add-hook 'ediff-before-setup-hook
+              (lambda ()
+                (setq ediff-saved-window-configuration (current-window-configuration))))
+
+    (let ((restore-window-configuration
+           (lambda ()
+             (set-window-configuration ediff-saved-window-configuration))))
+      (add-hook 'ediff-quit-hook restore-window-configuration 'append)
+      (add-hook 'ediff-suspend-hook restore-window-configuration 'append))
+
+    ;; horizontal window split
+    (setq ediff-split-window-function 'split-window-horizontally)
+    (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+    )
+  (add-hook 'ediff-load-hook 'modes/ediff-mode)
   ))
 #+END_SRC
 
@@ -1235,7 +1263,7 @@ Selective copy and paste
   )
 #+END_SRC
 
-*** Dired                                       :FILE:
+*** Dried                                       :FILE:
 
 File manager
 
