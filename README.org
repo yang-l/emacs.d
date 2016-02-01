@@ -454,7 +454,6 @@ Zenburn theme
 **** git-gutter
 
 #+BEGIN_SRC emacs-lisp
-(require 'git-gutter)
 (with-eval-after-load 'git-gutter
     (git-gutter:linum-setup)                    ; w/linum mode
     (custom-set-variables                       ; backend
@@ -616,11 +615,13 @@ Zenburn theme
 *** company mode
 
 #+BEGIN_SRC emacs-lisp
-(require 'company)
-(with-eval-after-load 'company (progn
-    (defun modes/company-mode ()
-        "company mode hook"
-        (company-mode)                          ; enable only under specific modes
+(autoload 'company-mode "company" nil t)
+(dolist (mode-hook '(prog-mode-hook
+                     ))
+  (add-hook mode-hook #'company-mode))
+
+(with-eval-after-load 'company
+    (progn
         (define-key (current-local-map) [remap hippie-expand] 'company-complete)
         (setq-default company-backends          ; default backends
             '((company-abbrev
@@ -647,10 +648,9 @@ Zenburn theme
               company-dabbrev-other-buffers t
               company-transformers
                 '(company-sort-by-occurrence)
-            ))
-    (add-hook 'prog-mode-hook 'modes/company-mode)
-    (diminish 'company-mode)
-    ))
+            )
+        (diminish 'company-mode)
+        ))
 #+END_SRC
 
 *** diminish
@@ -658,7 +658,7 @@ Zenburn theme
 shorten mode-line
 
 #+BEGIN_SRC emacs-lisp
-(require 'diminish)
+(autoload 'diminish "diminish" nil t)
 #+END_SRC
 
 *** erc
@@ -721,7 +721,7 @@ shorten mode-line
 *** evil
 
 #+BEGIN_SRC emacs-lisp
-(require 'evil)
+(autoload 'evil-mode "evil" nil t)
 (evil-mode 1)
 (setq evil-default-state 'emacs)                ; default to emacs
 #+END_SRC
@@ -736,7 +736,10 @@ shorten mode-line
 *** flycheck
 
 #+BEGIN_SRC emacs-lisp
-(require 'flycheck)
+(autoload 'flycheck "flycheck-mode" nil t)
+(eval-after-load 'flycheck
+  '(progn
+     ))
 #+END_SRC
 
 *** helm
