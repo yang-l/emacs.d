@@ -858,8 +858,37 @@ move where I mean
 (global-set-key (kbd "C-c n t") #'neotree-toggle)
 
 (with-eval-after-load 'neotree
-  '(progn
-     ))
+  (progn
+    (setq-default neo-create-file-auto-open t
+                  neo-dont-be-alone t
+                  neo-keymap-style 'concise
+                  neo-show-header nil
+                  neo-show-hidden-files t
+                  neo-smart-open t
+                  )
+    (setq neo-theme 'ascii)
+
+    ;; https://github.com/jaypei/emacs-neotree/issues/105
+    (setq neo-vc-integration '(face char))
+    (defun neo-vc-for-node (node)
+      (let* ((backend (vc-backend node))
+             (vc-state (when backend (vc-state node backend))))
+        (cons (cdr (assoc vc-state neo-vc-state-char-alist))
+              (cl-case vc-state
+                (up-to-date       neo-vc-up-to-date-face)
+                (edited           neo-vc-edited-face)
+                (needs-update     neo-vc-needs-update-face)
+                (needs-merge      neo-vc-needs-merge-face)
+                (unlocked-changes neo-vc-unlocked-changes-face)
+                (added            neo-vc-added-face)
+                (removed          neo-vc-removed-face)
+                (conflict         neo-vc-conflict-face)
+                (missing          neo-vc-missing-face)
+                (ignored          neo-vc-ignored-face)
+                (unregistered     neo-vc-unregistered-face)
+                (user             neo-vc-user-face)
+                (t                neo-vc-default-face)))))
+    ))
 #+END_SRC
 
 *** speedbar
