@@ -60,7 +60,7 @@ Define packages and install them in case of they are missing
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
     elpy                                        ; Python
     zenburn-theme diminish                      ; UI
-    sr-speedbar undo-tree window-numbering helm ; Editing
+    neotree undo-tree window-numbering helm     ; Editing
     evil mwim multiple-cursors expand-region
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc
@@ -851,18 +851,24 @@ move where I mean
 (global-set-key (kbd "C-e") #'mwim-end-of-code-or-line)
 #+END_SRC
 
-*** speedbar / sr-speedbar
+*** neotree
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'neotree-toggle "neotree" nil t)
+(global-set-key (kbd "C-c n t") #'neotree-toggle)
+
+(with-eval-after-load 'neotree
+  '(progn
+     ))
+#+END_SRC
+
+*** speedbar
 
 #+BEGIN_SRC emacs-lisp
 (setq speedbar-show-unknown-files t             ; show all files
       speedbar-directory-unshown-regexp "^$"
       speedbar-use-images nil                   ; no icon
     )
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp
-(require 'sr-speedbar)
-(sr-speedbar-refresh-turn-off)                  ; not refresh speedbar content
 #+END_SRC
 
 *** undo-tree
