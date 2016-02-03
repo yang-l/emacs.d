@@ -661,7 +661,7 @@ shorten mode-line
 (autoload 'diminish "diminish" nil t)
 #+END_SRC
 
-*** erc
+*** erc                                         :IRC:
 
 #+BEGIN_SRC emacs-lisp
 (require 'erc)
@@ -726,7 +726,7 @@ shorten mode-line
 (setq evil-default-state 'emacs)                ; default to emacs
 #+END_SRC
 
-*** expand-region
+*** expand-region                               :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'er/expand-region "expand-region" nil t)
@@ -833,14 +833,14 @@ shorten mode-line
 (add-hook 'prog-mode-hook #'modes/projectile-mode)
 #+END_SRC
 
-*** multiple-cursors
+*** multiple-cursors                            :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'mc/edit-lines "mc-edit-lines" nil t)
 (global-set-key (kbd "C-c m c") #'mc/edit-lines)
 #+END_SRC
 
-*** mwim
+*** mwim                                        :EDIT:
 
 move where I mean
 
@@ -851,7 +851,7 @@ move where I mean
 (global-set-key (kbd "C-e") #'mwim-end-of-code-or-line)
 #+END_SRC
 
-*** neotree
+*** neotree                                     :FILE:EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'neotree-toggle "neotree" nil t)
@@ -891,7 +891,7 @@ move where I mean
     ))
 #+END_SRC
 
-*** speedbar
+*** speedbar                                    :NOT_IN_USE:EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (setq speedbar-show-unknown-files t             ; show all files
@@ -900,7 +900,7 @@ move where I mean
     )
 #+END_SRC
 
-*** undo-tree
+*** undo-tree                                   :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'undo-tree-mode "undo-tree" nil t)
