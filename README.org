@@ -811,9 +811,14 @@ shorten mode-line
 *** (helm-)projectile
 
 #+BEGIN_SRC emacs-lisp
-(require 'helm-projectile)
-(defun modes/projectile-mode ()
-    "projectile-mode hook"
+(autoload 'helm-projectile "helm-projectile" nil t)
+(dolist (mode-hook '(prog-mode-hook
+                     ))
+  (add-hook mode-hook
+    (lambda ()
+      (define-key (current-global-map) (kbd "C-c p h") 'helm-projectile)
+      )))
+(with-eval-after-load 'helm-projectile (progn
     (setq
         projectile-keymap-prefix (kbd "C-c p")          ; prefix
         projectile-completion-system 'helm              ; via helm backend
@@ -828,9 +833,9 @@ shorten mode-line
     )
     (if (eq system-type 'windows-nt)                    ; external indexing under windows
             (setq projectile-indexing-method 'alien))
+    (projectile-mode)
     (helm-projectile-on)                                ; active helm, instead of Projectile, commands
-    )
-(add-hook 'prog-mode-hook #'modes/projectile-mode)
+    ))
 #+END_SRC
 
 *** multiple-cursors                            :EDIT:
