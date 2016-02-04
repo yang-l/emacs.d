@@ -62,6 +62,7 @@ Define packages and install them in case of they are missing
     zenburn-theme diminish                      ; UI
     neotree undo-tree window-numbering helm     ; Editing
     evil mwim multiple-cursors expand-region
+    indent-guide
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc
     which-key                                   ; Misc
@@ -774,6 +775,26 @@ shorten mode-line
                 'helm-esh-pcomplete)))
     (diminish 'helm-mode)
     )
+#+END_SRC
+
+*** indent-guide                                :EDIT:
+
+#+BEGIN_SRC emacs-lisp
+(dolist (hook '(prog-mode-hook
+                org-mode-hook
+                ))
+  (add-hook hook
+            (lambda ()
+              (indent-guide-mode 1)
+              )))
+(with-eval-after-load 'indent-guide
+  (progn
+    (set-face-foreground 'indent-guide-face "lightslategrey")
+    (setq indent-guide-char "¦"
+          indent-guide-delay 0.3
+          indent-guide-recursive t)
+    (diminish 'indent-guide-mode)
+    ))
 #+END_SRC
 
 *** org-mode
