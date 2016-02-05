@@ -444,6 +444,8 @@ Zenburn theme
     (push '("delta" . ?Δ) prettify-symbols-alist)
     (prettify-symbols-mode)
     (setq yas-snippet-dirs backup-directory)    ; snippet collections
+    (local-set-key (kbd "RET")
+                   'newline-and-indent)
     )
 (add-hook 'prog-mode-hook 'modes/prog-mode)
 (add-hook 'before-save-hook                     ; remove trailing whitespace
