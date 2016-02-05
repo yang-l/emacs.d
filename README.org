@@ -241,6 +241,17 @@ The default =set-mark-command= config conflicts with chinese input trigger
 (setq backup-enable-predicate 'my-backup-enable-p)
 #+END_SRC
 
+**** Minibuffer backup
+
+save the minibuffer histories
+
+#+BEGIN_SRC emacs-lisp
+(setq-default savehist-additional-variables
+              '(kill-ring search-ring regexp-search-ring)
+              savehist-file (concat backup-directory "savehist"))
+(savehist-mode +1)
+#+END_SRC
+
 **** Folders for other modes
 
 #+BEGIN_SRC emacs-lisp
