@@ -883,6 +883,7 @@ shorten mode-line
             (setq projectile-indexing-method 'alien))
     (projectile-mode)
     (helm-projectile-on)                                ; active helm, instead of Projectile, commands
+    (diminish 'projectile-mode " ⌕")
     ))
 #+END_SRC
 
