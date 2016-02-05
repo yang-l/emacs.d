@@ -26,8 +26,10 @@ Path to personal/credential info
 #+BEGIN_SRC emacs-lisp
 (if (file-exists-p (concat user-emacs-directory "private.el"))
     (load (expand-file-name "private.el" user-emacs-directory))
-(defvar my-win-default-directory "~/")          ; default
-(defvar my-lin-default-directory "~/")
+(defvar default-directory                       ; default
+  (concat (getenv "HOME") "/"))
+(defvar my-win-default-directory default-directory)
+(defvar my-lin-default-directory default-directory)
 (defvar my-erc-nick "")
 (defvar my-erc-user-full-name "")
 (defvar my-erc-email-userid ""))
