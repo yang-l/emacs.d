@@ -678,45 +678,44 @@ shorten mode-line
 *** erc                                         :IRC:
 
 #+BEGIN_SRC emacs-lisp
-(require 'erc)
-(eval-after-load "erc"
-    '(progn
-        (setq
-            erc-server  "irc.freenode.net"      ; default to freenode.net
-            erc-port    "6697"
-            erc-nick my-erc-nick
-            erc-user-full-name my-erc-user-full-name
-            erc-email-userid my-erc-email-userid
-            erc-hide-list                       ; hide unwanted messages
-                '("JOIN" "PART" "QUIT")
-            erc-interpret-mirc-color t          ; color highlighting
-            erc-rename-buffers t                ; Rename buffers to the current network name instead of SERVER:PORT
-            erc-server-coding-system            ; always utf-8
-                '(utf-8 . utf-8)
-            erc-log-mode t                      ; enable logging
-            erc-generate-log-file-name-function
-                (quote erc-generate-log-file-name-with-date)
-            erc-hide-timestamps t               ; hide logging timestamp when chatting
-            erc-log-channels-directory          ; directory
-                (concat backup-directory "erc.logs/")
-            erc-log-insert-log-on-open nil      ; ignore previous messages
-            erc-log-file-coding-system 'utf-8-unix
-        )
-        (erc-log-mode)
-        (erc-truncate-mode +1)                  ; truncate long irc buffers
-        (require 'erc-sasl)                     ; sasl
-        (add-to-list 'erc-sasl-server-regexp-list "irc\\.freenode\\.net")
+(autoload 'define-erc-response-handler "erc-backend" nil t)
+(with-eval-after-load `erc
+  (progn
+    (setq erc-server  "irc.freenode.net"        ; default to freenode.net
+          erc-port    "6697"
+          erc-nick my-erc-nick
+          erc-user-full-name my-erc-user-full-name
+          erc-email-userid my-erc-email-userid
+          erc-hide-list                         ; hide unwanted messages
+          '("JOIN" "PART" "QUIT")
+          erc-interpret-mirc-color t            ; color highlighting
+          erc-rename-buffers t                  ; Rename buffers to the current network name instead of SERVER:PORT
+          erc-server-coding-system              ; always utf-8
+          '(utf-8 . utf-8)
+          erc-log-mode t                        ; enable logging
+          erc-generate-log-file-name-function
+          (quote erc-generate-log-file-name-with-date)
+          erc-hide-timestamps t                 ; hide logging timestamp when chatting
+          erc-log-channels-directory            ; directory
+          (concat backup-directory "erc.logs/")
+          erc-log-insert-log-on-open nil        ; ignore previous messages
+          erc-log-file-coding-system 'utf-8-unix
+          )
+    (erc-log-mode)
+    (erc-truncate-mode +1)                      ; truncate long irc buffers
+    (require 'erc-sasl)                         ; sasl
+    (add-to-list 'erc-sasl-server-regexp-list "irc\\.freenode\\.net")
     ))
 
 ;; for erc-sasl
 (defun erc-login ()
   "Perform user authentication at the IRC server."
   (erc-log (format "login: nick: %s, user: %s %s %s :%s"
-		   (erc-current-nick)
-		   (user-login-name)
-		   (or erc-system-name (system-name))
-		   erc-session-server
-		   erc-session-user-full-name))
+                   (erc-current-nick)
+                   (user-login-name)
+                   (or erc-system-name (system-name))
+                   erc-session-server
+                   erc-session-user-full-name))
   (if erc-session-password
       (erc-server-send (format "PASS %s" erc-session-password))
     (message "Logging in without password"))
@@ -724,11 +723,10 @@ shorten mode-line
     (erc-server-send "CAP REQ :sasl"))
   (erc-server-send (format "NICK %s" (erc-current-nick)))
   (erc-server-send
-    (format "USER %s %s %s :%s"
-	   ;; hacked - S.B.
-	   (if erc-anonymous-login erc-email-userid (user-login-name))
-	   "0" "*"
-	   erc-session-user-full-name))
+   (format "USER %s %s %s :%s"
+           (if erc-anonymous-login erc-email-userid (user-login-name))
+           "0" "*"
+           erc-session-user-full-name))
   (erc-update-mode-line))
 #+END_SRC
 
