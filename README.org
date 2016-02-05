@@ -427,11 +427,11 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 (setq tramp-default-method "ssh")               ; faster than the default scp
 #+END_SRC
 
-*** UI
+*** Style
 
-**** Font
+**** Face
 
-Emacs GUI under Windows
+Emacs GUI font under Windows
 
 #+BEGIN_SRC emacs-lisp
 (if (eq system-type 'windows-nt)
