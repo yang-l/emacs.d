@@ -1363,6 +1363,6 @@ File manager
 | =C-c '​=                           |             | org           | edit SRC block in separate buffer  |
 | =S-<arrow>=                       | =C-x o=     | buildin       | move point between windows         |
 | =M-<num>=                         |             | window-number | jump to window by number           |
-| =C-S-Backspace=                   | =C-a=+=C-k= | buildin       | delete a whole line                |
+| =C-S-Backspace=                   | =C-a= =C-k= | buildin       | delete a whole line                |
 | =C-x z=                           |             | buildin       | repeat last command                |
 | =z=                               |             | buildin       | repeat last command again          |
