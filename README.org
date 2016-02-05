@@ -249,6 +249,17 @@ The default =set-mark-command= config conflicts with chinese input trigger
     )
 #+END_SRC
 
+**** Create missing parent directories
+
+#+BEGIN_SRC emacs-lisp
+(defun create-non-existent-directory ()
+  (let ((parent-directory (file-name-directory buffer-file-name)))
+    (when (and (not (file-exists-p parent-directory))
+               (y-or-n-p (format "Directory `%s' does not exist! Create it?" parent-directory)))
+      (make-directory parent-directory t))))
+(add-to-list 'find-file-not-found-functions #'create-non-existent-directory)
+#+END_SRC
+
 *** Buildin Mode Setting
 
 **** Case
