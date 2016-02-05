@@ -963,11 +963,11 @@ move where I mean
 Display the key bindings in a popup.
 
 #+BEGIN_SRC emacs-lisp
-(require 'which-key)
+(add-hook 'after-init-hook #'which-key-mode)
 (eval-after-load "which-key"
     '(progn
-        (which-key-mode)
         (setq which-key-idle-delay 2.0)         ; popup delay
+        (which-key-setup-side-window-right-bottom)
         (diminish 'which-key-mode)
     ))
 #+END_SRC
@@ -994,6 +994,8 @@ buffers switching
 #+END_SRC
 
 *** winner-mode
+
+Undo Emacs window changes
 
 #+BEGIN_SRC emacs-lisp
 (winner-mode +1)
