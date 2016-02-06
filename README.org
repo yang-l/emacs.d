@@ -599,6 +599,17 @@ Zenburn theme
 (add-hook 'python-mode-hook 'modes/python-mode)
 #+END_SRC
 
+**** Emacs Lisp
+
+#+BEGIN_SRC emacs-lisp
+(defun modes/elisp-mode ()
+    "emacs-lisp mode hook"
+    (progn
+      (eldoc-mode)
+      ))
+(add-hook 'emacs-lisp-mode-hook #'modes/elisp-mode)
+#+END_SRC
+
 *** Infrastructure
 
 **** dockerfile
