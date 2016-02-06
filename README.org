@@ -5,7 +5,7 @@ This file re-organises [[https://github.com/yang-l/configurations][the old init 
 
 * Installation
 
-Backup existing =~/.emacs.d=, and followed by
+Backup existing =~/.emacs.d=, and then follow by
 
 #+BEGIN_SRC bash
 git clone https://github.com/yang-l/emacs.d.git ~/.emacs.d
@@ -47,7 +47,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
     (package-initialize))
 #+END_SRC
 
-Define packages and install them in case of they are missing
+Define packages and install them in case of missing
 #+BEGIN_SRC emacs-lisp
 (defvar my-packages '(
     company yasnippet flycheck git-gutter magit ; Programming
