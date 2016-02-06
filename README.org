@@ -22,26 +22,19 @@ Path to non ELPA included lisp files
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 #+END_SRC
 
-Path to personal/credential info
+Path to personal/credential info in =~/.emacs.d/private.el=
 #+BEGIN_SRC emacs-lisp
 (if (file-exists-p (concat user-emacs-directory "private.el"))
     (load (expand-file-name "private.el" user-emacs-directory))
 (defvar default-directory                       ; default
   (concat (getenv "HOME") "/"))
-(defvar my-win-default-directory default-directory)
-(defvar my-lin-default-directory default-directory)
-(defvar my-erc-nick "")
+(defvar my-win-default-directory                ; folder
+  default-directory)
+(defvar my-lin-default-directory
+  default-directory)
+(defvar my-erc-nick "")                         ; ERC
 (defvar my-erc-user-full-name "")
 (defvar my-erc-email-userid ""))
-#+END_SRC
-
-The contains of =~/.emacs.d/private.el= should include
-#+BEGIN_SRC
-(defvar my-win-default-directory "WINDEFDIR")   ; folder
-(defvar my-lin-default-directory "LINDEFDIR")
-(defvar my-erc-nick "NICKNAME")                 ; ERC
-(defvar my-erc-user-full-name "FULLNAME")
-(defvar my-erc-email-userid "USERID")
 #+END_SRC
 
 *** ELPA
