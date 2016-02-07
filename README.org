@@ -51,7 +51,7 @@ Define packages and install them in case of missing
 #+BEGIN_SRC emacs-lisp
 (defvar my-packages '(
     company yasnippet flycheck git-gutter magit ; Programming
-    projectile helm-projectile
+    projectile helm-projectile swiper-helm
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
     elpy                                        ; Python
     zenburn-theme diminish                      ; UI
@@ -775,40 +775,6 @@ shorten mode-line
      ))
 #+END_SRC
 
-*** helm
-
-#+BEGIN_SRC emacs-lisp
-(require 'helm-config)
-(with-eval-after-load 'helm-config
-    (helm-mode 1)
-    (helm-adaptive-mode 1)
-    (helm-autoresize-mode 1)                    ; buffer window resizing
-    (setq helm-buffers-fuzzy-matching t         ; fuzzy matching when non-nil
-        helm-imenu-fuzzy-match t
-        helm-M-x-fuzzy-match t
-        helm-recentf-fuzzy-match t
-        helm-semantic-fuzzy-match t
-        helm-adaptive-history-file
-            (expand-file-name "helm-adaptive-history" backup-directory)
-        helm-candidate-number-limit 100         ; candidate limit
-        helm-ff-search-library-in-sexp t        ; search for library in `require' and `declare-function' sexp
-        helm-move-to-line-cycle-in-source t     ; move to end or beginning of source when reaching top or bottom of source
-        helm-quick-update t                     ; do not display invisible candidates
-        helm-split-window-in-side-p t           ; open helm buffer inside current window, not occupy whole other window
-        )
-    (define-key (current-global-map) [remap switch-to-buffer] 'helm-mini)
-    (define-key (current-global-map) [remap execute-extended-command] 'helm-M-x)
-    (define-key (current-global-map) [remap dabbrev-expand] 'helm-dabbrev)
-    (define-key (current-global-map) [remap occur] 'helm-occur)
-    (add-hook 'eshell-mode-hook                 ; eshell
-        #'(lambda ()
-            (define-key eshell-mode-map
-                [remap eshell-pcomplete]
-                'helm-esh-pcomplete)))
-    (diminish 'helm-mode)
-    )
-#+END_SRC
-
 *** indent-guide                                :EDIT:
 
 #+BEGIN_SRC emacs-lisp
@@ -859,37 +825,6 @@ shorten mode-line
 (add-hook 'org-shiftleft-final-hook 'windmove-left)
 (add-hook 'org-shiftdown-final-hook 'windmove-down)
 (add-hook 'org-shiftright-final-hook 'windmove-right)
-#+END_SRC
-
-*** (helm-)projectile
-
-#+BEGIN_SRC emacs-lisp
-(autoload 'helm-projectile "helm-projectile" nil t)
-(dolist (mode-hook '(prog-mode-hook
-                     ))
-  (add-hook mode-hook
-    (lambda ()
-      (define-key (current-global-map) (kbd "C-c p h") 'helm-projectile)
-      )))
-(with-eval-after-load 'helm-projectile (progn
-    (setq
-        projectile-keymap-prefix (kbd "C-c p")          ; prefix
-        projectile-completion-system 'helm              ; via helm backend
-        projectile-enable-caching t                     ; enable caching unconditionally
-        projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
-        projectile-remember-window-configs t
-        projectile-switch-project-action
-            'helm-projectile
-        projectile-cache-file (expand-file-name         ; Projectile cache file
-            "projectile.cache" backup-directory)
-        projectile-sort-order 'modification-time
-    )
-    (if (eq system-type 'windows-nt)                    ; external indexing under windows
-            (setq projectile-indexing-method 'alien))
-    (projectile-mode)
-    (helm-projectile-on)                                ; active helm, instead of Projectile, commands
-    (diminish 'projectile-mode " ⌕")
-    ))
 #+END_SRC
 
 *** multiple-cursors                            :EDIT:
@@ -1026,6 +961,81 @@ Undo Emacs window changes
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'yasnippet
     )
+#+END_SRC
+
+*** Helm                                        :EDIT:
+
+**** helm
+
+#+BEGIN_SRC emacs-lisp
+(require 'helm-config)
+(with-eval-after-load 'helm-config
+    (helm-mode 1)
+    (helm-adaptive-mode 1)
+    (helm-autoresize-mode 1)                    ; buffer window resizing
+    (setq helm-buffers-fuzzy-matching t         ; fuzzy matching when non-nil
+        helm-imenu-fuzzy-match t
+        helm-M-x-fuzzy-match t
+        helm-recentf-fuzzy-match t
+        helm-semantic-fuzzy-match t
+        helm-adaptive-history-file
+            (expand-file-name "helm-adaptive-history" backup-directory)
+        helm-candidate-number-limit 100         ; candidate limit
+        helm-ff-search-library-in-sexp t        ; search for library in `require' and `declare-function' sexp
+        helm-move-to-line-cycle-in-source t     ; move to end or beginning of source when reaching top or bottom of source
+        helm-quick-update t                     ; do not display invisible candidates
+        helm-split-window-in-side-p t           ; open helm buffer inside current window, not occupy whole other window
+        )
+    (define-key (current-global-map) [remap switch-to-buffer] 'helm-mini)
+    (define-key (current-global-map) [remap execute-extended-command] 'helm-M-x)
+    (define-key (current-global-map) [remap dabbrev-expand] 'helm-dabbrev)
+    (define-key (current-global-map) [remap occur] 'helm-occur)
+    (add-hook 'eshell-mode-hook                 ; eshell
+        #'(lambda ()
+            (define-key eshell-mode-map
+                [remap eshell-pcomplete]
+                'helm-esh-pcomplete)))
+    (diminish 'helm-mode)
+    )
+#+END_SRC
+
+**** projectile
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'helm-projectile "helm-projectile" nil t)
+(dolist (mode-hook '(prog-mode-hook
+                     ))
+  (add-hook mode-hook
+    (lambda ()
+      (define-key (current-global-map) (kbd "C-c p h") 'helm-projectile)
+      )))
+(with-eval-after-load 'helm-projectile (progn
+    (setq
+        projectile-keymap-prefix (kbd "C-c p")          ; prefix
+        projectile-completion-system 'helm              ; via helm backend
+        projectile-enable-caching t                     ; enable caching unconditionally
+        projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
+        projectile-remember-window-configs t
+        projectile-switch-project-action
+            'helm-projectile
+        projectile-cache-file (expand-file-name         ; Projectile cache file
+            "projectile.cache" backup-directory)
+        projectile-sort-order 'modification-time
+    )
+    (if (eq system-type 'windows-nt)                    ; external indexing under windows
+            (setq projectile-indexing-method 'alien))
+    (projectile-mode)
+    (helm-projectile-on)                                ; active helm, instead of Projectile, commands
+    (diminish 'projectile-mode " ⌕")
+    ))
+#+END_SRC
+
+**** swiper
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'swiper-helm "swiper-helm" nil t)
+(global-set-key (kbd "C-s") #'swiper-helm)
+(global-set-key (kbd "C-r") #'swiper-helm)
 #+END_SRC
 
 ** Research
