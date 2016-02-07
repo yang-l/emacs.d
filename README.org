@@ -180,6 +180,7 @@ The default =set-mark-command= config conflicts with chinese input trigger
         (when (fboundp                          ; windmove
             'windmove-default-keybindings)
             (windmove-default-keybindings))
+        (size-indication-mode +1)               ; show total buffer size
     )))
 #+END_SRC
 
