@@ -422,7 +422,9 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 (autoload 'multi-term "multi-term" nil t)
 (with-eval-after-load 'multi-term
   (progn
-    (setq multi-term-buffer-name "mterm"        ; buffer name
+    (setq multi-term-program "/bin/bash"        ; bash
+          multi-term-program-switches "-il"
+          multi-term-buffer-name "mterm"        ; buffer name
           term-buffer-maximum-size 0            ; keepp all buffer
           scroll-margin 0                       ; prevent only using half of available window
           )
