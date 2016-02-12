@@ -54,6 +54,7 @@ Define packages and install them in case of missing
     projectile helm-projectile swiper-helm
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
     elpy                                        ; Python
+    groovy-mode                                 ; Groovy
     zenburn-theme diminish                      ; UI
     neotree undo-tree window-numbering helm     ; Editing
     evil mwim multiple-cursors expand-region
@@ -627,6 +628,23 @@ Zenburn theme
       (eldoc-mode)
       ))
 (add-hook 'emacs-lisp-mode-hook #'modes/elisp-mode)
+#+END_SRC
+
+**** Groovy
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'groovy-mode "groovy-mode" nil t)
+(add-to-list 'auto-mode-alist '("\.groovy$" . groovy-mode))
+(add-hook 'groovy-mode-hook
+ (lambda ()
+   (eval-when-compile                           ; remove after emacs25
+     (if (and (= emacs-major-version 24) (< emacs-minor-version 6))
+         (require 'cl)))
+   (autoload 'groovy-electric "groovy-electric" nil t)
+   (groovy-electric-mode)
+   (diminish 'groovy-electric-mode)
+   (diminish 'abbrev-mode)
+   ))
 #+END_SRC
 
 *** Infrastructure
