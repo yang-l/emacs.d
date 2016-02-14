@@ -726,6 +726,33 @@ Zenburn theme
             (toggle-truncate-lines t)))         ; no line wrap when working on DB
 #+END_SRC
 
+*** C/C++
+
+#+BEGIN_SRC emacs-lisp
+(defun modes/c-mode ()
+  "c/c++ mode hook"
+  (progn
+    (setq gdb-many-windows t)                   ; gdb
+
+    (local-set-key (kbd "C-c -")                ; fold tag
+                   'senator-fold-tag)
+    (local-set-key (kbd "C-c +")
+                   'senator-unfold-tag)
+
+    (add-to-list 'company-backends '(company-gtags
+                                     company-semantic))
+    ))
+
+(dolist
+    (hook
+     (list
+      'c-mode-hook
+      'c++-mode-hook
+      ))
+  (add-hook hook #'modes/c-mode))
+
+#+END_SRC
+
 ** Mode Setting
 
 *** company mode
