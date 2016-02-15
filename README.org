@@ -829,6 +829,13 @@ shorten mode-line
           (concat backup-directory "erc.logs/")
           erc-log-insert-log-on-open nil        ; ignore previous messages
           erc-log-file-coding-system 'utf-8-unix
+          erc-button-url-regexp                 ; Button URL
+            "\\([-a-zA-Z0-9_=!?#$@~`%&*+\\/:;,]+\\.\\)+[-a-zA-Z0-9_=!?#$@~`%&*+\\/:;,]*[-a-zA-Z0-9\\/]"
+          erc-prompt (lambda () (concat "[" (buffer-name) "]"))
+          erc-auto-discard-away t               ; autoaway
+          erc-autoaway-idle-seconds 600
+          erc-autoaway-use-emacs-idle t
+          erc-query-display 'buffer             ; open query in the current window
           )
     (erc-log-mode)
     (erc-truncate-mode +1)                      ; truncate long irc buffers
