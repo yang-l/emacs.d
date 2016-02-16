@@ -461,7 +461,8 @@ Emacs GUI font under Windows
 
 #+BEGIN_SRC emacs-lisp
 (if (eq system-type 'windows-nt)
-    (set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100))
+    (set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100)
+(set-default-font "7x13"))
 #+END_SRC
 
 **** Theme
