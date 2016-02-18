@@ -463,6 +463,7 @@ Emacs GUI font under Windows
 (if (eq system-type 'windows-nt)
     (set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100)
 (set-default-font "7x14")
+(set-face-attribute 'default nil :family "Terminus" :height 120)
 )
 #+END_SRC
 
