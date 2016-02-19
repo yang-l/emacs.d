@@ -463,11 +463,23 @@ Emacs GUI font settings
 (when (display-graphic-p)
   (if (eq system-type 'windows-nt)
       (set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100)
-  ;(set-face-attribute 'default nil :font "7x14" )
-  (set-face-attribute 'default nil :font "Terminus" :height 120)
-  (set-fontset-font "fontset-default"           ; 中文
-                    'han '("WenQuanYi Zen Hei Sharp" . "unicode-bmp"))
-))
+    (cond                                       ; Linux
+     ((find-font (font-spec :name "Terminus"))
+      (set-face-attribute 'default nil :font "Terminus" :height 120))
+     ((find-font (font-spec :maker "misc"
+                            :family "fixed"
+                            :widthtype "normal"
+                            :pixels "14"
+                            :height "130"
+                            :horiz "75"
+                            :vert "75"
+                            ))                  ; fallback to "7x14" bitmap
+      ; 7x14 / -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-1
+      (set-face-attribute 'default nil :font "7x14"))
+     )
+    (set-fontset-font "fontset-default"         ; 中文字体
+                      'han '("WenQuanYi Zen Hei Sharp" . "unicode-bmp"))
+    ))
 #+END_SRC
 
 **** Theme
