@@ -105,6 +105,7 @@ Define packages and install them in case of missing
     require-final-newline t                     ; always add a new line at the end of a file
     scroll-margin 3                             ; auto scrolling
     scroll-step 1                               ; line-by-line scrolling
+    scroll-conservatively 10000                 ; do not jump to centre point in the window
     tab-width 4                                 ; 4 space indentation
     visible-bell 1                              ; no bell in windows
     x-stretch-cursor t                          ; stretch cursor to cover wide characters
@@ -442,7 +443,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
           multi-term-program-switches "-il"
           multi-term-buffer-name "mterm"        ; buffer name
           term-buffer-maximum-size 0            ; keepp all buffer
-          scroll-margin 0                       ; prevent only using half of available window
+          scroll-margin 0                       ; always make point visible at bottom of the window when auto-scrolling
           )
     (add-to-list 'term-bind-key-alist '("M-[" . multi-term-prev))
     (add-to-list 'term-bind-key-alist '("M-]" . multi-term-next))
