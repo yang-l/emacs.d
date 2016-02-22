@@ -311,7 +311,7 @@ save the minibuffer histories
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'dired (progn
   (defun modes/dired-mode ()
-    "direc mode hook"
+    "dired mode hook"
     (load "dired-x")
     ;; http://emacswiki.org/emacs/DiredOmitMode
     (setq-default dired-omit-files-p t)
@@ -367,7 +367,7 @@ save the minibuffer histories
     (setq dired-recursive-deletes 'top          ; recursive delection
           dired-recursive-copies 'always)       ; recursive copy
     )
-  (add-hook 'dired-load-hook 'modes/dired-mode)
+  (add-hook 'dired-load-hook #'modes/dired-mode)
   ))
 #+END_SRC
 
@@ -378,7 +378,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'ediff (progn
   (defun modes/ediff-mode ()
-    "direc mode hook"
+    "ediff-mode hook"
     ;; http://emacswiki.org/emacs/EdiffMode
     ;; save windows configurations
     (add-hook 'ediff-before-setup-hook
@@ -395,7 +395,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
     (setq ediff-split-window-function 'split-window-horizontally)
     (setq ediff-window-setup-function 'ediff-setup-windows-plain)
     )
-  (add-hook 'ediff-load-hook 'modes/ediff-mode)
+  (add-hook 'ediff-load-hook #'modes/ediff-mode)
   ))
 #+END_SRC
 
@@ -416,21 +416,14 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 
 **** Shell & Term
 
-***** ansi-term
+***** term
 
 #+BEGIN_SRC emacs-lisp
-(defadvice ansi-term                            ; utf-8
-    (after advise-ansi-term-coding-system)
-    (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))
-(ad-activate 'ansi-term)
-
-(defadvice term-sentinel
-    (around my-advice-term-sentinel (proc msg) activate)
-    (if (memq (process-status proc) '(signal exit))
-        (let ((buffer (process-buffer proc)))
-            ad-do-it
-            (kill-buffer buffer))
-        ad-do-it))
+(defun modes/term-mode ()
+    "term mode hook"
+    (setq term-buffer-maximum-size 10000)       ; increase buffer size
+    )
+(add-hook 'term-mode-hook #'modes/term-mode)
 #+END_SRC
 
 ***** multi-term
@@ -1534,3 +1527,5 @@ File manager
 | =C-S-Backspace=                   | =C-a C-k=   | buildin       | delete a whole line                |
 | =C-x z=                           |             | buildin       | repeat last command                |
 | =z=                               |             | buildin       | repeat last command again          |
+| =M-<=                             |             | buildin       | top of buffer                      |
+| =M->=                             |             | buildin       | end of buffer                      |
