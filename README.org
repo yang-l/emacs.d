@@ -533,6 +533,7 @@ Zenburn theme
     )
 (dolist (mode-hook '(web-mode-hook
                      org-mode-hook
+                     yaml-mode-hook
                     ))
     (add-hook mode-hook #'git-gutter-mode)
     )
@@ -717,6 +718,12 @@ Zenburn theme
 **** yaml
 
 #+BEGIN_SRC emacs-lisp
+(defun modes/yaml-mode ()
+    "yaml-mode hook"
+    (progn
+      (run-hooks 'prog-mode-hook)
+      ))
+(add-hook 'yaml-mode-hook #'modes/yaml-mode)
 (add-to-list 'auto-mode-alist '("\\.ya?ml$" . yaml-mode))
 #+END_SRC
 
@@ -729,6 +736,9 @@ Zenburn theme
 **** Ansiable
 
 #+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'ansible-doc
+  (diminish 'ansible-doc-mode)
+  )
 (add-hook 'yaml-mode-hook #'ansible-doc-mode)
 #+END_SRC
 
