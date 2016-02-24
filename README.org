@@ -187,6 +187,12 @@ The default =set-mark-command= config conflicts with chinese input trigger
             (windmove-default-keybindings))
         (size-indication-mode +1)               ; show total buffer size
     )))
+(dolist
+    (hook
+     (list
+      'term-exec-hook
+      ))
+  (add-hook hook #'redraw-display))             ; force redraw
 #+END_SRC
 
 *** Folder
@@ -774,7 +780,6 @@ Zenburn theme
       'c++-mode-hook
       ))
   (add-hook hook #'modes/c-mode))
-
 #+END_SRC
 
 ** Mode Setting
