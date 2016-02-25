@@ -462,7 +462,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 Emacs GUI font settings
 
 #+BEGIN_SRC emacs-lisp
-(when (display-graphic-p)
+(if (display-graphic-p) (progn
   (if (eq system-type 'windows-nt)
       (set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100)
     (cond                                       ; Linux
@@ -482,6 +482,8 @@ Emacs GUI font settings
     (set-fontset-font "fontset-default"         ; 中文字体
                       'han '("WenQuanYi Zen Hei Sharp" . "unicode-bmp"))
     ))
+  (add-to-list 'default-frame-alist '(font . "Terminus"))
+  )
 #+END_SRC
 
 **** Theme
