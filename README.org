@@ -110,6 +110,7 @@ Define packages and install them in case of missing
     visible-bell 1                              ; no bell in windows
     x-stretch-cursor t                          ; stretch cursor to cover wide characters
     )
+(defun display-startup-echo-area-message ())    ; disable minibufer welcome message
 #+END_SRC
 
 *** PATH
@@ -488,9 +489,7 @@ Emacs GUI font settings
 
 **** Theme
 
-Zenburn theme
-
-=emacs=, =emacs -nw= and =emacsclient -c= does apply the theme, but =emacsclent -t= failed
+Zenburn theme. =emacs=, =emacs -nw= and =emacsclient -c= does apply the theme, but =emacsclent -t= failed
 
 #+BEGIN_SRC emacs-lisp
 (if (daemonp)
