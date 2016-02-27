@@ -490,8 +490,15 @@ Emacs GUI font settings
 
 Zenburn theme
 
+=emacs=, =emacs -nw= and =emacsclient -c= does apply the theme, but =emacsclent -t= failed
+
 #+BEGIN_SRC emacs-lisp
-(load-theme 'zenburn t)
+(if (daemonp)
+    (add-hook 'after-make-frame-functions
+              (lambda (frame)
+                (select-frame frame)
+                (load-theme 'zenburn t)))
+  (load-theme 'zenburn t))
 #+END_SRC
 
 **** Transparent
