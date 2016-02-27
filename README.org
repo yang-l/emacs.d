@@ -487,15 +487,24 @@ Emacs GUI font settings
 
 **** Theme
 
-Zenburn theme. =emacs=, =emacs -nw= and =emacsclient -c= does apply the theme, but =emacsclent -t= failed
+Zenburn theme
 
 #+BEGIN_SRC emacs-lisp
+(load-theme 'zenburn t t)                       ; load but do not active theme
 (if (daemonp)
     (add-hook 'after-make-frame-functions
               (lambda (frame)
                 (select-frame frame)
-                (load-theme 'zenburn t)))
-  (load-theme 'zenburn t))
+                (if (display-graphic-p frame)
+                    (progn                      ; emacsclient -c
+                      (enable-theme 'zenburn)
+                      )
+                  (progn                        ; emacsclient -t
+                    (disable-theme 'zenburn)
+                    (set-frame-parameter nil 'tty-color-mode 256)
+                    ))
+                ))
+  (enable-theme 'zenburn))                      ; emacs & emacs -nw
 #+END_SRC
 
 **** Transparent
