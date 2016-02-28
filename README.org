@@ -1545,17 +1545,19 @@ File manager
 
 ** Keybindings
 
-| keybindings                       | alternative | mode          | description                        |
-|-----------------------------------+-------------+---------------+------------------------------------|
-| =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | buildin       | indent the region by =4= spaces    |
-| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C-c < <=   | buildin       | un-indent the region by =4= spaces |
-| =C-x SPC=                         |             | buildin       | rectangular selection              |
-| =C-x r t=                         |             | buildin       | replace rectangule content         |
-| =C-c '​=                           |             | org           | edit SRC block in separate buffer  |
-| =S-<arrow>=                       | =C-x o=     | buildin       | move point between windows         |
-| =M-<num>=                         |             | window-number | jump to window by number           |
-| =C-S-Backspace=                   | =C-a C-k=   | buildin       | delete a whole line                |
-| =C-x z=                           |             | buildin       | repeat last command                |
-| =z=                               |             | buildin       | repeat last command again          |
-| =M-<=                             |             | buildin       | top of buffer                      |
-| =M->=                             |             | buildin       | end of buffer                      |
+| keybindings                       | alternative | mode          | description                         |
+|-----------------------------------+-------------+---------------+-------------------------------------|
+| =C-u 4 C-x Tab= / =C-4 C-x Tab=   | =C-c > >=   | buildin       | indent the region by =4= spaces     |
+| =C-u -4 C-x Tab= / =C--4 C-x Tab= | =C-c < <=   | buildin       | un-indent the region by =4= spaces  |
+| =C-x SPC=                         |             | buildin       | rectangular selection               |
+| =C-x r t=                         |             | buildin       | replace rectangule content          |
+| =C-c '​=                           |             | org           | edit SRC block in separate buffer   |
+| =S-<arrow>=                       | =C-x o=     | buildin       | move point between windows          |
+| =M-<num>=                         |             | window-number | jump to window by number            |
+| =C-S-Backspace=                   | =C-a C-k=   | buildin       | delete a whole line                 |
+| =C-x z=                           |             | buildin       | repeat last command                 |
+| =z=                               |             | buildin       | repeat last command again           |
+| =M-<=                             |             | buildin       | top of buffer                       |
+| =M->=                             |             | buildin       | end of buffer                       |
+| =C-NUM C-x $=                     | hideshow    | buildin       | hide lines indented more NUM colums |
+| =C-x $=                           | hideshow    | buildin       | show all lines                      |
