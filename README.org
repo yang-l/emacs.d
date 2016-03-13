@@ -932,6 +932,9 @@ shorten mode-line
 (eval-after-load 'flycheck
   '(progn
      ))
+(dolist (mode-hook '(
+                     ))
+  (add-hook mode-hook #'flycheck-mode))
 #+END_SRC
 
 *** indent-guide                                :EDIT:
@@ -1561,3 +1564,4 @@ File manager
 | =M->=                             |             | buildin       | end of buffer                       |
 | =C-NUM C-x $=                     | hideshow    | buildin       | hide lines indented more NUM colums |
 | =C-x $=                           | hideshow    | buildin       | show all lines                      |
+| =C-x ==                           |             | buildin       | show current cursor position        |
