@@ -138,10 +138,9 @@ Run Emacs as a daemon, and edit via =emacsclient=. =emacsclient -t= for terminal
 
 Use the stock key bindings when possible.
 
-The default =set-mark-command= config conflicts with chinese input trigger
 #+BEGIN_SRC emacs-lisp
-(global-unset-key (kbd "C-SPC"))                ; mark trigger
-(global-set-key "\M- " #'set-mark-command)
+(global-unset-key (kbd "C-SPC"))                ; set-mark-command
+(global-unset-key (kbd "C-x f"))                ; set-fill-column
 #+END_SRC
 
 *** Browse URL
@@ -643,8 +642,8 @@ Zenburn theme
 #+BEGIN_SRC emacs-lisp
 (defun modes/sh-mode ()
     "sh mode hook"
-    (setq sh-basic-offset 2
-          sh-indentation 2
+    (setq sh-basic-offset 4
+          sh-indentation 4
           sh-indent-comment t
     ))
 (add-hook 'sh-mode-hook 'modes/sh-mode)
@@ -1060,9 +1059,8 @@ move where I mean
 (with-eval-after-load 'symon
   (progn
     (setq symon-sparkline-type 'bounded)
-
     (define-symon-monitor symon-current-date-time-monitor
-      :interval 30
+      :interval 5
       :display (propertize
                 (format-time-string "%k:%M %b %d %a     ")
                 'face 'font-lock-type-face))
