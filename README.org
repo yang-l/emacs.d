@@ -101,6 +101,7 @@ Define packages and install them in case of missing
     read-buffer-completion-ignore-case t        ; ignore case-sensitivity
     read-file-name-completion-ignore-case t
     require-final-newline t                     ; always add a new line at the end of a file
+    save-interprogram-paste-before-kill t       ; put clipboard into killringy
     scroll-margin 3                             ; auto scrolling
     scroll-step 1                               ; line-by-line scrolling
     scroll-conservatively 10000                 ; do not jump to centre point in the window
