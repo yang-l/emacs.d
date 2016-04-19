@@ -506,7 +506,7 @@ Zenburn & Solarized themes
                     (disable-theme 'solarized)
                     (setq solarized-termcolors 256)
                     (setq solarized-contrast 'normal)
-                    (set-frame-parameter nil 'background-mode 'dark)
+                    (set-terminal-parameter nil 'background-mode 'dark)
                     (enable-theme 'solarized)
                     ))
                 ))
