@@ -503,10 +503,7 @@ Zenburn & Solarized themes
                       )
                   (progn                        ; emacsclient -t
                     (disable-theme 'zenburn)
-                    (disable-theme 'solarized)
-                    (setq solarized-termcolors 256)
-                    (setq solarized-contrast 'normal)
-                    (set-terminal-parameter nil 'background-mode 'dark)
+                    (set-frame-parameter nil 'background-mode 'dark)
                     (enable-theme 'solarized)
                     ))
                 ))
