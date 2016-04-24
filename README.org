@@ -528,6 +528,7 @@ Zenburn & Solarized themes
                                                 ; starting the new one
         compilation-scroll-output 'first-error  ; Automatically scroll to first error
       )
+    (electric-pair-mode 1)                      ; auto close bracket insertion
     (goto-address-prog-mode)                    ; highlight URL
     (linum-mode)                                ; show line number
     (push '(">=" . ?≥) prettify-symbols-alist)  ; prettify symbols
