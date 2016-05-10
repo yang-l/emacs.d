@@ -436,7 +436,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 (with-eval-after-load 'multi-term
   (progn
     (setq multi-term-program "/bin/bash"        ; bash
-          multi-term-program-switches "-il"
+          multi-term-program-switches "-i"      ; interactive non-login shell, and read "~/.bashrc"
           multi-term-buffer-name "mterm"        ; buffer name
           term-buffer-maximum-size 0            ; keepp all buffer
           scroll-margin 0                       ; always make point visible at bottom of the window when auto-scrolling
@@ -726,9 +726,6 @@ Zenburn & Solarized themes
    (eval-when-compile                           ; remove after emacs25
      (if (and (= emacs-major-version 24) (< emacs-minor-version 6))
          (require 'cl)))
-   (autoload 'groovy-electric "groovy-electric" nil t)
-   (groovy-electric-mode)
-   (diminish 'groovy-electric-mode)
    ))
 #+END_SRC
 
