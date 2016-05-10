@@ -98,6 +98,7 @@ Define packages and install them in case of missing
     initial-scratch-message nil
     kill-ring-max 500                           ; kill ring size
     mouse-wheel-scroll-amount '(1 ((shift) .1)) ; scroll one line at a time
+    frame-resize-pixelwise t
     read-buffer-completion-ignore-case t        ; ignore case-sensitivity
     read-file-name-completion-ignore-case t
     require-final-newline t                     ; always add a new line at the end of a file
@@ -105,11 +106,15 @@ Define packages and install them in case of missing
     scroll-margin 3                             ; auto scrolling
     scroll-step 1                               ; line-by-line scrolling
     scroll-conservatively 10000                 ; do not jump to centre point in the window
+    scroll-preserve-screen-position t           ; make the cursor steady when scrolling
+    gnutls-verify-error t                       ; check tls/ssl
     tab-width 4                                 ; 4 space indentation
     visible-bell 1                              ; no bell in windows
+    window-combination-resize t                 ; split windows equally
     x-stretch-cursor t                          ; stretch cursor to cover wide characters
     )
 (defun display-startup-echo-area-message ())    ; disable minibufer welcome message
+(defalias 'dabbrev-expand 'hippie-expand)
 #+END_SRC
 
 *** PATH
