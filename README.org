@@ -534,6 +534,7 @@ Zenburn & Solarized themes
         compilation-scroll-output 'first-error  ; Automatically scroll to first error
       )
     (electric-pair-mode 1)                      ; auto close bracket insertion
+    (setq electric-pair-skip-whitespace 'chomp)
     (goto-address-prog-mode)                    ; highlight URL
     (linum-mode)                                ; show line number
     (push '(">=" . ?≥) prettify-symbols-alist)  ; prettify symbols
@@ -719,6 +720,8 @@ Zenburn & Solarized themes
       (eldoc-mode)
       ))
 (add-hook 'emacs-lisp-mode-hook #'modes/elisp-mode)
+(add-hook 'eval-expression-minibuffer-setup-hook    ; show eldoc for 'Eval:'
+          #'eldoc-mode)
 #+END_SRC
 
 **** Groovy
