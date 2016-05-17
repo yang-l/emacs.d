@@ -1003,7 +1003,10 @@ shorten mode-line
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'mc/edit-lines "mc-edit-lines" nil t)
-(global-set-key (kbd "C-c m c") #'mc/edit-lines)
+(global-set-key (kbd "C-c m e") #'mc/edit-lines)
+(global-set-key (kbd "C-c m >") #'mc/mark-next-like-this)
+(global-set-key (kbd "C-c m <") #'mc/mark-previous-like-this)
+(global-set-key (kbd "C-c m a") #'mc/mark-all-like-this)
 #+END_SRC
 
 *** mwim                                        :EDIT:
