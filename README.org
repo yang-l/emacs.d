@@ -58,7 +58,7 @@ Define packages and install them in case of missing
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm     ; Editing
     evil mwim multiple-cursors expand-region
-    indent-guide
+    indent-guide avy
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc
     which-key symon                             ; Misc
@@ -806,6 +806,15 @@ Zenburn & Solarized themes
 #+END_SRC
 
 ** Mode Setting
+
+*** avy
+
+Char-based jumping
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'avy-goto-char-2 "avy")
+(global-set-key (kbd "C-\"") 'avy-goto-char-2)
+#+END_SRC
 
 *** company mode
 
