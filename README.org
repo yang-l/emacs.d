@@ -672,6 +672,8 @@ Zenburn & Solarized themes
                                                 ; $ pip3 install elpy rope_py3k jedi #Python3
     (elpy-enable)                               ; enable elpy
     (setq elpy-rpc-backend "jedi")              ; jedi (instead of rope) backend
+    (setq elpy-modules                          ; remove flymake (replaced by flycheck)
+          (delq 'elpy-module-flymake elpy-modules))
     )
 
   (when (eq 1 (point-max))                      ; new file template
@@ -948,8 +950,11 @@ shorten mode-line
 (autoload 'flycheck "flycheck-mode" nil t)
 (eval-after-load 'flycheck
   '(progn
+     (flycheck-mode)
      ))
 (dolist (mode-hook '(
+                     elpy-mode-hook             ; elpy/python
+                     sh-mode-hook               ; bash
                      ))
   (add-hook mode-hook #'flycheck-mode))
 #+END_SRC
