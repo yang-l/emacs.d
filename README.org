@@ -951,6 +951,7 @@ shorten mode-line
 (eval-after-load 'flycheck
   '(progn
      (flycheck-mode)
+     (diminish 'flycheck-mode)
      ))
 (dolist (mode-hook '(
                      elpy-mode-hook             ; elpy/python
