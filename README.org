@@ -58,7 +58,7 @@ Define packages and install them in case of missing
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm     ; Editing
     evil mwim multiple-cursors expand-region
-    indent-guide avy
+    indent-guide avy vimish-fold
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc
     which-key symon                             ; Misc
@@ -269,6 +269,8 @@ save the minibuffer histories
         (expand-file-name "semanticdb" backup-directory)
       recentf-save-file
         (expand-file-name "recentf" backup-directory)
+      vimish-fold-dir
+        (expand-file-name "vimish-fold" backup-directory)
     )
 #+END_SRC
 
@@ -1168,6 +1170,19 @@ move where I mean
   (add-hook 'undo-tree-mode-hook 'modes/undo-tree-mode)
   (diminish 'undo-tree-mode)
   ))
+#+END_SRC
+
+*** vimish-fold                                 :EDIT:
+
+vim-like text folding
+
+#+BEGIN_SRC emacs-lisp
+(vimish-fold-global-mode t)
+(with-eval-after-load 'vimish-fold
+  (global-set-key (kbd "C-c v f") #'vimish-fold)
+  (global-set-key (kbd "C-c v d") #'vimish-fold-delete)
+  (global-set-key (kbd "C-c v t") #'vimish-fold-toggle)
+  )
 #+END_SRC
 
 *** which-key
