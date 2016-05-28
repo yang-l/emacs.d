@@ -64,9 +64,13 @@ Define packages and install them in case of missing
     which-key symon                             ; Misc
     multi-term                                  ; Terminal
     ))
-(dolist (p my-packages)                         ; install the missing packages
+(let ((refreshed nil))
+  (dolist (p my-packages)                       ; install the missing packages
     (when (not (package-installed-p p))
-    (package-install p)))
+      (unless refreshed
+        (package-refresh-contents)
+        (setq refreshed t))
+      (package-install p))))
 #+END_SRC
 
 *** UTF-8 on everything
