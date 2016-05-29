@@ -379,6 +379,14 @@ save the minibuffer histories
 
     (setq dired-recursive-deletes 'top          ; recursive delection
           dired-recursive-copies 'always)       ; recursive copy
+
+    (defadvice shell-command                    ; allow running multiple async commands simultaneously
+        (after shell-in-new-buffer
+               (command &optional output-buffer error-buffer))
+      (when (get-buffer "*Async Shell Command*")
+        (with-current-buffer "*Async Shell Command*"
+          (rename-uniquely))))
+    (ad-activate 'shell-command)
     )
   (add-hook 'dired-load-hook #'modes/dired-mode)
   ))
