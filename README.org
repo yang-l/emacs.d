@@ -57,7 +57,8 @@ Define packages and install them in case of missing
     groovy-mode                                 ; Groovy
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm     ; Editing
-    evil mwim multiple-cursors expand-region
+    mwim multiple-cursors expand-region
+    evil evil-leader
     indent-guide avy vimish-fold
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc
@@ -946,7 +947,7 @@ shorten mode-line
 *** evil
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'evil-mode "evil" nil t)
+(global-evil-leader-mode)                       ; evil-leader / active before evil-mode
 (evil-mode 1)
 (setq evil-default-state 'emacs)                ; default to emacs
 #+END_SRC
