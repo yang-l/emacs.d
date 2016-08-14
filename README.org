@@ -60,6 +60,7 @@ Define packages and install them in case of missing
     mwim multiple-cursors expand-region
     evil evil-leader
     indent-guide avy vimish-fold
+    org-page
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc
     which-key symon                             ; Misc
@@ -1001,40 +1002,6 @@ shorten mode-line
     ))
 #+END_SRC
 
-*** org-mode
-
-#+BEGIN_SRC emacs-lisp
-(defun modes/org-mode ()
-    "org-mode hook"
-    (progn
-        (setq truncate-lines nil                ; line wrap
-              org-edit-src-content-indentation 0; no indentation in SRC block
-              org-export-with-smart-quotes t
-              org-log-done 'time
-              org-html-doctype "html5"
-              org-pretty-entities t             ; show symbols without math delimiters
-              org-src-preserve-indentation t
-              org-src-fontify-natively t        ; native fontification
-              org-src-tab-acts-natively t       ; mative tab in SRC block
-              org-use-speed-commands t          ; speed keys
-              )
-        (org-indent-mode t)                     ; list-oriented
-        (diminish 'org-indent-mode)
-        (setq org-startup-indented t
-              org-hide-leading-stars t
-              )
-        (linum-mode)                            ; show line number
-        (global-set-key (kbd "C-c o b") 'org-switchb)
-    ))
-(add-hook 'org-mode-hook 'modes/org-mode)
-(add-hook 'org-shiftup-final-hook 'windmove-up) ; active windmove
-(add-hook 'org-shiftleft-final-hook 'windmove-left)
-(add-hook 'org-shiftdown-final-hook 'windmove-down)
-(add-hook 'org-shiftright-final-hook 'windmove-right)
-(with-eval-after-load 'org
-  (org-defkey org-mode-map [remap imenu] #'helm-org-in-buffer-headings))
-#+END_SRC
-
 *** multiple-cursors                            :EDIT:
 
 #+BEGIN_SRC emacs-lisp
@@ -1347,6 +1314,64 @@ Undo Emacs window changes
   [remap isearch-forward] 'swiper-helm)
 (define-key (current-global-map)                ; C-r
   [remap isearch-backward] 'swiper-helm)
+#+END_SRC
+
+*** Org                                         :ORG:
+
+**** org-mode
+
+#+BEGIN_SRC emacs-lisp
+(defun modes/org-mode ()
+    "org-mode hook"
+    (progn
+        (setq truncate-lines nil                ; line wrap
+              org-edit-src-content-indentation 0; no indentation in SRC block
+              org-export-with-smart-quotes t
+              org-log-done 'time
+              org-html-doctype "html5"
+              org-pretty-entities t             ; show symbols without math delimiters
+              org-src-preserve-indentation t
+              org-src-fontify-natively t        ; native fontification
+              org-src-tab-acts-natively t       ; mative tab in SRC block
+              org-use-speed-commands t          ; speed keys
+              )
+        (org-indent-mode t)                     ; list-oriented
+        (diminish 'org-indent-mode)
+        (setq org-startup-indented t
+              org-hide-leading-stars t
+              )
+        (linum-mode)                            ; show line number
+        (global-set-key (kbd "C-c o b") 'org-switchb)
+    ))
+(add-hook 'org-mode-hook 'modes/org-mode)
+(add-hook 'org-shiftup-final-hook 'windmove-up) ; active windmove
+(add-hook 'org-shiftleft-final-hook 'windmove-left)
+(add-hook 'org-shiftdown-final-hook 'windmove-down)
+(add-hook 'org-shiftright-final-hook 'windmove-right)
+(with-eval-after-load 'org
+  (org-defkey org-mode-map [remap imenu] #'helm-org-in-buffer-headings))
+#+END_SRC
+
+**** org-page
+
+Static site generator in org-mode
+
+Two stpes to write a blog
+- op/new-post
+- op/do-publication
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'op/new-repository "org-page" nil t)
+(autoload 'op/new-post "org-page" nil t)
+(autoload 'op/do-publication "org-page" nil t)
+(with-eval-after-load 'org-page
+  (progn
+    (setq op/repository-directory "~/repos/public/yang-l.github.io"
+          op/site-domain "http://yang-l.github.io/"
+          op/personal-github-link "https://github.com/yang-l"
+          op/site-main-title "@Home"
+          op/site-sub-title ""
+          )))
 #+END_SRC
 
 ** Research
