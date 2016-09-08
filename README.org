@@ -557,7 +557,6 @@ Zenburn & Solarized themes
     (electric-pair-mode 1)                      ; auto close bracket insertion
     (setq electric-pair-skip-whitespace 'chomp)
     (goto-address-prog-mode)                    ; highlight URL
-    (linum-mode)                                ; show line number
     (push '(">=" . ?≥) prettify-symbols-alist)  ; prettify symbols
     (push '("<=" . ?≤) prettify-symbols-alist)
     (push '("delta" . ?Δ) prettify-symbols-alist)
@@ -577,7 +576,6 @@ Zenburn & Solarized themes
 
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'git-gutter
-    (git-gutter:linum-setup)                    ; w/linum mode
     (custom-set-variables                       ; backend
         '(git-gutter:handled-backends
         (quote (git svn))))
@@ -1353,7 +1351,6 @@ Undo Emacs window changes
         (setq org-startup-indented t
               org-hide-leading-stars t
               )
-        (linum-mode)                            ; show line number
         (global-set-key (kbd "C-c o b") 'org-switchb)
     ))
 (add-hook 'org-mode-hook 'modes/org-mode)
