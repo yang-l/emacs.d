@@ -59,7 +59,7 @@ Define packages and install them in case of missing
     neotree undo-tree window-numbering helm     ; Editing
     mwim multiple-cursors expand-region
     evil evil-leader
-    indent-guide avy vimish-fold
+    indent-guide avy vimish-fold super-save
     org-page
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc
@@ -1075,7 +1075,7 @@ move where I mean
     )
 #+END_SRC
 
-*** symon
+*** symon                                       :MONITOR:
 
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'symon
@@ -1140,6 +1140,19 @@ move where I mean
                      symon-windows-network-rx-monitor
                      symon-windows-network-tx-monitor))))
       )))
+#+END_SRC
+
+*** super-save                                  :EDIT:
+
+auto-save buffers
+
+#+BEGIN_SRC emacs-lisp
+(super-save-mode +1)
+(with-eval-after-load 'super-save
+  (progn
+    (setq super-save-auto-save-when-idle t)
+    (diminish 'super-save-mode)
+    ))
 #+END_SRC
 
 *** undo-tree                                   :EDIT:
