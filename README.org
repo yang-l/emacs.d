@@ -178,6 +178,7 @@ Use the stock key bindings when possible.
         (mouse-avoidance-mode 'animate)         ; mouse avoidance
         (scroll-bar-mode -1)                    ; no scroll bars
         (show-paren-mode 1)                     ; show matched parentheses
+        (setq show-paren-style 'mixed)
         (toggle-frame-maximized)                ; fullscreen
         (tool-bar-mode -1)                      ; hide toolbar
         (tooltip-mode -1)
