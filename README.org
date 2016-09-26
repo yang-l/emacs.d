@@ -585,6 +585,7 @@ Zenburn & Solarized themes
 (dolist (mode-hook '(web-mode-hook
                      org-mode-hook
                      yaml-mode-hook
+                     groovy-mode-hook
                     ))
     (add-hook mode-hook #'git-gutter-mode)
     )
