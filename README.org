@@ -1201,19 +1201,6 @@ Display the key bindings in a popup.
     ))
 #+END_SRC
 
-*** whitespace
-
-#+BEGIN_SRC emacs-lisp
-(setq-default
-    whitespace-style '(face lines-tail))
-(add-hook 'prog-mode-hook #'global-whitespace-mode)
-(add-hook 'whitespace-mode-hook
-    (lambda () (set
-        (make-local-variable 'whitespace-line-column)
-        fill-column)))
-(eval-after-load "whitespace" '(diminish 'global-whitespace-mode))
-#+END_SRC
-
 *** window-numbering
 
 buffers switching
