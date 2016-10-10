@@ -689,6 +689,7 @@ Zenburn & Solarized themes
 (defun modes/python-mode ()
   "python mode hook"
   (setq python-indent 4                         ; tab space
+        elpy-rpc-project-specific t
         )
 
   (defvar python-virtualenv-directory           ; virtualenv
@@ -712,7 +713,8 @@ Zenburn & Solarized themes
       )
     )
 
-  (require 'py-autopep8)                        ; pep8 format on save
+  (autoload 'py-autopep8-enable-on-save         ; pep8 format on save
+    "py-autopep8" nil t)
   (add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
 
   (when (eq 1 (point-max))                      ; new file template
