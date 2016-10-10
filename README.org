@@ -699,12 +699,14 @@ Zenburn & Solarized themes
 
   (company-mode 0)                              ; disable company-mode
   (when (require 'elpy nil t)                   ; Note - require to install the following extra python packages
-                                                ; $ pip install jedi flake8 importmagic autopep8 yapf ipython
+                                                ; $ pip2 install jedi flake8 importmagic autopep8 yapf ipython
+                                                ; $ pip3 install jedi flake8 importmagic autopep8 yapf ipython
     (elpy-mode)                                 ; enable elpy
-;    (setq elpy-rpc-python-command "python3")    ; default version to python3
-    (setq elpy-rpc-backend "jedi")              ; jedi (instead of rope) backend
-    (setq elpy-modules                          ; remove flymake (replaced by flycheck)
-          (delq 'elpy-module-flymake elpy-modules))
+    (setq elpy-rpc-python-command "python3"     ; default version to python3
+          elpy-rpc-backend "jedi"               ; jedi (instead of rope) backend
+          elpy-modules                          ; remove flymake (replaced by flycheck)
+            (delq 'elpy-module-flymake elpy-modules)
+          )
     (pyvenv-activate python-virtualenv-directory)
     (when (executable-find "ipython")           ; use ipython
       (elpy-use-ipython)
