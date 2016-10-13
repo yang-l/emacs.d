@@ -993,8 +993,16 @@ shorten mode-line
 (autoload 'flycheck "flycheck-mode" nil t)
 (eval-after-load 'flycheck
   '(progn
+     (setq flycheck-check-syntax-automatically
+           '(save
+             idle-change
+             mode-enabled)
+           flycheck-idle-change-delay
+             (if flycheck-current-errors 0.5 30.0)
+           )
      (flycheck-mode)
      (diminish 'flycheck-mode)
+     (flymake-mode -1)                          ; disable flymake
      ))
 (dolist (mode-hook '(
                      elpy-mode-hook             ; elpy/python
