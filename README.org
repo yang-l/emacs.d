@@ -479,6 +479,17 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 (define-key ctl-x-map "\C-q" 'view-mode)        ; replace toggle-read-only with view-mode
 #+END_SRC
 
+**** ZapUpToChar
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'zap-up-to-char "misc"
+    "Kill up to, but not including ARGth occurrence of CHAR.
+
+  \(fn arg char)"
+    'interactive)
+(global-set-key "\M-z" 'zap-up-to-char)
+#+END_SRC
+
 *** Style
 
 **** Face
@@ -1768,6 +1779,7 @@ File manager
 | =C-NUM C-x $=                     | hideshow    | buildin       | hide lines indented more NUM colums |
 | =C-x $=                           | hideshow    | buildin       | show all lines                      |
 | =C-x ==                           |             | buildin       | show current cursor position        |
+| =M-z CHAR=                        |             | buildin       | del up to CHAR (but not included)   |
 
 #+BEGIN_SRC emacs-lisp
 ;; Local Variables:
