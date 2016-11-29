@@ -617,7 +617,6 @@ Zenburn & Solarized themes
 #+BEGIN_SRC emacs-lisp
 (autoload 'js3-mode "js3" nil t)
 (add-to-list 'auto-mode-alist '("\\.js\\'" . js3-mode))
-(add-to-list 'auto-mode-alist '("\\.json\\'" . js3-mode))
 (setq js3-lazy-commas t
       js3-lazy-operators t
       js3-lazy-dots t
@@ -799,6 +798,7 @@ Zenburn & Solarized themes
       ))
 (add-hook 'yaml-mode-hook #'modes/yaml-mode)
 (add-to-list 'auto-mode-alist '("\\.ya?ml$" . yaml-mode))
+(add-to-list 'auto-mode-alist '("\\.json\\'" . yaml-mode))
 #+END_SRC
 
 **** js2
