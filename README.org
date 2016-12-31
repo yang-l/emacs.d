@@ -56,7 +56,7 @@ Define packages and install them in case of missing
     elpy py-autopep8                            ; Python
     groovy-mode                                 ; Groovy
     zenburn-theme color-theme-solarized diminish; UI
-    neotree undo-tree window-numbering helm     ; Editing
+    neotree undo-tree window-numbering helm ivy ; Editing
     mwim multiple-cursors expand-region
     evil evil-leader
     indent-guide avy vimish-fold super-save
@@ -1369,6 +1369,27 @@ Undo Emacs window changes
   [remap isearch-forward] 'swiper-helm)
 (define-key (current-global-map)                ; C-r
   [remap isearch-backward] 'swiper-helm)
+#+END_SRC
+
+*** Ivy                                         :EDIT:
+
+**** ivy
+
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'helm
+  (setq ivy-use-virtual-buffers t
+        ivy-display-style nil
+        ivy-minibuffer-faces nil
+        ivy-re-builders-alist '((t . ivy--regex-fuzzy))
+        )
+  (define-key ivy-minibuffer-map                ; use 'Enter' on a directory to navigate into the directory, not open it with dired
+    (kbd "C-m") 'ivy-alt-done)
+  )
+(add-hook 'after-init-hook
+          (lambda ()
+            (ivy-mode 1)
+            (diminish 'ivy-mode)
+            ))
 #+END_SRC
 
 *** Org                                         :ORG:
