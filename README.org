@@ -62,7 +62,7 @@ Define packages and install them in case of missing
     indent-guide avy vimish-fold super-save
     org-page
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
-    ansible-doc
+    ansible-doc restclient
     which-key symon                             ; Misc
     multi-term                                  ; Terminal
     ))
@@ -832,6 +832,14 @@ Zenburn & Solarized themes
   (diminish 'ansible-doc-mode)
   )
 (add-hook 'yaml-mode-hook #'ansible-doc-mode)
+#+END_SRC
+
+**** restclient
+
+Explore and test HTTP REST webservices
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'restclient-mode "restclient" nil t)
 #+END_SRC
 
 *** DB
