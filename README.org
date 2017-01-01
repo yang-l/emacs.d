@@ -1006,7 +1006,7 @@ shorten mode-line
 (setq evil-default-state 'emacs)                ; default to emacs
 #+END_SRC
 
-*** elfeed                                      :WEB_FEED:
+*** elfeed                                      :RSS_FEED:
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'elfeed "elfeed" nil t)
@@ -1017,14 +1017,16 @@ shorten mode-line
           (let
               ((elfeed_db
                 (concat backup-directory
-                 "elfeed_db/")))                ; must end with /
+                        "elfeed_db/")))         ; must end with /
             (make-directory elfeed_db :parents)
             elfeed_db)
+          my-elfeed-timer                       ; 1hr update timer
+          (run-at-time t (* 60 60) #'elfeed-update)
           elfeed-feeds
-          '(("http://www.reddit.com/r/devops/.rss" devops)
-            ("http://feeds.dzone.com/devops" devops)
-            ("https://www.infoq.com/feed/devops/news" devops)
-            ("http://www.reddit.com/r/emacs/.rss" emacs)
+          '(("http://www.reddit.com/r/devops/.rss" devops reddit)
+            ("http://feeds.dzone.com/devops" devops dzone)
+            ("https://www.infoq.com/feed/devops/news" devops infoq)
+            ("http://www.reddit.com/r/emacs/.rss" emacs reddit)
             )
           )
     ))
