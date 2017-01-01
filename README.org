@@ -63,7 +63,7 @@ Define packages and install them in case of missing
     org-page
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc restclient
-    which-key symon                             ; Misc
+    which-key symon elfeed                      ; Misc
     multi-term                                  ; Terminal
     ))
 (let ((refreshed nil))
@@ -1004,6 +1004,30 @@ shorten mode-line
 (global-evil-leader-mode)                       ; evil-leader / active before evil-mode
 (evil-mode 1)
 (setq evil-default-state 'emacs)                ; default to emacs
+#+END_SRC
+
+*** elfeed                                      :WEB_FEED:
+
+#+BEGIN_SRC emacs-lisp
+(autoload 'elfeed "elfeed" nil t)
+(global-set-key (kbd "C-x w") #'elfeed)
+(with-eval-after-load 'elfeed
+  (progn
+    (setq elfeed-db-directory
+          (let
+              ((elfeed_db
+                (concat backup-directory
+                 "elfeed_db/")))                ; must end with /
+            (make-directory elfeed_db :parents)
+            elfeed_db)
+          elfeed-feeds
+          '(("http://www.reddit.com/r/devops/.rss" devops)
+            ("http://feeds.dzone.com/devops" devops)
+            ("https://www.infoq.com/feed/devops/news" devops)
+            ("http://www.reddit.com/r/emacs/.rss" emacs)
+            )
+          )
+    ))
 #+END_SRC
 
 *** expand-region                               :EDIT:
