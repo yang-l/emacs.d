@@ -59,7 +59,7 @@ Define packages and install them in case of missing
     groovy-mode                                 ; Groovy
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm ivy ; Editing
-    mwim multiple-cursors expand-region
+    mwim multiple-cursors expand-region ztree
     evil evil-leader
     indent-guide avy vimish-fold super-save
     org-page
@@ -842,6 +842,14 @@ Explore and test HTTP REST webservices
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'restclient-mode "restclient" nil t)
+#+END_SRC
+
+**** ztree                                      :EDIT:
+
+Diff between directories
+
+#+BEGIN_SRC emacs-lisp
+(setq ztree-draw-unicode-lines t)
 #+END_SRC
 
 *** DB
