@@ -65,7 +65,7 @@ Define packages and install them in case of missing
     org-page
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc restclient
-    which-key symon elfeed                      ; Misc
+    which-key symon elfeed bm                   ; Misc
     multi-term                                  ; Terminal
     ))
 (let ((refreshed nil))
@@ -895,6 +895,13 @@ Char-based jumping
 #+BEGIN_SRC emacs-lisp
 (autoload 'avy-goto-char-2 "avy")
 (global-set-key (kbd "C-\"") 'avy-goto-char-2)
+#+END_SRC
+
+*** bm                                          :BOOKMARK:
+
+Visible bookmarks
+
+#+BEGIN_SRC emacs-lisp
 #+END_SRC
 
 *** company mode
