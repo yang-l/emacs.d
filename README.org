@@ -120,6 +120,7 @@ Define packages and install them in case of missing
     visible-bell 1                              ; no bell in windows
     window-combination-resize t                 ; split windows equally
     x-stretch-cursor t                          ; stretch cursor to cover wide characters
+    confirm-kill-emacs 'y-or-n-p                ; prompts before kill
     )
 (defun display-startup-echo-area-message ())    ; disable minibufer welcome message
 (defalias 'dabbrev-expand 'hippie-expand)
