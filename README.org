@@ -1257,6 +1257,12 @@ move where I mean
                      symon-linux-cpu-monitor
                      symon-linux-network-rx-monitor
                      symon-linux-network-tx-monitor))
+                  ((memq system-type '(darwin))
+                   '(symon-current-date-time-monitor
+                     symon-darwin-memory-monitor
+                     symon-darwin-cpu-monitor
+                     symon-darwin-network-rx-monitor
+                     symon-darwin-network-tx-monitor))
                   ((memq system-type '(windows-nt))
                    '(symon-current-date-time-monitor
                      symon-windows-memory-monitor
