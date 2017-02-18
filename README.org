@@ -489,10 +489,34 @@ Call =ediff= or =ediff3= in Emace for file comparisons
           multi-term-buffer-name "mterm"        ; buffer name
           term-buffer-maximum-size 0            ; keepp all buffer
           scroll-margin 0                       ; always make point visible at bottom of the window when auto-scrolling
+          multi-term-dedicated-close-back-to-open-buffer-p t
           )
     (add-to-list 'term-bind-key-alist '("M-[" . multi-term-prev))
     (add-to-list 'term-bind-key-alist '("M-]" . multi-term-next))
+    (add-to-list 'term-bind-key-alist '("C-c t h" .
+                                        (lambda ()
+                                          "New terminal to the right"
+                                          (interactive)
+                                          (split-window-horizontally)
+                                          (other-window 1)
+                                          (multi-term)
+                                          (term-send-raw-string ". ~/.bash_profile\n")
+                                          )))
+    (add-to-list 'term-bind-key-alist '("C-c t v" .
+                                        (lambda ()
+                                          "New terminal to the below"
+                                          (interactive)
+                                          (split-window-vertically)
+                                          (other-window 1)
+                                          (multi-term)
+                                          (term-send-raw-string ". ~/.bash_profile\n")
+                                          )))
     ))
+(global-set-key (kbd "C-c t") '(lambda ()
+                                 (interactive)
+                                 (multi-term)
+                                 (term-send-raw-string ". ~/.bash_profile\n")
+                                 ))
 #+END_SRC
 
 **** Tramp
