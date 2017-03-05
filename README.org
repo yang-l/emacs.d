@@ -485,7 +485,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 (with-eval-after-load 'multi-term
   (progn
     (setq multi-term-program "/bin/bash"        ; bash
-          multi-term-program-switches "-i"      ; interactive non-login shell, and read "~/.bashrc"
+          multi-term-program-switches "-il"     ; FIXME - this switch does not work with any space characters in it. Set to interactive login shell, which will read "~/.bash_profile" and source the bashrc file
           multi-term-buffer-name "mterm"        ; buffer name
           term-buffer-maximum-size 0            ; keepp all buffer
           scroll-margin 0                       ; always make point visible at bottom of the window when auto-scrolling
