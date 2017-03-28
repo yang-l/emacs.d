@@ -477,7 +477,6 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 #+BEGIN_SRC emacs-lisp
 (defun modes/term-mode ()
     "term mode hook"
-    (setq term-buffer-maximum-size 10000)       ; increase buffer size
     )
 (add-hook 'term-mode-hook #'modes/term-mode)
 #+END_SRC
@@ -491,7 +490,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
     (setq multi-term-program "/bin/bash"        ; bash
           multi-term-program-switches "-il"     ; FIXME - this switch does not work with any space characters in it. Set to interactive login shell, which will read "~/.bash_profile" and source the bashrc file
           multi-term-buffer-name "mterm"        ; buffer name
-          term-buffer-maximum-size 0            ; keepp all buffer
+          term-buffer-maximum-size 0            ; keep all buffer
           scroll-margin 0                       ; always make point visible at bottom of the window when auto-scrolling
           multi-term-dedicated-close-back-to-open-buffer-p t
           )
