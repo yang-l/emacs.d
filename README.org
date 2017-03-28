@@ -677,7 +677,7 @@ Zenburn & Solarized themes
 (eval-after-load "magit"
     '(progn
         (setq magit-completing-read-function
-              (quote helm-completing-read-default)
+                (quote magit-builtin-completing-read)
               magit-diff-refine-hunk t          ; highlight changes
               )
         ;; full screen magit-status
