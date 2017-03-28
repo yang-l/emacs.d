@@ -66,6 +66,7 @@ Define packages and install them in case of missing
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
     ansible-doc restclient
     which-key symon elfeed bm                   ; Misc
+    exec-path-from-shell                        ; System
     multi-term                                  ; Terminal
     ))
 (let ((refreshed nil))
@@ -124,6 +125,8 @@ Define packages and install them in case of missing
     )
 (defun display-startup-echo-area-message ())    ; disable minibufer welcome message
 (defalias 'dabbrev-expand 'hippie-expand)
+(exec-path-from-shell-copy-env "SSH_AGENT_PID") ; inherent ssh-agent from system
+(exec-path-from-shell-copy-env "SSH_AUTH_SOCK")
 #+END_SRC
 
 *** PATH
