@@ -477,7 +477,9 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 #+BEGIN_SRC emacs-lisp
 (defun modes/term-mode ()
     "term mode hook"
-    )
+    (progn
+      (yas-minor-mode -1)
+      ))
 (add-hook 'term-mode-hook #'modes/term-mode)
 #+END_SRC
 
