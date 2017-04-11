@@ -64,7 +64,7 @@ Define packages and install them in case of missing
     indent-guide avy vimish-fold super-save
     org-page
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
-    ansible-doc restclient
+    ansible-doc restclient es-mode
     which-key symon elfeed bm                   ; Misc
     exec-path-from-shell                        ; System
     multi-term                                  ; Terminal
@@ -919,13 +919,18 @@ Zenburn & Solarized themes
 (setq auto-mode-alist (cons '("\\.j2" . jinja2-mode) auto-mode-alist))
 #+END_SRC
 
-**** Ansiable
+**** ansiable
 
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'ansible-doc
   (diminish 'ansible-doc-mode)
   )
 (add-hook 'yaml-mode-hook #'ansible-doc-mode)
+#+END_SRC
+
+**** es-mode
+
+#+BEGIN_SRC emacs-lisp
 #+END_SRC
 
 **** restclient
