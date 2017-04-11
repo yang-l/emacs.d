@@ -650,6 +650,33 @@ Zenburn & Solarized themes
     (setq yas-snippet-dirs backup-directory)    ; snippet collections
     (local-set-key (kbd "RET")
                    'newline-and-indent)
+
+    (defconst intellij-java-style               ; coding style
+      '((c-basic-offset . 4)
+        (c-comment-only-line-offset . (0 . 0))
+        (c-offsets-alist
+         .
+         ((inline-open . 0)
+          (topmost-intro-cont    . +)
+          (statement-block-intro . +)
+          (knr-argdecl-intro     . +)
+          (substatement-open     . +)
+          (substatement-label    . +)
+          (case-label            . +)
+          (label                 . +)
+          (statement-case-open   . +)
+          (statement-cont        . ++)
+          (arglist-intro         . 0)
+          (arglist-cont-nonempty . ++)
+          (arglist-close         . --)
+          (inexpr-class          . 0)
+          (access-label          . 0)
+          (inher-intro           . ++)
+          (inher-cont            . ++)
+          (brace-list-intro      . +)
+          (func-decl-cont        . ++))))
+      "Elasticsearch's Intellij Java Programming Style")
+    (c-add-style "intellij" intellij-java-style)
     )
 (add-hook 'prog-mode-hook 'modes/prog-mode)
 (add-hook 'before-save-hook                     ; remove trailing whitespace
@@ -949,6 +976,17 @@ Diff between directories
       'c++-mode-hook
       ))
   (add-hook hook #'modes/c-mode))
+#+END_SRC
+
+*** Java
+
+#+BEGIN_SRC emacs-lisp
+(defun modes/java-mode ()
+  "java mode hook"
+  (progn
+    (c-set-style "intellij" t)
+    ))
+(add-hook 'java-mode-hook 'modes/java-mode)
 #+END_SRC
 
 ** Mode Setting
