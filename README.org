@@ -354,8 +354,16 @@ save the minibuffer histories
 **** Comint
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'comint-output-filter-functions
-    'comint-watch-for-password-prompt)          ; hide password in shell
+(with-eval-after-load 'comint
+  (progn
+    (add-hook 'comint-output-filter-functions
+              'comint-watch-for-password-prompt); hide password in shell
+    (add-hook 'comint-mode-hook
+              (function
+               (lambda ()
+                 (setq comint-scroll-show-maximum-output nil)
+                 )))
+    ))
 #+END_SRC
 
 **** Dired                                      :FILE:
@@ -483,6 +491,11 @@ Call =ediff= or =ediff3= in Emace for file comparisons
     "term mode hook"
     (progn
       (yas-minor-mode -1)
+      (setq bidi-paragraph-direction 'left-to-right
+            term-scroll-to-bottom-on-output t
+            )
+      (setq-local scroll-margin 0)
+      (eval-after-load 'evil-vars '(evil-set-initial-state 'term-mode 'emacs))
       ))
 (add-hook 'term-mode-hook #'modes/term-mode)
 #+END_SRC
@@ -719,7 +732,9 @@ Zenburn & Solarized themes
           (window-configuration-to-register :magit-fullscreen)
           ad-do-it
           (delete-other-windows))
-    ))
+        (eval-after-load 'evil-vars '(evil-set-initial-state 'magit-mode 'emacs))
+        (eval-after-load 'evil-vars '(evil-set-initial-state 'magit-mode 'emacs))
+        ))
 #+END_SRC
 
 *** Web / JS
