@@ -549,13 +549,20 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 
 **** Tramp
 
+=M-x tramp-cleanup-all-connections= - flush remote connections
+
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'tramp
   (progn
     (setq tramp-default-method "ssh"            ; faster than the default scp
           tramp-use-ssh-controlmaster-options nil
+          tramp-auto-save-directory backup-directory
           )
     (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+    (tramp-set-completion-function
+     "ssh"
+     '((tramp-parse-sconfig "~/.ssh/config")
+       ))
     ))
 #+END_SRC
 
@@ -2010,6 +2017,9 @@ File manager
 | =C-x $=                           | hideshow    | buildin       | show all lines                      |
 | =C-x ==                           |             | buildin       | show current cursor position        |
 | =M-z CHAR=                        |             | buildin       | del up to CHAR (but not included)   |
+| =C-x r b=                         |             | buildin       | create bookmark                     |
+| =C-x r m=                         |             | buildin       | jump to bookmark                    |
+| =C-x r l=                         |             | buildin       | list bookmark                       |
 
 #+BEGIN_SRC emacs-lisp
 ;; Local Variables:
