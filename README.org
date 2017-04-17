@@ -60,6 +60,7 @@ Define packages and install them in case of missing
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm ivy ; Editing
     mwim multiple-cursors expand-region ztree
+    drag-stuff
     evil evil-leader
     indent-guide avy vimish-fold super-save
     org-page
@@ -1094,6 +1095,20 @@ shorten mode-line
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'diminish "diminish" nil t)
+#+END_SRC
+
+*** drag-stuff                                  :EDIT:
+
+moving word/line/region around
+
+#+BEGIN_SRC emacs-lisp
+(drag-stuff-global-mode 1)
+(eval-after-load 'drag-stuff
+  '(progn
+     (setq drag-stuff-modifier 'alt)            ; alt-up/down/left/rigth key bindings
+     (drag-stuff-define-keys)
+     (diminish 'drag-stuff-mode)
+     ))
 #+END_SRC
 
 *** erc                                         :IRC:
