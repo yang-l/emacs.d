@@ -188,8 +188,8 @@ OSX-only key bindings
 
 #+BEGIN_SRC emacs-lisp
 (when (eq system-type 'darwin)                  ; mac only settings
-  (setq mac-option-modifier 'meta)
-  (setq mac-command-modifier 'alt)
+  (setq mac-option-modifier 'meta
+        mac-command-modifier 'alt)
   )
 #+END_SRC
 
@@ -631,7 +631,8 @@ Emacs GUI font settings
     (set-fontset-font "fontset-default"         ; 中文字体
                       'han '("WenQuanYi Zen Hei Sharp" . "unicode-bmp"))
     ))
-  (add-to-list 'default-frame-alist '(font . "Terminus"))
+  (when (member "Terminus" (font-family-list))
+    (add-to-list 'default-frame-alist '(font . "Terminus")))
   )
 #+END_SRC
 
