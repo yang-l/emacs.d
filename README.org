@@ -212,7 +212,6 @@ OSX-only key bindings
         (global-hl-line-mode +1)                ; highlight current line
         (global-subword-mode 1)                 ; navigate into CamelCaseWords
         (diminish 'subword-mode)
-        (menu-bar-mode -1)                      ; hide menu bar
         (mouse-avoidance-mode 'animate)         ; mouse avoidance
         (scroll-bar-mode -1)                    ; no scroll bars
         (show-paren-mode 1)                     ; show matched parentheses
@@ -244,6 +243,16 @@ OSX-only key bindings
             (toggle-frame-fullscreen)           ; fullscreen
             (toggle-frame-maximized))           ; maximised
           t)
+(dolist
+    (hook
+     (list
+      'emacs-startup-hook
+      'tty-setup-hook
+      ))
+  (add-hook hook
+      (lambda () (progn
+          (menu-bar-mode -1)                    ; hide menu bar
+          ))))
 #+END_SRC
 
 *** Folder
