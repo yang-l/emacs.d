@@ -57,6 +57,7 @@ Define packages and install them in case of missing
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
     elpy py-autopep8                            ; Python
     groovy-mode                                 ; Groovy
+    enh-ruby-mode rspec-mode                    ; Ruby
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm ivy ; Editing
     mwim multiple-cursors expand-region ztree
@@ -65,7 +66,7 @@ Define packages and install them in case of missing
     indent-guide avy vimish-fold super-save
     org-page
     dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
-    ansible-doc restclient es-mode
+    ansible-doc restclient es-mode puppet-mode
     which-key symon elfeed bm                   ; Misc
     exec-path-from-shell                        ; System
     multi-term                                  ; Terminal
@@ -748,6 +749,7 @@ Zenburn & Solarized themes
                      org-mode-hook
                      yaml-mode-hook
                      groovy-mode-hook
+                     puppet-mode-hook
                     ))
     (add-hook mode-hook #'git-gutter-mode)
     )
@@ -951,6 +953,40 @@ Zenburn & Solarized themes
    ))
 #+END_SRC
 
+**** Ruby
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'auto-mode-alist '("\\.rb$" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("\\.rake$" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("Rakefile$" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("\\.gemspec$" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("\\.ru$" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("Gemfile$" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("Cheffile$" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("Vagrantfile$" . enh-ruby-mode))
+
+(with-eval-after-load 'enh-ruby-mode
+  (progn
+    (setq enh-ruby-add-encoding-comment-on-save nil
+          rspec-compilation-buffer-name "*rspec-compilation*"
+          rspec-use-opts-file-when-available nil
+          rspec-use-rake-flag nil
+          ruby-insert-encoding-magic-comment nil
+          )
+    (add-hook 'enh-ruby-mode-hook 'rspec-mode)
+    ))
+#+END_SRC
+
+**** RSpec
+
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'rspec-mode
+  (progn
+    (rspec-install-snippets)
+    (diminish 'rspec-mode)
+    ))
+#+END_SRC
+
 *** Infrastructure
 
 **** dockerfile
@@ -988,6 +1024,11 @@ Zenburn & Solarized themes
 #+END_SRC
 
 **** es-mode
+
+#+BEGIN_SRC emacs-lisp
+#+END_SRC
+
+**** puppet-mode
 
 #+BEGIN_SRC emacs-lisp
 #+END_SRC
