@@ -54,6 +54,7 @@ Define packages and install them in case of missing
 (defvar my-packages '(
     company yasnippet flycheck git-gutter magit ; Programming
     projectile helm-projectile swiper-helm
+    counsel
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
     elpy py-autopep8                            ; Python
     groovy-mode                                 ; Groovy
@@ -1677,7 +1678,19 @@ Undo Emacs window changes
           (lambda ()
             (ivy-mode 1)
             (diminish 'ivy-mode)
+
+            ; counsel keybind
+            (global-set-key (kbd "C-c c g") #'counsel-git)
+            (global-set-key (kbd "C-c c j") #'counsel-git-grep)
+            (global-set-key (kbd "C-c c a") #'counsel-ag)
             ))
+#+END_SRC
+
+**** counsel
+
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'counsel
+  )
 #+END_SRC
 
 *** Org                                         :ORG:
