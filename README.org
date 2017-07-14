@@ -1596,8 +1596,10 @@ Undo Emacs window changes
             (define-key eshell-mode-map
                 [remap eshell-pcomplete]
                 'helm-esh-pcomplete)))
-    (define-key (current-global-map)            ; C-x b
-      [remap switch-to-buffer] 'helm-mini)
+    (define-key (current-global-map)            ; remap switch-to-buffer
+      (kbd "C-x b") 'helm-mini)
+    (define-key (current-global-map)            ; remap find-file
+      (kbd "C-x C-f") 'helm-find-files)
     (define-key (current-global-map)            ; C-h a
       [remap apropos-command] 'helm-apropos)
     (define-key (current-global-map)            ; M-/
