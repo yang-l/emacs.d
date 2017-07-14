@@ -1645,7 +1645,7 @@ Undo Emacs window changes
             (setq projectile-indexing-method 'alien))
     (projectile-mode)
     (helm-projectile-on)                                ; active helm, instead of Projectile, commands
-    (diminish 'projectile-mode " ⌕")
+    (diminish 'projectile-mode)
     ))
 #+END_SRC
 
