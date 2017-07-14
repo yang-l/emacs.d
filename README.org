@@ -65,8 +65,10 @@ Define packages and install them in case of missing
     evil evil-leader
     indent-guide avy vimish-fold super-save
     org-page
-    dockerfile-mode yaml-mode jinja2-mode       ; Infrastructure
-    ansible-doc restclient es-mode puppet-mode
+    dockerfile-mode                             ; Infrastructure
+    ansible-doc yaml-mode jinja2-mode ansible
+    restclient es-mode
+    puppet-mode
     which-key symon elfeed bm                   ; Misc
     exec-path-from-shell                        ; System
     multi-term                                  ; Terminal
@@ -1020,7 +1022,11 @@ Zenburn & Solarized themes
 (with-eval-after-load 'ansible-doc
   (diminish 'ansible-doc-mode)
   )
+(with-eval-after-load 'ansible
+  (diminish 'ansible)
+  )
 (add-hook 'yaml-mode-hook #'ansible-doc-mode)
+(add-hook 'yaml-mode-hook '(lambda () (ansible 1)))
 #+END_SRC
 
 **** es-mode
