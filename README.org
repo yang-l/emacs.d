@@ -66,7 +66,7 @@ Define packages and install them in case of missing
     evil evil-leader
     indent-guide avy vimish-fold super-save
     org-page
-    dockerfile-mode                             ; Infrastructure
+    dockerfile-mode terraform-mode              ; Infrastructure
     ansible-doc yaml-mode jinja2-mode ansible
     restclient es-mode
     puppet-mode
@@ -1046,6 +1046,14 @@ Explore and test HTTP REST webservices
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'restclient-mode "restclient" nil t)
+#+END_SRC
+
+**** Terraform
+
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'terraform-mode
+  (setq terraform-indent-level 2)
+  )
 #+END_SRC
 
 **** ztree                                      :EDIT:
