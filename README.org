@@ -753,6 +753,7 @@ Zenburn & Solarized themes
                      yaml-mode-hook
                      groovy-mode-hook
                      puppet-mode-hook
+                     enh-ruby-mode-hook
                     ))
     (add-hook mode-hook #'git-gutter-mode)
     )
@@ -1009,6 +1010,7 @@ Zenburn & Solarized themes
 (add-hook 'yaml-mode-hook #'modes/yaml-mode)
 (add-to-list 'auto-mode-alist '("\\.ya?ml$" . yaml-mode))
 (add-to-list 'auto-mode-alist '("\\.json\\'" . yaml-mode))
+(add-to-list 'auto-mode-alist '("\\.json.erb\\'" . yaml-mode))
 #+END_SRC
 
 **** js2
