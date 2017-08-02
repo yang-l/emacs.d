@@ -122,7 +122,7 @@ Define packages and install them in case of missing
     scroll-conservatively 10000                 ; do not jump to centre point in the window
     scroll-preserve-screen-position t           ; make the cursor steady when scrolling
     gnutls-verify-error t                       ; check tls/ssl
-    tab-width 4                                 ; 4 space indentation
+    tab-width 2                                 ; 2 space indentation
     visible-bell 1                              ; no bell in windows
     window-combination-resize t                 ; split windows equally
     x-stretch-cursor t                          ; stretch cursor to cover wide characters
