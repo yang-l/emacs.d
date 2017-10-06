@@ -1350,7 +1350,7 @@ moving word/line/region around
 (global-set-key (kbd "C-c m >") #'mc/mark-next-like-this)
 (global-set-key (kbd "C-c m <") #'mc/mark-previous-like-this)
 (global-set-key (kbd "C-c m a") #'mc/mark-all-like-this)
-(global-set-key (kbd "C-c m r") #'mc/set-rectangular-region-anchor)
+(global-set-key (kbd "C-c m r") #'set-rectangular-region-anchor)
 #+END_SRC
 
 *** multiple scratches
