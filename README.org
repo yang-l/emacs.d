@@ -62,7 +62,7 @@ Define packages and install them in case of missing
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm ivy ; Editing
     mwim multiple-cursors expand-region ztree
-    drag-stuff
+    drag-stuff scratch
     evil evil-leader
     indent-guide avy vimish-fold super-save
     org-page
@@ -1351,16 +1351,6 @@ moving word/line/region around
 (global-set-key (kbd "C-c m <") #'mc/mark-previous-like-this)
 (global-set-key (kbd "C-c m a") #'mc/mark-all-like-this)
 (global-set-key (kbd "C-c m r") #'set-rectangular-region-anchor)
-#+END_SRC
-
-*** multiple scratches
-
-from [[https://raw.githubusercontent.com/zhangkaiyulw/scratches/master/scratches.el][scratches.el]]
-
-#+BEGIN_SRC emacs-lisp
-(autoload #'scratches-new-scratch-dwim "scratches" nil t)
-(autoload #'scratches-new-scratch-other-window-dwim "scratches" nil t)
-(autoload #'scratches-kill-all-scratches "scratches" nil t)
 #+END_SRC
 
 *** mwim                                        :EDIT:
