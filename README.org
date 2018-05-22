@@ -145,7 +145,7 @@ Define packages and install them in case of missing
 #+BEGIN_SRC emacs-lisp
 (setenv "PATH"
   (concat
-;   "~/:"
+   "/usr/local/bin" ":"
    (getenv "PATH")
   )
 )
@@ -867,12 +867,13 @@ Zenburn & Solarized themes
   (if (not (file-exists-p python-virtualenv-directory))
       (progn
         (make-directory python-virtualenv-directory t)
-        (shell-command
+        (async-shell-command
          (concat
-          "bash "
-          user-emacs-directory "bin/venv.sh "
-          python-virtualenv-directory " "
-          user-emacs-directory "bin/requirements.txt"
+          "PATH=/usr/local/bin:$PATH" " "
+          "bash" " "
+          (expand-file-name (concat user-emacs-directory "bin/venv.sh")) " "
+          (expand-file-name (concat python-virtualenv-directory)) " "
+          (expand-file-name (concat user-emacs-directory "bin/requirements.txt"))
           ))
         ))
   (pyvenv-activate python-virtualenv-directory)
