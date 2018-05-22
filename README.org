@@ -133,7 +133,7 @@ Define packages and install them in case of missing
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
-(when (memq window-system '(mac ns x))
+(when (memq window-system '(mac ns x nil))
   (setq exec-path-from-shell-check-startup-files nil)
   (exec-path-from-shell-initialize))
 (exec-path-from-shell-copy-env "SSH_AGENT_PID") ; inherent ssh-agent from system
@@ -144,11 +144,9 @@ Define packages and install them in case of missing
 
 #+BEGIN_SRC emacs-lisp
 (setenv "PATH"
-  (concat
-   "/usr/local/bin" ":"
-   (getenv "PATH")
-  )
-)
+        (concat
+         (getenv "PATH")
+         ))
 #+END_SRC
 
 *** Server mode
@@ -869,7 +867,6 @@ Zenburn & Solarized themes
         (make-directory python-virtualenv-directory t)
         (async-shell-command
          (concat
-          "PATH=/usr/local/bin:$PATH" " "
           "bash" " "
           (expand-file-name (concat user-emacs-directory "bin/venv.sh")) " "
           (expand-file-name (concat python-virtualenv-directory)) " "
