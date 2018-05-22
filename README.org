@@ -62,7 +62,7 @@ Define packages and install them in case of missing
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm ivy ; Editing
     mwim multiple-cursors expand-region ztree
-    drag-stuff scratch
+    drag-stuff scratch dumb-jump
     evil evil-leader
     indent-guide avy vimish-fold super-save
     org-page
@@ -694,6 +694,7 @@ Zenburn & Solarized themes
                                                 ; starting the new one
         compilation-scroll-output 'first-error  ; Automatically scroll to first error
       )
+    (dumb-jump-mode)                            ; jump to definition
     (electric-pair-mode 1)                      ; auto close bracket insertion
     (setq electric-pair-skip-whitespace 'chomp)
     (goto-address-prog-mode)                    ; highlight URL
