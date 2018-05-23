@@ -1,5 +1,5 @@
 ;;;;  INIT
-(let ((minver "24.4"))
+(let ((minver "25.3"))
   (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
 
