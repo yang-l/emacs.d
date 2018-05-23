@@ -3,4 +3,4 @@ flake8
 importmagic
 autopep8
 yapf
-ipython
+jupyter

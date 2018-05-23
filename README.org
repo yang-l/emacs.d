@@ -860,7 +860,7 @@ Zenburn & Solarized themes
         )
 
   (defvar python-virtualenv-directory           ; virtualenv
-    (concat backup-directory "python/"))
+    (concat backup-directory "python3/"))
   (if (not (file-exists-p python-virtualenv-directory))
       (progn
         (make-directory python-virtualenv-directory t)
@@ -872,20 +872,24 @@ Zenburn & Solarized themes
           (expand-file-name (concat user-emacs-directory "bin/requirements.txt"))
           ))
         ))
-  (pyvenv-activate python-virtualenv-directory)
 
   (company-mode 0)                              ; disable company-mode
   (when (require 'elpy nil t)
     (elpy-mode)                                 ; enable elpy
+    (pyvenv-activate python-virtualenv-directory)
+    (pyvenv-tracking-mode t)
     (setq elpy-rpc-python-command "python3"     ; default version to python3
           elpy-rpc-backend "jedi"               ; jedi (instead of rope) backend
           elpy-modules                          ; remove flymake (replaced by flycheck)
             (delq 'elpy-module-flymake elpy-modules)
           )
-    (when (executable-find "ipython")           ; use ipython
-      (elpy-use-ipython)
-      (setq python-shell-interpreter "ipython"  ; ipython5.x prompt
-            python-shell-interpreter-args "--simple-prompt -i --pprint")
+
+    (when (executable-find "jupyter")           ; use jupyter
+      (setq python-shell-interpreter "jupyter"
+            python-shell-interpreter-args "console --simple-prompt"
+            python-shell-prompt-detect-failure-warning nil)
+      (add-to-list 'python-shell-completion-native-disabled-interpreters
+                   "jupyter")
       )
     )
 
