@@ -52,9 +52,9 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 Define packages and install them in case of missing
 #+BEGIN_SRC emacs-lisp
 (defvar my-packages '(
-    company yasnippet flycheck git-gutter magit ; Programming
+    company flycheck git-gutter magit counsel   ; Programming
     projectile helm-projectile swiper-helm
-    counsel
+    yasnippet yasnippet-snippets ivy-yasnippet
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
     elpy py-autopep8                            ; Python
     groovy-mode                                 ; Groovy
@@ -700,7 +700,6 @@ Zenburn & Solarized themes
     (push '("<=" . ?≤) prettify-symbols-alist)
     (push '("delta" . ?Δ) prettify-symbols-alist)
     (prettify-symbols-mode)
-    (setq yas-snippet-dirs backup-directory)    ; snippet collections
     (local-set-key (kbd "RET")
                    'newline-and-indent)
 
