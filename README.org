@@ -895,7 +895,7 @@ Zenburn & Solarized themes
 
   (when (eq 1 (point-max))                      ; new file template
     (insert
-     "#!/usr/bin/env python\n"
+     "#!/usr/bin/env python3\n"
      "\n\n\n"
      "def main():\n"
      "    pass\n"
