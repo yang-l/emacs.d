@@ -63,7 +63,7 @@ Define packages and install them in case of missing
     neotree undo-tree window-numbering helm ivy ; Editing
     mwim multiple-cursors expand-region ztree
     drag-stuff scratch dumb-jump
-    evil evil-leader
+    evil evil-leader evil-nerd-commenter
     indent-guide avy vimish-fold super-save
     org-page
     dockerfile-mode terraform-mode              ; Infrastructure
@@ -1263,6 +1263,8 @@ moving word/line/region around
 (global-evil-leader-mode)                       ; evil-leader / active before evil-mode
 (evil-mode 1)
 (setq evil-default-state 'emacs)                ; default to emacs
+(evilnc-default-hotkeys)                        ; code commenting
+                                                ; enable recommended key bindings under both evil and non-evil (Emacs) mode
 #+END_SRC
 
 *** elfeed                                      :RSS_FEED:
@@ -1653,9 +1655,9 @@ Undo Emacs window changes
             (diminish 'ivy-mode)
 
             ; counsel keybind
-            (global-set-key (kbd "C-c c g") #'counsel-git)
-            (global-set-key (kbd "C-c c j") #'counsel-git-grep)
-            (global-set-key (kbd "C-c c a") #'counsel-ag)
+            (global-set-key (kbd "C-c i g") #'counsel-git)
+            (global-set-key (kbd "C-c i j") #'counsel-git-grep)
+            (global-set-key (kbd "C-c i a") #'counsel-ag)
             ))
 #+END_SRC
 
@@ -1673,11 +1675,11 @@ Undo Emacs window changes
                      ))
   (add-hook mode-hook
     (lambda ()
-      (define-key (current-global-map) (kbd "C-c p i") 'counsel-projectile)
+      (define-key (current-global-map) (kbd "C-c i p") 'counsel-projectile)
       )))
 (with-eval-after-load 'counsel-projectile (progn
     (setq
-        projectile-keymap-prefix (kbd "C-c p")          ; prefix
+        projectile-keymap-prefix (kbd "C-c i")          ; prefix
         projectile-completion-system 'ivy               ; via ivy backend
         projectile-enable-caching t                     ; enable caching unconditionally
         projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
@@ -2021,37 +2023,6 @@ Two stpes to write a blog
   "unix2dos on current buffer."
   (interactive)
   (set-buffer-file-coding-system 'dos))
-#+END_SRC
-
-*** Commenting
-
-#+BEGIN_SRC emacs-lisp
-(defun comment-or-uncomment ()                  ; @ https://github.com/anler/.emacs.d-literate
-  "Comment or uncomment current line or region if there's a region active."
-  (interactive)
-  (let ((start (line-beginning-position))
-        (end (line-end-position)))
-    (when (region-active-p)
-      (setq start (save-excursion
-                    (goto-char (region-beginning))
-                    (beginning-of-line)
-                    (point))
-            end (save-excursion
-                  (goto-char (region-end))
-                  (end-of-line)
-                  (point))))
-    (comment-or-uncomment-region start end)))
-(defun comment-or-uncomment-lisp-form ()
-  "Comment or uncomment current lisp form"
-  (interactive)
-  (save-excursion
-    (beginning-of-line)
-    (if (search-forward-regexp ";+ " (save-excursion
-                                       (end-of-line)
-                                       (point))
-                               :noerror)
-        (call-interactively 'emr-lisp-uncomment-block)
-      (call-interactively 'emr-lisp-comment-form))))
 #+END_SRC
 
 *** Copy N Paste                                :EDIT:
