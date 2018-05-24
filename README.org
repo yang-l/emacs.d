@@ -53,7 +53,7 @@ Define packages and install them in case of missing
 #+BEGIN_SRC emacs-lisp
 (defvar my-packages '(
     company flycheck git-gutter magit counsel   ; Programming
-    projectile helm-projectile swiper-helm
+    projectile counsel-projectile swiper-helm
     yasnippet yasnippet-snippets ivy-yasnippet
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
     elpy py-autopep8                            ; Python
@@ -1623,37 +1623,6 @@ Undo Emacs window changes
             ))
 #+END_SRC
 
-**** projectile
-
-#+BEGIN_SRC emacs-lisp
-(autoload 'helm-projectile "helm-projectile" nil t)
-(dolist (mode-hook '(prog-mode-hook
-                     ))
-  (add-hook mode-hook
-    (lambda ()
-      (define-key (current-global-map) (kbd "C-c p h") 'helm-projectile)
-      )))
-(with-eval-after-load 'helm-projectile (progn
-    (setq
-        projectile-keymap-prefix (kbd "C-c p")          ; prefix
-        projectile-completion-system 'helm              ; via helm backend
-        projectile-enable-caching t                     ; enable caching unconditionally
-        projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
-        projectile-remember-window-configs t
-        projectile-switch-project-action
-            'helm-projectile
-        projectile-cache-file (expand-file-name         ; Projectile cache file
-            "projectile.cache" backup-directory)
-        projectile-sort-order 'modification-time
-    )
-    (if (eq system-type 'windows-nt)                    ; external indexing under windows
-            (setq projectile-indexing-method 'alien))
-    (projectile-mode)
-    (helm-projectile-on)                                ; active helm, instead of Projectile, commands
-    (diminish 'projectile-mode)
-    ))
-#+END_SRC
-
 **** swiper
 
 #+BEGIN_SRC emacs-lisp
@@ -1695,6 +1664,35 @@ Undo Emacs window changes
 #+BEGIN_SRC emacs-lisp
 (with-eval-after-load 'counsel
   )
+#+END_SRC
+
+**** projectile
+
+#+BEGIN_SRC emacs-lisp
+(dolist (mode-hook '(prog-mode-hook
+                     ))
+  (add-hook mode-hook
+    (lambda ()
+      (define-key (current-global-map) (kbd "C-c p i") 'counsel-projectile)
+      )))
+(with-eval-after-load 'counsel-projectile (progn
+    (setq
+        projectile-keymap-prefix (kbd "C-c p")          ; prefix
+        projectile-completion-system 'ivy               ; via ivy backend
+        projectile-enable-caching t                     ; enable caching unconditionally
+        projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
+        projectile-remember-window-configs t
+        projectile-switch-project-action
+            'counsel-projectile-find-file-or-buffer
+        projectile-cache-file (expand-file-name         ; Projectile cache file
+            "projectile.cache" backup-directory)
+        projectile-sort-order 'modification-time
+    )
+    (if (eq system-type 'windows-nt)                    ; external indexing under windows
+            (setq projectile-indexing-method 'alien))
+    (counsel-projectile-mode)
+    (diminish 'projectile-mode)
+    ))
 #+END_SRC
 
 *** Org                                         :ORG:
