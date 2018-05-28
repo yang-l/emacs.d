@@ -56,6 +56,7 @@ Define packages and install them in case of missing
     projectile counsel-projectile swiper-helm
     yasnippet yasnippet-snippets ivy-yasnippet
     js3-mode web-mode tern-auto-complete        ; JavaScript/Web
+    meghanada                                   ; Java
     elpy py-autopep8                            ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode                    ; Ruby
@@ -1109,7 +1110,30 @@ Diff between directories
 (defun modes/java-mode ()
   "java mode hook"
   (progn
-    (c-set-style "intellij" t)
+    (c-set-style "intellij" t)                  ; code style
+
+    (cond                                       ; path config
+     ((eq system-type 'windows-nt)
+      (setq meghanada-java-path (expand-file-name "bin/java.exe" (getenv "JAVA_HOME")))
+      (setq meghanada-maven-path "mvn.cmd"))
+     (t
+      (setq meghanada-java-path "java")
+      (setq meghanada-maven-path "mvn")))
+
+    (meghanada-mode t)                          ; meghanada
+                                                ; 1) compile meghanada-server -> ./gradlew clean goJF check shadowJar buildNeeded
+                                                ; 2) copy meghanada-x.x.x.jar from meghanada-server/server/build/libs/
+                                                ;    and meghanada-setup-x.x.x.jar meghanada-server/setup/build/libs
+                                                ;    into ~/.emacs.d/meghanada
+    (flycheck-mode +1)
+    (setq c-basic-offset 2)
+    (add-hook 'before-save-hook                 ; code format
+              'meghanada-code-beautify-before-save)
+
+    (define-key meghanada-mode-map (kbd "C-c C-r u") #'meghanada-reference)
+    (define-key meghanada-mode-map (kbd "C-c C-r h") #'meghanada-typeinfo)
+    (define-key meghanada-mode-map (kbd "C-c C-r s") #'meghanada-search-everywhere)
+    (define-key meghanada-mode-map (kbd "C-c C-r S") #'meghanada-search-everywhere-ex)
     ))
 (add-hook 'java-mode-hook 'modes/java-mode)
 #+END_SRC
