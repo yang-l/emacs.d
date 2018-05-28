@@ -122,7 +122,6 @@ Define packages and install them in case of missing
     scroll-step 1                               ; line-by-line scrolling
     scroll-conservatively 10000                 ; do not jump to centre point in the window
     scroll-preserve-screen-position t           ; make the cursor steady when scrolling
-    gnutls-verify-error t                       ; check tls/ssl
     tab-width 2                                 ; 2 space indentation
     visible-bell 1                              ; no bell in windows
     window-combination-resize t                 ; split windows equally
@@ -484,6 +483,22 @@ Call =ediff= or =ediff3= in Emace for file comparisons
     )
   (add-hook 'ediff-load-hook #'modes/ediff-mode)
   ))
+#+END_SRC
+
+**** GnuTLS
+
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'gnutls
+  (progn
+    (setq-default
+     gnutls-verify-error t                      ; check tls/ssl
+     )
+    (cond
+     ((string-equal system-type "darwin")       ; Mac OS X
+      (progn
+        (add-to-list 'gnutls-trustfiles "/private/etc/ssl/cert.pem")
+        )))
+    ))
 #+END_SRC
 
 **** Imenu
