@@ -224,10 +224,6 @@ OSX-only key bindings
         (diminish 'visual-line-mode)
         (which-function-mode)                   ; which-function-mode
         (setq which-func-unknown "⊥")
-        (setq-default header-line-format        ; move to header line
-            '((which-func-mode ("" which-func-format " "))))
-        (setq mode-line-misc-info
-            (assq-delete-all 'which-func-mode mode-line-misc-info))
         (when (fboundp                          ; windmove
             'windmove-default-keybindings)
             (windmove-default-keybindings))
