@@ -1710,11 +1710,11 @@ Undo Emacs window changes
                      ))
   (add-hook mode-hook
     (lambda ()
-      (define-key (current-global-map) (kbd "C-c i p") 'counsel-projectile)
+      (define-key (current-global-map) (kbd "C-c i p") #'counsel-projectile)
+      (setq projectile-keymap-prefix (kbd "C-c i C-p")) ; prefix
       )))
-(with-eval-after-load 'counsel-projectile (progn
+(with-eval-after-load 'projectile (progn
     (setq
-        projectile-keymap-prefix (kbd "C-c i")          ; prefix
         projectile-completion-system 'ivy               ; via ivy backend
         projectile-enable-caching t                     ; enable caching unconditionally
         projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
