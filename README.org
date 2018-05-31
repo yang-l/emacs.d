@@ -764,6 +764,7 @@ Zenburn & Solarized themes
                      groovy-mode-hook
                      puppet-mode-hook
                      enh-ruby-mode-hook
+                     python-mode-hook
                     ))
     (add-hook mode-hook #'git-gutter-mode)
     )
