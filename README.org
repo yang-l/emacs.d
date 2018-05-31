@@ -59,7 +59,7 @@ Define packages and install them in case of missing
     meghanada                                   ; Java
     elpy py-autopep8                            ; Python
     groovy-mode                                 ; Groovy
-    enh-ruby-mode rspec-mode                    ; Ruby
+    enh-ruby-mode rspec-mode inf-ruby           ; Ruby
     zenburn-theme color-theme-solarized diminish; UI
     neotree undo-tree window-numbering helm ivy ; Editing
     mwim multiple-cursors expand-region ztree
@@ -1003,6 +1003,15 @@ Zenburn & Solarized themes
   (progn
     (rspec-install-snippets)
     (diminish 'rspec-mode)
+    ))
+#+END_SRC
+
+**** inf-ruby
+
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'inf-ruby-minor-mode
+  (progn
+    (add-hook 'compilation-filter-hook 'inf-ruby-auto-enter)
     ))
 #+END_SRC
 
