@@ -60,7 +60,7 @@ Define packages and install them in case of missing
     company flycheck git-gutter magit counsel   ; Programming
     projectile counsel-projectile swiper-helm
     yasnippet yasnippet-snippets ivy-yasnippet
-    js3-mode web-mode tern-auto-complete        ; JavaScript/Web
+    js3-mode web-mode                           ; JavaScript/Web
     meghanada                                   ; Java
     elpy py-autopep8                            ; Python
     groovy-mode                                 ; Groovy
@@ -815,16 +815,6 @@ Zenburn & Solarized themes
       js3-indent-on-enter-key t
       js3-indent-dots t
       )
-#+END_SRC
-
-**** tern
-
-#+BEGIN_SRC emacs-lisp
-(add-hook 'js3-mode-hook (lambda () (tern-mode t)))
-(eval-after-load 'tern
-   '(progn
-      (require 'tern-auto-complete)
-      (tern-ac-setup)))                         ; need to change tern.elc - http://stackoverflow.com/questions/18102833/could-not-start-tern-server-in-emacs
 #+END_SRC
 
 **** web-mode
