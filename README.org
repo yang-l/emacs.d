@@ -40,13 +40,18 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 *** ELPA
 
 #+BEGIN_SRC emacs-lisp
-(when (>= emacs-major-version 24)
-    (require 'package)
-    (add-to-list 'package-archives
-                 '("melpa" . "https://melpa.org/packages/") t)
-    (add-to-list 'package-archives
-                 '("org" . "http://orgmode.org/elpa/") t)   ; org-mode
-    (package-initialize))
+(unless (version< emacs-version "25.1")
+  (setq package-archives
+        '(("GNU ELPA"     . "http://elpa.gnu.org/packages/")
+          ("MELPA Stable" . "https://stable.melpa.org/packages/")
+          ("MELPA"        . "https://melpa.org/packages/")
+          ("Org"          . "http://orgmode.org/elpa/"))
+        package-archive-priorities
+        '(("Org"          . 15)
+          ("MELPA Stable" . 10)
+          ("GNU ELPA"     . 5)
+          ("MELPA"        . 0)))
+  (package-initialize))
 #+END_SRC
 
 Define packages and install them in case of missing
