@@ -63,7 +63,7 @@ Define packages and install them in case of missing
     lsp-ui company-lsp                          ; Language Server Protocol
     js3-mode web-mode                           ; JavaScript/Web
     meghanada                                   ; Java
-    elpy py-autopep8                            ; Python
+    pyvenv                                      ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
     zenburn-theme color-theme-solarized diminish; UI
@@ -859,89 +859,6 @@ Zenburn & Solarized themes
 (add-hook 'sh-mode-hook 'modes/sh-mode)
 #+END_SRC
 
-**** Python
-
-#+BEGIN_SRC emacs-lisp
-(defun modes/python-mode ()
-  "python mode hook"
-  (setq python-indent 4                         ; tab space
-        elpy-rpc-project-specific t
-        )
-
-  (defvar python-virtualenv-directory           ; virtualenv
-    (concat backup-directory "python3/"))
-  (if (not (file-exists-p python-virtualenv-directory))
-      (progn
-        (make-directory python-virtualenv-directory t)
-        (async-shell-command
-         (concat
-          "bash" " "
-          (expand-file-name (concat user-emacs-directory "bin/venv.sh")) " "
-          (expand-file-name (concat python-virtualenv-directory)) " "
-          (expand-file-name (concat user-emacs-directory "bin/requirements.txt"))
-          ))
-        ))
-
-  (company-mode 0)                              ; disable company-mode
-  (when (require 'elpy nil t)
-    (elpy-mode)                                 ; enable elpy
-    (pyvenv-activate python-virtualenv-directory)
-    (pyvenv-tracking-mode t)
-    (setq elpy-rpc-python-command "python3"     ; default version to python3
-          elpy-rpc-backend "jedi"               ; jedi (instead of rope) backend
-          elpy-modules                          ; remove flymake (replaced by flycheck)
-            (delq 'elpy-module-flymake elpy-modules)
-          )
-
-    (when (executable-find "jupyter")           ; use jupyter
-      (setq python-shell-interpreter "jupyter"
-            python-shell-interpreter-args "console --simple-prompt"
-            python-shell-prompt-detect-failure-warning nil)
-      (add-to-list 'python-shell-completion-native-disabled-interpreters
-                   "jupyter")
-      )
-    )
-
-  (autoload 'py-autopep8-enable-on-save         ; pep8 format on save
-    "py-autopep8" nil t)
-  (add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
-
-  (when (eq 1 (point-max))                      ; new file template
-    (insert
-     "#!/usr/bin/env python3\n"
-     "\n\n\n"
-     "def main():\n"
-     "    pass\n"
-     "\n"
-     "if __name__ == \"__main__\":\n"
-     "    main()\n"
-     ))
-
-  (defun add-py-debug ()                        ; insert/remove debug breakpoint
-    "add debug code and move line down"
-    (interactive)
-    (move-beginning-of-line 1)
-    (insert "import pdb; pdb.set_trace();\n"))
-
-  (defun remove-py-debug ()
-    "remove py debug code, if found"
-    (interactive)
-    (let ((x (line-number-at-pos))
-          (cur (point)))
-      (search-forward-regexp "^[ ]*import pdb; pdb.set_trace();")
-      (if (= x (line-number-at-pos))
-          (let ()
-            (move-beginning-of-line 1)
-            (kill-line 1)
-            (move-beginning-of-line 1))
-        (goto-char cur))))
-
-  (local-set-key (kbd "<f9>") 'add-py-debug)    ; insert breakpoint
-  (local-set-key (kbd "C-c <f9>") 'remove-py-debug) ; remove breakpoint
-  )
-(add-hook 'python-mode-hook #'modes/python-mode)
-#+END_SRC
-
 **** Emacs Lisp
 
 #+BEGIN_SRC emacs-lisp
@@ -1186,10 +1103,77 @@ Language Server Protocol
 
 (dolist
     (mode-hook
-     '(
+     '(python-mode-hook
        ))
   (add-hook mode-hook #'modes/lsp-mode-setting)
   )
+#+END_SRC
+
+**** Python
+
+#+BEGIN_SRC emacs-lisp
+(defun modes/python-mode ()
+  "python mode hook"
+  (setq python-indent 4                         ; tab space
+        )
+
+  (require 'pyvenv)                             ; virtualenv
+  (with-eval-after-load 'pyvenv
+    (progn
+      (defvar python-virtualenv-directory
+        (concat backup-directory "python3/"))
+      (if (not (file-exists-p python-virtualenv-directory))
+          (progn
+            (make-directory python-virtualenv-directory t)
+            (async-shell-command
+             (concat
+              "bash" " "
+              (expand-file-name (concat user-emacs-directory "bin/venv.sh")) " "
+              (expand-file-name (concat python-virtualenv-directory)) " "
+              (expand-file-name (concat user-emacs-directory "bin/python3-pip-requirements.txt"))
+              ))
+            ))
+      (pyvenv-activate python-virtualenv-directory)
+      (pyvenv-tracking-mode t)
+      ))
+
+  (require 'lsp-python)                         ; lsp-python
+  (lsp-python-enable)
+
+  (when (eq 1 (point-max))                      ; new file template
+    (insert
+     "#!/usr/bin/env python3\n"
+     "\n\n"
+     "def main():\n"
+     "    pass\n"
+     "\n\n"
+     "if __name__ == \"__main__\":\n"
+     "    main()\n"
+     ))
+
+  (defun add-py-debug ()                        ; insert/remove debug breakpoint
+    "add debug code and move line down"
+    (interactive)
+    (move-beginning-of-line 1)
+    (insert "import pdb; pdb.set_trace();\n"))
+
+  (defun remove-py-debug ()
+    "remove py debug code, if found"
+    (interactive)
+    (let ((x (line-number-at-pos))
+          (cur (point)))
+      (search-forward-regexp "^[ ]*import pdb; pdb.set_trace();")
+      (if (= x (line-number-at-pos))
+          (let ()
+            (move-beginning-of-line 1)
+            (kill-line 1)
+            (move-beginning-of-line 1))
+        (goto-char cur))))
+
+  (local-set-key (kbd "<f9>") 'add-py-debug)    ; insert breakpoint
+  (local-set-key (kbd "C-c <f9>") 'remove-py-debug) ; remove breakpoint
+  )
+(add-hook 'python-mode-hook #'modes/python-mode t)
 #+END_SRC
 
 ** Mode Setting
