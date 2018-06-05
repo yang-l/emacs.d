@@ -67,9 +67,9 @@ Define packages and install them in case of missing
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
     zenburn-theme color-theme-solarized diminish; UI
-    neotree undo-tree window-numbering helm ivy ; Editing
+    undo-tree window-numbering helm ivy         ; Editing
     mwim multiple-cursors expand-region ztree
-    drag-stuff scratch dumb-jump
+    drag-stuff scratch dumb-jump treemacs
     evil evil-leader evil-nerd-commenter
     indent-guide avy vimish-fold super-save
     org-page
@@ -1430,53 +1430,47 @@ move where I mean
 (global-set-key (kbd "C-e") #'mwim-end-of-code-or-line)
 #+END_SRC
 
-*** neotree                                     :FILE:EDIT:
+*** Treemacs                                    :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'neotree-toggle "neotree" nil t)
-(global-set-key (kbd "C-c n t") #'neotree-toggle)
+(with-eval-after-load 'treemacs
+  (setq treemacs-collapse-dirs              (if (executable-find "python") 3 0)
+        treemacs-file-event-delay           5000
+        treemacs-follow-after-init          t
+        treemacs-follow-recenter-distance   0.1
+        treemacs-goto-tag-strategy          'refetch-index
+        treemacs-indentation                2
+        treemacs-indentation-string         " "
+        treemacs-is-never-other-window      nil
+        treemacs-no-png-images              nil
+        treemacs-project-follow-cleanup     nil
+        treemacs-recenter-after-file-follow nil
+        treemacs-recenter-after-tag-follow  nil
+        treemacs-show-hidden-files          t
+        treemacs-silent-filewatch           nil
+        treemacs-silent-refresh             nil
+        treemacs-sorting                    'alphabetic-desc
+        treemacs-tag-follow-cleanup         t
+        treemacs-tag-follow-delay           1.5
+        treemacs-width                      35)
 
-(with-eval-after-load 'neotree
-  (progn
-    (setq-default neo-create-file-auto-open t
-                  neo-dont-be-alone t
-                  neo-keymap-style 'concise
-                  neo-show-header nil
-                  neo-show-hidden-files t
-                  neo-smart-open t
-                  )
-    (setq neo-theme 'ascii)
+  (treemacs-follow-mode t)
+  (treemacs-filewatch-mode t)
+  (pcase (cons (not (null (executable-find "git")))
+               (not (null (executable-find "python3"))))
+    (`(t . t)
+     (treemacs-git-mode 'extended))
+    (`(t . _)
+     (treemacs-git-mode 'simple)))
+  )
 
-    ;; https://github.com/jaypei/emacs-neotree/issues/105
-    (setq neo-vc-integration '(face char))
-    (defun neo-vc-for-node (node)
-      (let* ((backend (vc-backend node))
-             (vc-state (when backend (vc-state node backend))))
-        (cons (cdr (assoc vc-state neo-vc-state-char-alist))
-              (cl-case vc-state
-                (up-to-date       neo-vc-up-to-date-face)
-                (edited           neo-vc-edited-face)
-                (needs-update     neo-vc-needs-update-face)
-                (needs-merge      neo-vc-needs-merge-face)
-                (unlocked-changes neo-vc-unlocked-changes-face)
-                (added            neo-vc-added-face)
-                (removed          neo-vc-removed-face)
-                (conflict         neo-vc-conflict-face)
-                (missing          neo-vc-missing-face)
-                (ignored          neo-vc-ignored-face)
-                (unregistered     neo-vc-unregistered-face)
-                (user             neo-vc-user-face)
-                (t                neo-vc-default-face)))))
-    ))
-#+END_SRC
-
-*** speedbar                                    :NOT_IN_USE:EDIT:
-
-#+BEGIN_SRC emacs-lisp
-(setq speedbar-show-unknown-files t             ; show all files
-      speedbar-directory-unshown-regexp "^$"
-      speedbar-use-images nil                   ; no icon
-    )
+(global-set-key (kbd "M-0") #'treemacs-select-window)
+(global-set-key (kbd "C-x t 1") #'treemacs-delete-other-windows)
+(global-set-key (kbd "C-x t t") #'treemacs)
+(global-set-key (kbd "C-x t B") #'treemacs-bookmark)
+(global-set-key (kbd "C-x t C-t") #'treemacs-find-file)
+(global-set-key (kbd "C-x t M-t") #'treemacs-find-tag)
+(global-set-key (kbd "C-x t p") #'treemacs-projectile)
 #+END_SRC
 
 *** symon                                       :MONITOR:
