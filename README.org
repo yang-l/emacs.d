@@ -1075,6 +1075,39 @@ Diff between directories
 
 *** Programming
 
+**** Shared Functions
+
+#+BEGIN_SRC emacs-lisp
+(dolist
+    (mode-hook
+     '(python-mode-hook
+       ))
+  (add-hook mode-hook
+    #'(lambda ()
+        (defun create-virtualenv (virtualenv-folder setup-cmd requirement-file)
+          "Create a Python3 virtualenv and install packages based on the supplied requirement file"
+          (require 'pyvenv)
+          (with-eval-after-load 'pyvenv
+            (progn
+              (defvar python-virtualenv-directory
+                (concat backup-directory virtualenv-folder))
+              (if (not (file-exists-p python-virtualenv-directory))
+                  (progn
+                    (make-directory python-virtualenv-directory t)
+                    (async-shell-command
+                     (concat
+                      "bash" " "
+                      (expand-file-name (concat user-emacs-directory setup-cmd)) " "
+                      (expand-file-name (concat python-virtualenv-directory)) " "
+                      (expand-file-name (concat user-emacs-directory requirement-file))
+                      ))
+                    ))
+              (pyvenv-activate python-virtualenv-directory)
+              (pyvenv-tracking-mode t)
+              ))
+          ))))
+#+END_SRC
+
 **** LSP
 
 Language Server Protocol
@@ -1118,25 +1151,7 @@ Language Server Protocol
   (setq python-indent 4                         ; tab space
         )
 
-  (require 'pyvenv)                             ; virtualenv
-  (with-eval-after-load 'pyvenv
-    (progn
-      (defvar python-virtualenv-directory
-        (concat backup-directory "python3/"))
-      (if (not (file-exists-p python-virtualenv-directory))
-          (progn
-            (make-directory python-virtualenv-directory t)
-            (async-shell-command
-             (concat
-              "bash" " "
-              (expand-file-name (concat user-emacs-directory "bin/venv.sh")) " "
-              (expand-file-name (concat python-virtualenv-directory)) " "
-              (expand-file-name (concat user-emacs-directory "bin/python3-pip-requirements.txt"))
-              ))
-            ))
-      (pyvenv-activate python-virtualenv-directory)
-      (pyvenv-tracking-mode t)
-      ))
+  (create-virtualenv "python3/" "bin/venv-python3.sh" "bin/python3-pip-requirements.txt")
 
   (require 'lsp-python)                         ; lsp-python
   (lsp-python-enable)
