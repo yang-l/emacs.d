@@ -1,3 +1,4 @@
 pyls-mypy
 pyls-isort
 python-language-server[all]
+jupyter

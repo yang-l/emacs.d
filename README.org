@@ -64,7 +64,7 @@ Define packages and install them in case of missing
     lsp-ui company-lsp                          ; Language Server Protocol
     js3-mode web-mode                           ; JavaScript/Web
     meghanada                                   ; Java
-    pyvenv                                      ; Python
+    pyvenv py-autopep8                          ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
     zenburn-theme color-theme-solarized diminish; UI
@@ -1162,6 +1162,18 @@ Language Server Protocol
 
   (require 'lsp-python)                         ; lsp-python
   (lsp-python-enable)
+
+  (when (executable-find "jupyter")             ; use jupyter
+    (setq python-shell-interpreter "jupyter"
+          python-shell-interpreter-args "console --simple-prompt"
+          python-shell-prompt-detect-failure-warning nil)
+    (add-to-list 'python-shell-completion-native-disabled-interpreters
+                 "jupyter")
+    )
+
+  (autoload 'py-autopep8-enable-on-save         ; pep8 format on save
+    "py-autopep8" nil t)
+  (add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
 
   (when (eq 1 (point-max))                      ; new file template
     (insert
