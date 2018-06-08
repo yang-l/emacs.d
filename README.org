@@ -848,18 +848,6 @@ Zenburn & Solarized themes
     'executable-make-buffer-file-executable-if-script-p)
 #+END_SRC
 
-**** Bash
-
-#+BEGIN_SRC emacs-lisp
-(defun modes/sh-mode ()
-    "sh mode hook"
-    (setq sh-basic-offset 4
-          sh-indentation 4
-          sh-indent-comment t
-    ))
-(add-hook 'sh-mode-hook 'modes/sh-mode)
-#+END_SRC
-
 **** Emacs Lisp
 
 #+BEGIN_SRC emacs-lisp
@@ -1081,6 +1069,7 @@ Diff between directories
 (dolist
     (mode-hook
      '(python-mode-hook
+       sh-mode-hook
        ))
   (add-hook mode-hook
     #'(lambda ()
@@ -1141,6 +1130,24 @@ Language Server Protocol
        ))
   (add-hook mode-hook #'modes/lsp-mode-setting)
   )
+#+END_SRC
+
+**** Bash
+
+#+BEGIN_SRC emacs-lisp
+(defun modes/sh-mode ()
+  "sh mode hook"
+  (setq sh-basic-offset 4
+        sh-indentation 4
+        sh-indent-comment t
+        )
+
+  ;; Bash LSP
+  (create-virtualenv "nodejs-bash/" "bin/venv-nodejs-bash.sh" "bin/nodejs-pip-requirements.txt")
+  (require 'lsp-bash)
+  (lsp-bash-enable)
+  )
+(add-hook 'sh-mode-hook #'modes/sh-mode t)
 #+END_SRC
 
 **** Python
