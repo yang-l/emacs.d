@@ -1048,7 +1048,6 @@ Diff between directories
                                                 ; 2) copy meghanada-x.x.x.jar from meghanada-server/server/build/libs/
                                                 ;    and meghanada-setup-x.x.x.jar meghanada-server/setup/build/libs
                                                 ;    into ~/.emacs.d/meghanada
-    (flycheck-mode +1)
     (setq c-basic-offset 2)
     (add-hook 'before-save-hook                 ; code format
               'meghanada-code-beautify-before-save)
@@ -1414,12 +1413,10 @@ moving word/line/region around
              (if flycheck-current-errors 0.5 30.0)
            )
      (flycheck-mode)
-     (diminish 'flycheck-mode)
      (flymake-mode -1)                          ; disable flymake
      ))
 (dolist (mode-hook '(
-                     elpy-mode-hook             ; elpy/python
-                     sh-mode-hook               ; bash
+                     prog-mode-hook
                      ))
   (add-hook mode-hook #'flycheck-mode))
 #+END_SRC
