@@ -607,6 +607,8 @@ Call =ediff= or =ediff3= in Emace for file comparisons
      "ssh"
      '((tramp-parse-sconfig "~/.ssh/config")
        ))
+    (add-to-list 'backup-directory-alist        ; local backup directory
+                 (cons tramp-file-name-regexp (expand-file-name backup-directory)))
     ))
 #+END_SRC
 
