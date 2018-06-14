@@ -1063,6 +1063,9 @@ Language Server Protocol
 (defun modes/lsp-mode-setting ()
   "default mode hook for LSP"
   (progn
+    (require 'lsp-mode)                         ; lsp-mode
+    (setq lsp-message-project-root-warning t)
+
     (require 'lsp-ui)                           ; lsp-ui
     (setq
      lsp-ui-doc-position 'bottom
