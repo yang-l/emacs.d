@@ -1808,7 +1808,7 @@ Undo Emacs window changes
       (define-key (current-global-map) (kbd "C-c i p") #'counsel-projectile)
       (setq projectile-keymap-prefix (kbd "C-c i C-p")) ; prefix
       )))
-(with-eval-after-load 'projectile (progn
+(with-eval-after-load 'counsel-projectile (progn
     (setq
         projectile-completion-system 'ivy               ; via ivy backend
         projectile-enable-caching t                     ; enable caching unconditionally
@@ -1819,9 +1819,20 @@ Undo Emacs window changes
         projectile-cache-file (expand-file-name         ; Projectile cache file
             "projectile.cache" backup-directory)
         projectile-sort-order 'modification-time
-    )
+        projectile-globally-ignored-directories
+          (append '(".meghanada" ".metadata") projectile-globally-ignored-directories)
+        projectile-globally-ignored-files
+          (append '(".DS_Store") projectile-globally-ignored-files)
+          )
+    (cond
+     ((executable-find "ag")
+      (setq projectile-generic-command
+            (concat "ag -0 -l --nocolor"
+                    ; https://github.com/ggreer/the_silver_searcher/issues/1060
+                    (mapconcat #'identity (cons "" projectile-globally-ignored-directories) " --ignore /")
+                    (mapconcat #'identity (cons "" projectile-globally-ignored-directories) " --ignore /**/")))))
     (if (eq system-type 'windows-nt)                    ; external indexing under windows
-            (setq projectile-indexing-method 'alien))
+        (setq projectile-indexing-method 'alien))
     (counsel-projectile-mode)
     (diminish 'projectile-mode)
     ))
