@@ -868,12 +868,6 @@ Zenburn & Solarized themes
 #+BEGIN_SRC emacs-lisp
 (autoload 'groovy-mode "groovy-mode" nil t)
 (add-to-list 'auto-mode-alist '("\.groovy$" . groovy-mode))
-(add-hook 'groovy-mode-hook
- (lambda ()
-   (eval-when-compile                           ; remove after emacs25
-     (if (and (= emacs-major-version 24) (< emacs-minor-version 6))
-         (require 'cl)))
-   ))
 #+END_SRC
 
 *** Infrastructure
