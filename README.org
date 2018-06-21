@@ -1084,7 +1084,10 @@ Language Server Protocol
 
 (dolist
     (mode-hook
-     '(python-mode-hook
+     '(
+       enh-ruby-mode-hook
+       python-mode-hook
+       sh-mode-hook
        ))
   (add-hook mode-hook #'modes/lsp-mode-setting)
   )
