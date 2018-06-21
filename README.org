@@ -52,6 +52,10 @@ Path to personal/credential info in =~/.emacs.d/private.el=
           ("GNU ELPA"     . 5)
           ("MELPA"        . 0))
         package-enable-at-startup nil)
+  (when (boundp 'package-pinned-packages)
+    (setq package-pinned-packages
+          '((lsp-mode     . "MELPA")))
+    )
   (package-initialize))
 #+END_SRC
 
@@ -63,7 +67,7 @@ Define packages and install them in case of missing
     yasnippet yasnippet-snippets ivy-yasnippet
     lsp-ui company-lsp                          ; Language Server Protocol
     js3-mode web-mode                           ; JavaScript/Web
-    meghanada                                   ; Java
+    lsp-java                                    ; Java
     pyvenv py-autopep8                          ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
@@ -981,39 +985,6 @@ Diff between directories
   (add-hook hook #'modes/c-mode))
 #+END_SRC
 
-*** Java
-
-#+BEGIN_SRC emacs-lisp
-(defun modes/java-mode ()
-  "java mode hook"
-  (progn
-    (c-set-style "intellij" t)                  ; code style
-
-    (cond                                       ; path config
-     ((eq system-type 'windows-nt)
-      (setq meghanada-java-path (expand-file-name "bin/java.exe" (getenv "JAVA_HOME")))
-      (setq meghanada-maven-path "mvn.cmd"))
-     (t
-      (setq meghanada-java-path "java")
-      (setq meghanada-maven-path "mvn")))
-
-    (meghanada-mode t)                          ; meghanada
-                                                ; 1) compile meghanada-server -> ./gradlew clean goJF check shadowJar buildNeeded
-                                                ; 2) copy meghanada-x.x.x.jar from meghanada-server/server/build/libs/
-                                                ;    and meghanada-setup-x.x.x.jar meghanada-server/setup/build/libs
-                                                ;    into ~/.emacs.d/meghanada
-    (setq c-basic-offset 2)
-    (add-hook 'before-save-hook                 ; code format
-              'meghanada-code-beautify-before-save)
-
-    (define-key meghanada-mode-map (kbd "C-c C-r u") #'meghanada-reference)
-    (define-key meghanada-mode-map (kbd "C-c C-r h") #'meghanada-typeinfo)
-    (define-key meghanada-mode-map (kbd "C-c C-r s") #'meghanada-search-everywhere)
-    (define-key meghanada-mode-map (kbd "C-c C-r S") #'meghanada-search-everywhere-ex)
-    ))
-(add-hook 'java-mode-hook 'modes/java-mode)
-#+END_SRC
-
 *** Programming
 
 **** Shared Functions
@@ -1087,6 +1058,7 @@ Language Server Protocol
     (mode-hook
      '(
        enh-ruby-mode-hook
+       java-mode-hook
        python-mode-hook
        sh-mode-hook
        ))
@@ -1110,6 +1082,38 @@ Language Server Protocol
   (lsp-bash-enable)
   )
 (add-hook 'sh-mode-hook #'modes/sh-mode t)
+#+END_SRC
+
+**** Java
+
+#+BEGIN_SRC emacs-lisp
+(defun modes/java-mode ()
+  "java mode hook"
+  (progn
+    (c-set-style "intellij" t)                  ; code style
+    (setq c-basic-offset 2)
+
+    (require 'lsp-java)                         ; LSP
+                                                ; check on github on how to install the server
+    ; set workspace
+    (setq lsp-java-workspace-dir (expand-file-name (concat backup-directory "jdt-workspace/"))
+          lsp-java-workspace-cache-dir (expand-file-name (concat lsp-java-workspace-dir ".cache/"))
+          lsp-java--workspace-folders
+            (list
+             ((lambda ()
+                (let ((root_dir (locate-dominating-file (expand-file-name (file-name-directory buffer-file-name)) "pom.xml")))
+                  (if root_dir
+                      (expand-file-name root_dir)
+                    (expand-file-name (file-name-directory buffer-file-name))))
+                ))
+             ))
+
+    (setq lsp-inhibit-message t
+          lsp-ui-sideline-update-mode 'point)
+
+    (lsp-java-enable)                           ; make this one the last step
+    ))
+(add-hook 'java-mode-hook #'modes/java-mode t)
 #+END_SRC
 
 **** Python
