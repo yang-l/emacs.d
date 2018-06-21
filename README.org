@@ -1041,7 +1041,7 @@ Diff between directories
               (if (not (file-exists-p python-virtualenv-directory))
                   (progn
                     (make-directory python-virtualenv-directory t)
-                    (async-shell-command
+                    (shell-command
                      (concat
                       "bash" " "
                       (expand-file-name (concat user-emacs-directory setup-cmd)) " "
@@ -1119,8 +1119,7 @@ Language Server Protocol
 #+BEGIN_SRC emacs-lisp
 (defun modes/python-mode ()
   "python mode hook"
-  (setq python-indent 4                         ; tab space
-        )
+  (setq python-indent-offset 4)                 ; tab space
 
   (create-virtualenv "python3/" "bin/venv-python3.sh" "bin/python3-pip-requirements.txt")
 
