@@ -107,6 +107,7 @@ Define packages and install them in case of missing
 
 #+BEGIN_SRC emacs-lisp
 (setq-default
+    ad-redefinition-action 'accept              ; silence functions getting redefined messages
     column-number-mode t                        ; show cursor position
     default-major-mode 'text-mode               ; set new buffers as test files
     initial-major-mode 'text-mode
