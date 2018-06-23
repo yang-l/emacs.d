@@ -1119,61 +1119,68 @@ Language Server Protocol
 **** Python
 
 #+BEGIN_SRC emacs-lisp
-(defun modes/python-mode ()
-  "python mode hook"
-  (setq python-indent-offset 4)                 ; tab space
+(use-package python
+  :interpreter ("python" . python-mode)
+  :mode ("\\.py\\'" . python-mode)
+        ("\\.wsgi$" . python-mode)
+  :config
+  (add-hook 'python-mode-hook
+    #'(lambda ()
+        (setq python-indent-offset 4)           ; tab space
 
-  (create-virtualenv "python3/" "bin/venv-python3.sh" "bin/python3-pip-requirements.txt")
+        (create-virtualenv "python3/"           ; create virtualenv
+                           "bin/venv-python3.sh"
+                           "bin/python3-pip-requirements.txt")
 
-  (require 'lsp-python)                         ; lsp-python
-  (lsp-python-enable)
+        (require 'lsp-python)                   ; lsp-python
+        (lsp-python-enable)
 
-  (when (executable-find "jupyter")             ; use jupyter
-    (setq python-shell-interpreter "jupyter"
-          python-shell-interpreter-args "console --simple-prompt"
-          python-shell-prompt-detect-failure-warning nil)
-    (add-to-list 'python-shell-completion-native-disabled-interpreters
-                 "jupyter")
-    )
+        (when (executable-find "jupyter")       ; use jupyter
+          (setq python-shell-interpreter "jupyter"
+                python-shell-interpreter-args "console --simple-prompt"
+                python-shell-prompt-detect-failure-warning nil)
+          (add-to-list 'python-shell-completion-native-disabled-interpreters
+                       "jupyter")
+          )
 
-  (autoload 'py-autopep8-enable-on-save         ; pep8 format on save
-    "py-autopep8" nil t)
-  (add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
+        (autoload 'py-autopep8-enable-on-save   ; pep8 format on save
+          "py-autopep8" nil t)
+        (add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
 
-  (when (eq 1 (point-max))                      ; new file template
-    (insert
-     "#!/usr/bin/env python3\n"
-     "\n\n"
-     "def main():\n"
-     "    pass\n"
-     "\n\n"
-     "if __name__ == \"__main__\":\n"
-     "    main()\n"
-     ))
+        (when (eq 1 (point-max))                ; new file template
+          (insert
+           "#!/usr/bin/env python3\n"
+           "\n\n"
+           "def main():\n"
+           "    pass\n"
+           "\n\n"
+           "if __name__ == \"__main__\":\n"
+           "    main()\n"
+           ))
 
-  (defun add-py-debug ()                        ; insert/remove debug breakpoint
-    "add debug code and move line down"
-    (interactive)
-    (move-beginning-of-line 1)
-    (insert "import pdb; pdb.set_trace();\n"))
+        (defun add-py-debug ()                  ; insert/remove debug breakpoint
+          "add debug code and move line down"
+          (interactive)
+          (move-beginning-of-line 1)
+          (insert "import pdb; pdb.set_trace();\n"))
 
-  (defun remove-py-debug ()
-    "remove py debug code, if found"
-    (interactive)
-    (let ((x (line-number-at-pos))
-          (cur (point)))
-      (search-forward-regexp "^[ ]*import pdb; pdb.set_trace();")
-      (if (= x (line-number-at-pos))
-          (let ()
-            (move-beginning-of-line 1)
-            (kill-line 1)
-            (move-beginning-of-line 1))
-        (goto-char cur))))
+        (defun remove-py-debug ()
+          "remove py debug code, if found"
+          (interactive)
+          (let ((x (line-number-at-pos))
+                (cur (point)))
+            (search-forward-regexp "^[ ]*import pdb; pdb.set_trace();")
+            (if (= x (line-number-at-pos))
+                (let ()
+                  (move-beginning-of-line 1)
+                  (kill-line 1)
+                  (move-beginning-of-line 1))
+              (goto-char cur))))
 
-  (local-set-key (kbd "<f9>") 'add-py-debug)    ; insert breakpoint
-  (local-set-key (kbd "C-c <f9>") 'remove-py-debug) ; remove breakpoint
+        (local-set-key (kbd "<f9>") 'add-py-debug)  ; insert breakpoint
+        (local-set-key (kbd "C-c <f9>") 'remove-py-debug) ; remove breakpoint
+        ) t)
   )
-(add-hook 'python-mode-hook #'modes/python-mode t)
 #+END_SRC
 
 **** Ruby
