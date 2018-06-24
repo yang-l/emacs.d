@@ -1077,19 +1077,23 @@ Language Server Protocol
 **** Bash
 
 #+BEGIN_SRC emacs-lisp
-(defun modes/sh-mode ()
-  "sh mode hook"
-  (setq sh-basic-offset 4
-        sh-indentation 4
-        sh-indent-comment t
-        )
+(use-package sh-script
+  :mode (("\\.*bashrc$"      . sh-mode)
+         ("\\.*bash_profile" . sh-mode))
+  :config
+  (add-hook 'sh-mode-hook
+    #'(lambda ()
+        (setq-default sh-basic-offset 2
+                      sh-indentation 2
+                      sh-indent-comment t)
 
-  ;; Bash LSP
-  (create-virtualenv "nodejs-bash/" "bin/venv-nodejs-bash.sh" "bin/nodejs-pip-requirements.txt")
-  (require 'lsp-bash)
-  (lsp-bash-enable)
+        (create-virtualenv "nodejs-bash/"       ; bash lsp
+                           "bin/venv-nodejs-bash.sh"
+                           "bin/nodejs-pip-requirements.txt")
+        (require 'lsp-bash)
+        (lsp-bash-enable)
+        ) t)
   )
-(add-hook 'sh-mode-hook #'modes/sh-mode t)
 #+END_SRC
 
 **** Java
