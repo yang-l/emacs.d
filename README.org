@@ -1026,34 +1026,6 @@ Diff between directories
 Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
-(defun modes/lsp-mode-setting ()
-  "default mode hook for LSP"
-  (progn
-    (require 'lsp-mode)                         ; lsp-mode
-    (setq lsp-message-project-root-warning t)
-
-    (require 'lsp-ui)                           ; lsp-ui
-    (setq
-     lsp-ui-doc-position 'bottom
-     lsp-ui-doc-include-signature t
-     )
-    (add-hook 'lsp-mode-hook 'lsp-ui-mode)
-    (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
-    (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references)
-
-    (require 'lsp-imenu)                        ; lsp-imenu
-    (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
-
-    (with-eval-after-load 'lsp-mode             ; flycheck
-      (add-hook 'lsp-after-open-hook (lambda () (lsp-ui-flycheck-enable 1))))
-
-    (require 'company-lsp)                      ; company-lsp
-    (setq company-lsp-enable-recompletion t)
-    (push 'company-lsp company-backends)
-
-    (yas-minor-mode)                            ; yasnippet
-    ))
-
 (dolist
     (mode-hook
      '(
@@ -1062,7 +1034,43 @@ Language Server Protocol
        python-mode-hook
        sh-mode-hook
        ))
-  (add-hook mode-hook #'modes/lsp-mode-setting)
+  (add-hook mode-hook
+    #'(lambda ()
+        (use-package lsp-mode
+          :config
+          (setq lsp-message-project-root-warning t)
+          )
+
+        (use-package lsp-ui
+          :after lsp-mode yasnippet
+          :bind (:map lsp-ui-mode-map
+                 ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
+                 ([remap xref-find-references]  . lsp-ui-peek-find-references))
+          :hook
+          ((lsp-mode . lsp-ui-mode))
+          :config
+          (setq lsp-ui-doc-position 'bottom
+                lsp-ui-doc-include-signature t)
+
+          (add-hook 'lsp-after-open-hook        ; flycheck
+                    #'(lambda () (lsp-ui-flycheck-enable 1)))
+          (yas-minor-mode)                      ; yasnippet
+          )
+
+        (use-package lsp-imenu
+          :after lsp-mode
+          :hook
+          ((lsp-after-open . lsp-enable-imenu))
+          )
+
+        (use-package company-lsp
+          :after lsp-mode company
+          :init
+          (push 'company-lsp company-backends)
+          :config
+          (setq company-lsp-enable-recompletion t)
+          )
+        ))
   )
 #+END_SRC
 
@@ -1281,42 +1289,39 @@ Visible bookmarks
 *** company mode
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'company-mode "company" nil t)
-(dolist (mode-hook '(prog-mode-hook
-                     ))
-  (add-hook mode-hook #'company-mode))
-
-(with-eval-after-load 'company
-    (progn
-        (define-key (current-local-map) [remap hippie-expand] 'company-complete)
-        (setq-default company-backends          ; default backends
-            '((company-abbrev
-              company-dabbrev
-              company-dabbrev-code
-              company-files
-              company-ispell
-              company-keywords                  ; keywords
-              company-yasnippet
-              ))
-              company-global-modes
-                '(not eshell-mode)
-              company-idle-delay 0.25           ; delay before autocompletion popup shows
-              company-minimum-prefix-length 2
-              company-tooltip-align-annotations t
-              company-tooltip-limit 10          ; popup window size
-              company-tooltip-flip-when-above t ; flip the popup menu when near the bottom of windows
-              company-selection-wrap-around t   ; loop over candidates
-              company-show-numbers t            ; show number
-              company-begin-commands
-                '(self-insert-command)          ; start autocompletion only after typing
-              company-dabbrev-downcase nil      ; do not change case in dabbrev
-              company-dabbrev-ignore-case t
-              company-dabbrev-other-buffers t
-              company-transformers
-                '(company-sort-by-occurrence)
-            )
-        (diminish 'company-mode)
-        ))
+(use-package company
+  :bind (([remap hippie-expand] . company-complete))
+  :diminish company-mode
+  :hook ((prog-mode) . company-mode)
+  :config
+  (setq-default
+       company-backends                         ; default backends
+         '((company-abbrev
+            company-dabbrev
+            company-dabbrev-code
+            company-files
+            company-ispell
+            company-keywords                    ; keywords
+            company-yasnippet
+            ))
+       company-global-modes
+         '(not eshell-mode)
+       company-idle-delay 0.25                  ; delay before autocompletion popup shows
+       company-minimum-prefix-length 2
+       company-tooltip-align-annotations t
+       company-tooltip-limit 10                 ; popup window size
+       company-tooltip-flip-when-above   t      ; flip the popup menu when near the bottom of windows
+       company-selection-wrap-around t          ; loop over candidates
+       company-show-numbers t                   ; show number
+       company-begin-commands
+         '(self-insert-command)                 ; start autocompletion only after typing
+       company-dabbrev-downcase nil             ; do not change case in dabbrev
+       company-dabbrev-ignore-case t
+       company-dabbrev-other-buffers t
+       company-transformers
+         '(company-sort-by-occurrence)
+       )
+    )
 #+END_SRC
 
 *** diminish
@@ -1706,8 +1711,7 @@ Undo Emacs window changes
 *** yasnippet
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'yasnippet
-    )
+(use-package yasnippet :defer t)
 #+END_SRC
 
 *** Helm                                        :EDIT:
