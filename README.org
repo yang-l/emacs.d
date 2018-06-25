@@ -1197,79 +1197,69 @@ Language Server Protocol
 
 **** Ruby
 
-***** Enhanced Ruby Mode
-
 #+BEGIN_SRC emacs-lisp
-(add-to-list 'auto-mode-alist '("\\.rb$" . enh-ruby-mode))
-(add-to-list 'auto-mode-alist '("\\.rake$" . enh-ruby-mode))
-(add-to-list 'auto-mode-alist '("Rakefile$" . enh-ruby-mode))
-(add-to-list 'auto-mode-alist '("\\.gemspec$" . enh-ruby-mode))
-(add-to-list 'auto-mode-alist '("\\.ru$" . enh-ruby-mode))
-(add-to-list 'auto-mode-alist '("Gemfile$" . enh-ruby-mode))
-(add-to-list 'auto-mode-alist '("Cheffile$" . enh-ruby-mode))
-(add-to-list 'auto-mode-alist '("Vagrantfile$" . enh-ruby-mode))
-
-(with-eval-after-load 'enh-ruby-mode
+(use-package enh-ruby-mode
+  :mode
+  (("\\.rb$"       . enh-ruby-mode)
+   ("\\.rake$"     . enh-ruby-mode)
+   ("Rakefile$"    . enh-ruby-mode)
+   ("\\.gemspec$"  . enh-ruby-mode)
+   ("\\.ru$"       . enh-ruby-mode)
+   ("Gemfile$"     . enh-ruby-mode)
+   ("Cheffile$"    . enh-ruby-mode)
+   ("Vagrantfile$" . enh-ruby-mode))
+  :config
   (setq enh-ruby-add-encoding-comment-on-save nil
         rspec-compilation-buffer-name "*rspec-compilation*"
         rspec-use-opts-file-when-available nil
         rspec-use-rake-flag nil
-        ruby-insert-encoding-magic-comment nil
-        )
-  (add-hook 'enh-ruby-mode-hook 'rspec-mode)
+        ruby-insert-encoding-magic-comment nil)
+
+  (add-hook 'enh-ruby-mode-hook                         ; LSP
+            #'(lambda ()
+                (defvar ruby-workspace-directory        ; ruby language server
+                  (expand-file-name (concat backup-directory "ruby-lsp-workspace/")))
+                (defvar ruby-version "2.4.2")           ; ruby version
+                (if (not (file-exists-p ruby-workspace-directory))
+                    (progn
+                      (make-directory
+                       ruby-workspace-directory t)      ; create a directory for ruby lsp server
+                      (when (executable-find "rbenv")
+                        (append-to-file ruby-version    ; define ruby version in the workspace directory
+                                        nil
+                                        (expand-file-name (concat ruby-workspace-directory ".ruby-version")))
+                        (copy-file                      ; create Gemfile for ruby lsp
+                         (expand-file-name (concat user-emacs-directory "bin/Gemfile.rubylsp.template"))
+                         (expand-file-name (concat ruby-workspace-directory "Gemfile")) )
+                        (shell-command                  ; install ruby lsp
+                         (concat "rbenv install -s " ruby-version " && cd " (expand-file-name ruby-workspace-directory) " && rbenv exec bundle install --path vendor/bundle/"))
+                        )
+                      )
+                  )
+
+                (setq exec-path (append (list (concat (expand-file-name "~/.rbenv/versions/") ruby-version  "/bin/")) exec-path))
+                (setenv "PATH" (concat (expand-file-name "~/.rbenv/versions/") ruby-version  "/bin/:" (getenv "PATH")))
+                (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
+
+                (require 'lsp-ruby)
+                (lsp-ruby-enable)
+                ) t)
   )
 #+END_SRC
 
-***** inf-ruby
-
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'inf-ruby-minor-mode
-  (add-hook 'compilation-filter-hook 'inf-ruby-auto-enter)
+(use-package inf-ruby
+  :after enh-ruby-mode
+  :hook (compilation-filter . inf-ruby-auto-enter)
   )
 #+END_SRC
 
-***** RSpec
-
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'rspec-mode
-  (rspec-install-snippets)
-  (diminish 'rspec-mode)
+(use-package rspec-mode
+  :after enh-ruby-mode
+  :diminish rspec-mode
+  :hook (enh-ruby-mode . rspec-mode)
   )
-#+END_SRC
-
-***** Ruby LSP
-
-#+BEGIN_SRC emacs-lisp
-(defun modes/ruby-mode ()
-  "ruby mode hook"
-  (progn
-    (defvar ruby-workspace-directory            ; ruby language server
-      (expand-file-name (concat backup-directory "ruby-lsp-workspace/")))
-    (defvar ruby-version "2.4.2")               ; ruby version
-    ; create folder
-    (if (not (file-exists-p ruby-workspace-directory))
-        (progn
-          (make-directory ruby-workspace-directory t)
-          ; create a directory for ruby lsp
-          (when (executable-find "rbenv")
-            ; define ruby version in the workspace directory
-            (append-to-file ruby-version nil (expand-file-name (concat ruby-workspace-directory ".ruby-version")))
-            ; create Gemfile for ruby lsp
-            (copy-file (expand-file-name (concat user-emacs-directory "bin/Gemfile.rubylsp.template")) (expand-file-name (concat ruby-workspace-directory "Gemfile")) )
-            ; install ruby lsp
-            (shell-command (concat "rbenv install -s " ruby-version " && cd " (expand-file-name ruby-workspace-directory) " && rbenv exec bundle install --path vendor/bundle/"))
-            )
-          )
-      )
-
-    (setq exec-path (append (list (concat (expand-file-name "~/.rbenv/versions/") ruby-version  "/bin/")) exec-path))
-    (setenv "PATH" (concat (expand-file-name "~/.rbenv/versions/") ruby-version  "/bin/:" (getenv "PATH")))
-    (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
-    (require 'lsp-ruby)
-    (lsp-ruby-enable)
-    )
-  )
-(add-hook 'enh-ruby-mode-hook #'modes/ruby-mode t)
 #+END_SRC
 
 ** Mode Setting
