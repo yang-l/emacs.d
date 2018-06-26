@@ -1202,14 +1202,14 @@ Language Server Protocol
 #+BEGIN_SRC emacs-lisp
 (use-package enh-ruby-mode
   :mode
-  (("\\.rb$"       . enh-ruby-mode)
-   ("\\.rake$"     . enh-ruby-mode)
-   ("Rakefile$"    . enh-ruby-mode)
-   ("\\.gemspec$"  . enh-ruby-mode)
-   ("\\.ru$"       . enh-ruby-mode)
-   ("Gemfile$"     . enh-ruby-mode)
-   ("Cheffile$"    . enh-ruby-mode)
-   ("Vagrantfile$" . enh-ruby-mode))
+  (("\\.rb\\'"       . enh-ruby-mode)
+   ("\\.rake\\'"     . enh-ruby-mode)
+   ("Rakefile\\'"    . enh-ruby-mode)
+   ("\\.gemspec\\'"  . enh-ruby-mode)
+   ("\\.ru\\'"       . enh-ruby-mode)
+   ("Gemfile\\'"     . enh-ruby-mode)
+   ("Cheffile\\'"    . enh-ruby-mode)
+   ("Vagrantfile\\'" . enh-ruby-mode))
   :config
   (setq enh-ruby-add-encoding-comment-on-save nil
         rspec-compilation-buffer-name "*rspec-compilation*"
@@ -1234,7 +1234,7 @@ Language Server Protocol
                          (expand-file-name (concat user-emacs-directory "bin/Gemfile.rubylsp.template"))
                          (expand-file-name (concat ruby-workspace-directory "Gemfile")) )
                         (shell-command                  ; install ruby lsp
-                         (concat "rbenv install -s " ruby-version " && cd " (expand-file-name ruby-workspace-directory) " && rbenv exec bundle install --path vendor/bundle/"))
+                         (concat "rbenv install -s " ruby-version " && cd " (expand-file-name ruby-workspace-directory) " && rbenv exec bundle install --path vendor/bundle/ && rbenv exec bundle exec solargraph download-core"))
                         )
                       )
                   )
