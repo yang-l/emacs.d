@@ -997,8 +997,8 @@ Diff between directories
        ))
   (add-hook mode-hook
     #'(lambda ()
-        (defun create-virtualenv (virtualenv-folder setup-cmd requirement-file)
-          "Create a Python3 virtualenv and install packages based on the supplied requirement file"
+        (defun create-virtualenv (virtualenv-folder setup-cmd requirement-file &optional install-packages)
+          "Create a python pip based virtualenv and install packages based on the supplied requirement file"
           (require 'pyvenv)
           (with-eval-after-load 'pyvenv
             (progn
@@ -1013,6 +1013,7 @@ Diff between directories
                       (expand-file-name (concat user-emacs-directory setup-cmd)) " "
                       (expand-file-name (concat python-virtualenv-directory)) " "
                       (expand-file-name (concat user-emacs-directory requirement-file))
+                      (when install-packages (concat " " install-packages))
                       ))
                     ))
               (pyvenv-activate python-virtualenv-directory)
@@ -1087,9 +1088,10 @@ Language Server Protocol
                       sh-indentation 2
                       sh-indent-comment t)
 
-        (create-virtualenv "nodejs-bash/"       ; bash lsp
-                           "bin/venv-nodejs-bash.sh"
-                           "bin/nodejs-pip-requirements.txt")
+        (create-virtualenv "venv-lsp-bash/"     ; bash lsp
+                           "bin/venv-nodejs-npm.sh"
+                           "bin/nodejs-pip-requirements.txt"
+                           "bash-language-server")
         (require 'lsp-bash)
         (lsp-bash-enable)
         ) t)
@@ -1140,7 +1142,7 @@ Language Server Protocol
     #'(lambda ()
         (setq python-indent-offset 4)           ; tab space
 
-        (create-virtualenv "python3/"           ; create virtualenv
+        (create-virtualenv "venv-lsp-python3/"  ; create virtualenv
                            "bin/venv-python3.sh"
                            "bin/python3-pip-requirements.txt")
 
@@ -1218,7 +1220,7 @@ Language Server Protocol
   (add-hook 'enh-ruby-mode-hook                         ; LSP
             #'(lambda ()
                 (defvar ruby-workspace-directory        ; ruby language server
-                  (expand-file-name (concat backup-directory "ruby-lsp-workspace/")))
+                  (expand-file-name (concat backup-directory "venv-lsp-ruby/")))
                 (defvar ruby-version "2.4.2")           ; ruby version
                 (if (not (file-exists-p ruby-workspace-directory))
                     (progn
