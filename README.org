@@ -1732,7 +1732,7 @@ Undo Emacs window changes
         helm-ff-search-library-in-sexp t        ; search for library in `require' and `declare-function' sexp
         helm-move-to-line-cycle-in-source t     ; move to end or beginning of source when reaching top or bottom of source
         helm-quick-update t                     ; do not display invisible candidates
-        helm-split-window-in-side-p t           ; open helm buffer inside current window, not occupy whole other window
+        helm-split-window-inside-p t            ; open helm buffer inside current window, not occupy whole other window
         )
     (add-hook 'eshell-mode-hook                 ; eshell
         #'(lambda ()
@@ -1741,6 +1741,8 @@ Undo Emacs window changes
                 'helm-esh-pcomplete)))
     (define-key (current-global-map)            ; remap switch-to-buffer
       (kbd "C-x b") 'helm-mini)
+    (define-key (current-global-map)            ; remap list-buffer
+      (kbd "C-x C-b") 'helm-mini)
     (define-key (current-global-map)            ; remap find-file
       (kbd "C-x C-f") 'helm-find-files)
     (define-key (current-global-map)            ; C-h a
@@ -1764,11 +1766,11 @@ Undo Emacs window changes
 **** swiper
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'swiper-helm "swiper-helm" nil t)
-(define-key (current-global-map)                ; C-s
-  [remap isearch-forward] 'swiper-helm)
-(define-key (current-global-map)                ; C-r
-  [remap isearch-backward] 'swiper-helm)
+(use-package swiper-helm
+  :after helm
+  :bind (([remap isearch-forward]  . swiper-helm)   ; C-s
+         ([remap isearch-backward] . swiper-helm))  ; C-r
+  )
 #+END_SRC
 
 *** Ivy                                         :EDIT:
@@ -1785,22 +1787,24 @@ Undo Emacs window changes
   (define-key ivy-minibuffer-map                ; use 'Enter' on a directory to navigate into the directory, not open it with dired
     (kbd "C-m") 'ivy-alt-done)
   )
-(add-hook 'after-init-hook
-          (lambda ()
-            (ivy-mode 1)
-            (diminish 'ivy-mode)
 
-            ; counsel keybind
-            (global-set-key (kbd "C-c i g") #'counsel-git)
-            (global-set-key (kbd "C-c i j") #'counsel-git-grep)
-            (global-set-key (kbd "C-c i a") #'counsel-ag)
-            ))
+(use-package ivy
+  :defer t
+  :diminish ivy-mode
+  :init
+  (add-hook 'after-init-hook #'(lambda () (ivy-mode 1)))
+  )
 #+END_SRC
 
 **** counsel
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'counsel
+(use-package counsel
+  :after ivy
+  :bind (("C-c i g" . counsel-git)
+         ("C-c i j" . counsel-git-grep)
+         ("C-c i a" . counsel-ag)
+         )
   )
 #+END_SRC
 
