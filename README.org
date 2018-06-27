@@ -66,7 +66,8 @@ Define packages and install them in case of missing
     projectile counsel-projectile swiper-helm
     yasnippet yasnippet-snippets ivy-yasnippet
     lsp-ui company-lsp                          ; Language Server Protocol
-    js3-mode web-mode                           ; JavaScript/Web
+    js2-mode lsp-javascript-typescript          ; JavaScript
+    web-mode                                    ; Web
     lsp-java                                    ; Java
     pyvenv py-autopep8                          ; Python
     groovy-mode                                 ; Groovy
@@ -805,47 +806,27 @@ Zenburn & Solarized themes
         ))
 #+END_SRC
 
-*** Web / JS
+*** Web
 
-**** js3-mode
-
-#+BEGIN_SRC emacs-lisp
-(autoload 'js3-mode "js3" nil t)
-(add-to-list 'auto-mode-alist '("\\.js\\'" . js3-mode))
-(setq js3-lazy-commas t
-      js3-lazy-operators t
-      js3-lazy-dots t
-      js3-expr-indent-offset 2
-      js3-paren-indent-offset 2
-      js3-square-indent-offset 2
-      js3-curly-indent-offset 2
-      js3-auto-indent-p t
-      js3-enter-indents-newline t
-      js3-indent-on-enter-key t
-      js3-indent-dots t
-      )
-#+END_SRC
-
-**** web-mode
+web-mode
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'web-mode "web-mode" nil t)
-(defun modes/web-mode ()
-    "web-mode hook"
-    (setq web-mode-indent-style 4               ; indentation
-          web-mode-code-indent-offset 4
-          web-mode-css-indent-offset 2
-          web-mode-markup-indent-offset 4
-          web-mode-block-padding 4
-          web-mode-style-padding 4
-          web-mode-script-padding 4
-          web-mode-enable-css-colorization t
-          )
-    (add-to-list (make-local-variable 'company-backends)
-                             '(company-css company-nxml))
-    )
-(add-hook 'web-mode-hook 'modes/web-mode)
-(add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+(use-package web-mode
+  :mode ("\\.html\\'" . web-mode)
+  :init
+  (setq web-mode-indent-style 4                 ; indentation
+        web-mode-code-indent-offset 4
+        web-mode-css-indent-offset 2
+        web-mode-markup-indent-offset 4
+        web-mode-block-padding 4
+        web-mode-style-padding 4
+        web-mode-script-padding 4
+        web-mode-enable-css-colorization t
+        )
+  :config
+  (add-to-list (make-local-variable 'company-backends)
+               '(company-css company-nxml))
+  )
 #+END_SRC
 
 *** Scripting
@@ -992,9 +973,9 @@ Diff between directories
 #+BEGIN_SRC emacs-lisp
 (dolist
     (mode-hook
-     '(python-mode-hook
-       sh-mode-hook
-       ))
+     '(js2-mode-hook
+       python-mode-hook
+       sh-mode-hook))
   (add-hook mode-hook
     #'(lambda ()
         (defun create-virtualenv (virtualenv-folder setup-cmd requirement-file &optional install-packages)
@@ -1029,12 +1010,11 @@ Language Server Protocol
 #+BEGIN_SRC emacs-lisp
 (dolist
     (mode-hook
-     '(
-       enh-ruby-mode-hook
+     '(enh-ruby-mode-hook
        java-mode-hook
+       js2-mode-hook
        python-mode-hook
-       sh-mode-hook
-       ))
+       sh-mode-hook))
   (add-hook mode-hook
     #'(lambda ()
         (use-package lsp-mode
@@ -1128,6 +1108,38 @@ Language Server Protocol
     (lsp-java-enable)                           ; make this one the last step
     ))
 (add-hook 'java-mode-hook #'modes/java-mode t)
+#+END_SRC
+
+**** JavaScript
+
+#+BEGIN_SRC emacs-lisp
+(use-package js2-mode
+  :interpreter ("node" . js2-mode)
+  :mode (("\\.js\\'" . js2-mode))
+  :config
+  (add-hook 'js2-mode-hook
+    #'(lambda ()
+        (setq js2-basic-offset 2
+              js2-bounce-indent-p t
+              js2-strict-missing-semi-warning nil
+              js2-concat-multiline-strings nil
+              js2-include-node-externs t
+              js2-skip-preprocessor-directives t
+              js2-strict-inconsistent-return-warning nil)
+
+        (create-virtualenv "venv-lsp-js/"       ; js lsp venv folder
+                           "bin/venv-nodejs-npm.sh"
+                           "bin/nodejs-pip-requirements.txt"
+                           "typescript,typescript-language-server")
+
+        (require 'lsp-javascript-typescript)    ; lsp
+        (setq lsp-javascript-typescript-server
+                "typescript-language-server"
+              lsp-javascript-typescript-server-args
+                '("--stdio" "--tsserver-path=tsserver"))
+        (lsp-javascript-typescript-enable)
+        ) t)
+  )
 #+END_SRC
 
 **** Python

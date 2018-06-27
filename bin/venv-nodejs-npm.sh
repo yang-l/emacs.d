@@ -4,7 +4,7 @@ set -e
 
 # $1 - virtualenv path
 # $2 - pip packages
-# $3 - npm packages
+# $3 - npm packages - comma separated package string
 
 if [ -d "${1}" ]; then
     if [ ! -L "${1}" ]; then
@@ -16,7 +16,10 @@ if [ -d "${1}" ]; then
         ## Node.js configure
         nodeenv -p
         # /Applications/Python\ 3.6/Install\ Certificates.command
-        npm i -g "${3}"
+        for APP in $(echo ${3} | sed 's/,/ /g')
+        do
+            npm i -g "${APP}"
+        done
 
         deactivate
     fi
