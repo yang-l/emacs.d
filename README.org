@@ -858,12 +858,6 @@ web-mode
 
 *** Infrastructure
 
-**** dockerfile
-
-#+BEGIN_SRC emacs-lisp
-(add-to-list 'auto-mode-alist '("Dockerfile\\'" . dockerfile-mode))
-#+END_SRC
-
 **** yaml
 
 #+BEGIN_SRC emacs-lisp
@@ -966,14 +960,15 @@ Diff between directories
   (add-hook hook #'modes/c-mode))
 #+END_SRC
 
-*** Programming
+*** Programming / Scripting
 
 **** Shared Functions
 
 #+BEGIN_SRC emacs-lisp
 (dolist
     (mode-hook
-     '(js2-mode-hook
+     '(dockerfile-mode-hook
+       js2-mode-hook
        python-mode-hook
        sh-mode-hook))
   (add-hook mode-hook
@@ -1011,6 +1006,7 @@ Language Server Protocol
 (dolist
     (mode-hook
      '(enh-ruby-mode-hook
+       dockerfile-mode-hook
        java-mode-hook
        js2-mode-hook
        python-mode-hook
@@ -1074,6 +1070,25 @@ Language Server Protocol
                            "bash-language-server")
         (require 'lsp-bash)
         (lsp-bash-enable)
+        ) t)
+  )
+#+END_SRC
+
+**** Dockerfile
+
+#+BEGIN_SRC emacs-lisp
+(use-package dockerfile-mode
+  :defer t
+  :config
+  (add-hook 'dockerfile-mode-hook
+    #'(lambda ()
+        (create-virtualenv "venv-lsp-dockerfile/"   ; lsp venv folder
+                           "bin/venv-nodejs-npm.sh"
+                           "bin/nodejs-pip-requirements.txt"
+                           "dockerfile-language-server-nodejs")
+
+        (require 'lsp-dockerfile)               ; LSP
+        (lsp-dockerfile-enable)
         ) t)
   )
 #+END_SRC
