@@ -1852,11 +1852,13 @@ Undo Emacs window changes
         projectile-completion-system 'ivy               ; via ivy backend
         projectile-enable-caching t                     ; enable caching unconditionally
         projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
+        projectile-known-projects-file (expand-file-name
+          "projectile-bookmarks.eld" backup-directory)
         projectile-remember-window-configs t
         projectile-switch-project-action
-            'counsel-projectile-find-file-or-buffer
+          'counsel-projectile-find-file-or-buffer
         projectile-cache-file (expand-file-name         ; Projectile cache file
-            "projectile.cache" backup-directory)
+          "projectile.cache" backup-directory)
         projectile-sort-order 'modification-time
         projectile-globally-ignored-directories
           (append '(".meghanada" ".metadata") projectile-globally-ignored-directories)
