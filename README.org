@@ -607,13 +607,15 @@ Call =ediff= or =ediff3= in Emace for file comparisons
     (setq tramp-default-method "ssh"            ; faster than the default scp
           tramp-use-ssh-controlmaster-options nil
           tramp-auto-save-directory backup-directory
+          tramp-persistency-file-name           ; tramp histroy file location
+            (expand-file-name "tramp" backup-directory)
           )
     (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
     (tramp-set-completion-function
      "ssh"
      '((tramp-parse-sconfig "~/.ssh/config")
        ))
-    (add-to-list 'backup-directory-alist        ; local backup directory
+    (add-to-list 'backup-directory-alist        ; local backup directory for remote files
                  (cons tramp-file-name-regexp (expand-file-name backup-directory)))
     ))
 #+END_SRC
