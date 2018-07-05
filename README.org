@@ -72,6 +72,7 @@ Define packages and install them in case of missing
     pyvenv py-autopep8                          ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
+    go-mode lsp-go                              ; Go
     zenburn-theme color-theme-solarized diminish; UI
     undo-tree window-numbering helm ivy         ; Editing
     mwim multiple-cursors expand-region ztree
@@ -1009,6 +1010,7 @@ Language Server Protocol
     (mode-hook
      '(enh-ruby-mode-hook
        dockerfile-mode-hook
+       go-mode-hook
        java-mode-hook
        js2-mode-hook
        python-mode-hook
@@ -1091,6 +1093,36 @@ Language Server Protocol
 
         (require 'lsp-dockerfile)               ; LSP
         (lsp-dockerfile-enable)
+        ) t)
+  )
+#+END_SRC
+
+**** Go
+
+#+BEGIN_SRC emacs-lisp
+(use-package go-mode
+  :defer t
+  :config
+  (add-hook 'go-mode-hook
+    #'(lambda ()
+        (defvar go-langserver-directory (concat backup-directory "venv-lsp-go"))
+        (if (not (file-exists-p go-langserver-directory))
+            (progn
+              (make-directory go-langserver-directory t)    ; create go-langserver directory
+              (when (executable-find "go")
+                (shell-command                              ; install go-language lsp
+                 (concat
+                  "GOPATH=" (expand-file-name go-langserver-directory) " go get -u github.com/sourcegraph/go-langserver"
+                  ))
+                )
+              ))
+
+        ; set go-langserver PATH
+        (setq exec-path (append (list (concat (expand-file-name go-langserver-directory) "/bin/")) exec-path))
+        (setenv "PATH" (concat (expand-file-name go-langserver-directory) "/bin/:" (getenv "PATH")))
+
+        (require 'lsp-go)                       ; Go LSP
+        (lsp-go-enable)
         ) t)
   )
 #+END_SRC
