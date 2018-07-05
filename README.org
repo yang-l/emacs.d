@@ -1036,6 +1036,25 @@ Language Server Protocol
           (add-hook 'lsp-after-open-hook        ; flycheck
                     #'(lambda () (lsp-ui-flycheck-enable 1)))
           (yas-minor-mode)                      ; yasnippet
+
+          ;; redefine the function in lsp-ui-doc
+          ;; may need to sync the content with the latest version of lsp-ui-doc.el
+          (defun lsp-ui-doc--setup-markdown (mode)
+            "Setup the ‘markdown-mode’ in the frame.
+MODE is the mode used in the parent frame."
+            (make-local-variable 'markdown-code-lang-modes)
+            (dolist (mark (alist-get mode lsp-ui-doc-custom-markup-modes))
+              (add-to-list 'markdown-code-lang-modes (cons mark mode)))
+            (setq-local markdown-fontify-code-blocks-natively nil)
+            (setq-local markdown-fontify-code-block-default-mode mode)
+            (setq-local markdown-hide-markup t)
+
+            ; lsp-ui-doc is using (markdown-view-mode)
+            ; ignore rendering code block for background and text style in order to prevent hard to read rendered texts
+            (set-face-attribute 'markdown-code-face nil
+                                :inherit 'default
+                                :background nil)
+            )
           )
 
         (use-package lsp-imenu
