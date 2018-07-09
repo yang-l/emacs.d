@@ -1577,14 +1577,15 @@ moving word/line/region around
 *** multiple-cursors                            :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'mc/edit-lines "mc-edit-lines" nil t)
-(global-set-key (kbd "C-c m l") #'mc/edit-lines)
-(global-set-key (kbd "C-c m b") #'mc/edit-beginnings-of-lines)
-(global-set-key (kbd "C-c m e") #'mc/edit-ends-of-lines)
-(global-set-key (kbd "C-c m >") #'mc/mark-next-like-this)
-(global-set-key (kbd "C-c m <") #'mc/mark-previous-like-this)
-(global-set-key (kbd "C-c m a") #'mc/mark-all-like-this)
-(global-set-key (kbd "C-c m r") #'set-rectangular-region-anchor)
+(use-package multiple-cursors
+  :bind (("C-c m l" . mc/edit-lines)
+         ("C-c m b" . mc/edit-beginnings-of-lines)
+         ("C-c m e" . mc/edit-ends-of-lines)
+         ("C-c m >" . mc/mark-next-like-this)
+         ("C-c m <" . mc/mark-previous-like-this)
+         ("C-c m a" . mc/mark-all-like-this)
+         ("C-c m r" . set-rectangular-region-anchor))
+  )
 #+END_SRC
 
 *** mwim                                        :EDIT:
