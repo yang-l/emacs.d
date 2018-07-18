@@ -1,4 +1,6 @@
+autoflake
+jupyter
 pyls-mypy
 pyls-isort
-python-language-server[all]
-jupyter
+# perfer 'yapf' over 'autopep8' for pyls code formatting
+python-language-server[mccabe,pycodestyle,pydocstyle,pyflakes,rope,yapf]

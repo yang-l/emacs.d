@@ -69,7 +69,7 @@ Define packages and install them in case of missing
     js2-mode lsp-javascript-typescript          ; JavaScript
     web-mode                                    ; Web
     lsp-java                                    ; Java
-    pyvenv py-autopep8                          ; Python
+    pyvenv                                      ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
     go-mode lsp-go                              ; Go
@@ -1242,10 +1242,6 @@ MODE is the mode used in the parent frame."
                        "jupyter")
           )
 
-        (autoload 'py-autopep8-enable-on-save   ; pep8 format on save
-          "py-autopep8" nil t)
-        (add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
-
         (when (eq 1 (point-max))                ; new file template
           (insert
            "#!/usr/bin/env python3\n"
@@ -1257,27 +1253,43 @@ MODE is the mode used in the parent frame."
            "    main()\n"
            ))
 
-        (defun add-py-debug ()                  ; insert/remove debug breakpoint
-          "add debug code and move line down"
+        ;; from https://github.com/syl20bnr/spacemacs/blob/master/layers/%2Blang/python/funcs.el
+        (defun python-remove-unused-imports ()
+          "Use Autoflake to remove unused function
+autoflake --remove-all-unused-imports -i unused_imports.py"
           (interactive)
-          (move-beginning-of-line 1)
-          (insert "import pdb; pdb.set_trace();\n"))
+          (if (executable-find "autoflake")
+              (progn
+                (shell-command (format "autoflake --remove-all-unused-imports -i %s"
+                                       (shell-quote-argument (buffer-file-name))))
+                (revert-buffer t t t))
+            (message "Error: Cannot find autoflake executable.")))
+        (local-set-key (kbd "A-M-f") #'(lambda ()
+                                         (interactive)
+                                         (lsp-format-buffer)                ; built-in lsp-mode formatting
+                                         (save-buffer)                      ; work on file only, and need to save the file first
+                                         (python-remove-unused-imports))    ; remove unused imports via external cmd
+                       )
 
-        (defun remove-py-debug ()
-          "remove py debug code, if found"
+        ;; from https://github.com/syl20bnr/spacemacs/blob/master/layers/%2Blang/python/funcs.el
+        (defun python-toggle-breakpoint ()      ; toggle python breakpoint
+          "Add a break point, highlight it."
           (interactive)
-          (let ((x (line-number-at-pos))
-                (cur (point)))
-            (search-forward-regexp "^[ ]*import pdb; pdb.set_trace();")
-            (if (= x (line-number-at-pos))
-                (let ()
-                  (move-beginning-of-line 1)
-                  (kill-line 1)
-                  (move-beginning-of-line 1))
-              (goto-char cur))))
-
-        (local-set-key (kbd "<f9>") 'add-py-debug)  ; insert breakpoint
-        (local-set-key (kbd "C-c <f9>") 'remove-py-debug) ; remove breakpoint
+          (let ((trace (cond ((executable-find "wdb") "import wdb; wdb.set_trace()")
+                             ((executable-find "ipdb") "import ipdb; ipdb.set_trace()")
+                             ((executable-find "pudb") "import pudb; pudb.set_trace()")
+                             ((executable-find "ipdb3") "import ipdb; ipdb.set_trace()")
+                             ((executable-find "pudb3") "import pudb; pudb.set_trace()")
+                             (t "import pdb; pdb.set_trace()")))
+                (line (thing-at-point 'line)))
+            (if (and line (string-match trace line))
+                (kill-whole-line)
+              (progn
+                (back-to-indentation)
+                (insert trace)
+                (insert "\n")
+                (python-indent-line)))))
+        (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
         ) t)
   )
 #+END_SRC
