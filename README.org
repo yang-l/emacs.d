@@ -84,7 +84,7 @@ Define packages and install them in case of missing
     ansible-doc yaml-mode jinja2-mode ansible
     restclient es-mode
     puppet-mode
-    which-key symon elfeed bm                   ; Misc
+    which-key symon elfeed bm benchmark-init    ; Misc
     exec-path-from-shell                        ; System
     multi-term                                  ; Terminal
     ))
@@ -95,6 +95,18 @@ Define packages and install them in case of missing
         (package-refresh-contents)
         (setq refreshed t))
       (package-install p))))
+#+END_SRC
+
+*** Emacs Startup Benchmark & Profiling
+
+Start benchmark-init as soon as it initialised
+
+#+BEGIN_SRC emacs-lisp
+(use-package benchmark-init
+  :disabled                                     ; by default
+  :config
+  ;; To disable collection of benchmark data after init is done.
+  (add-hook 'after-init-hook 'benchmark-init/deactivate))
 #+END_SRC
 
 *** UTF-8 on everything
