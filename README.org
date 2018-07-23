@@ -1323,7 +1323,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   (setq enh-ruby-add-encoding-comment-on-save nil
         rspec-compilation-buffer-name "*rspec-compilation*"
         rspec-use-opts-file-when-available nil
-        rspec-use-rake-flag nil
+        rspec-use-rake-when-possible nil
         ruby-insert-encoding-magic-comment nil)
 
   (add-hook 'enh-ruby-mode-hook                         ; LSP
