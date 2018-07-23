@@ -78,6 +78,7 @@ Define packages and install them in case of missing
     mwim multiple-cursors expand-region ztree
     drag-stuff scratch dumb-jump treemacs
     evil evil-leader evil-nerd-commenter
+    evil-surround
     indent-guide avy vimish-fold super-save
     org-page
     dockerfile-mode terraform-mode              ; Infrastructure
@@ -1515,12 +1516,48 @@ moving word/line/region around
 
 *** evil
 
+vi layer for Emacs
+
 #+BEGIN_SRC emacs-lisp
-(global-evil-leader-mode)                       ; evil-leader / active before evil-mode
-(evil-mode 1)
-(setq evil-default-state 'emacs)                ; default to emacs
-(evilnc-default-hotkeys)                        ; code commenting
-                                                ; enable recommended key bindings under both evil and non-evil (Emacs) mode
+(use-package evil-leader
+  :defer t
+  :config
+  (global-evil-leader-mode)
+  (evil-leader/set-leader ",")
+  )
+
+(use-package evil-nerd-commenter
+  :defer t
+  :config
+  (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
+  (evil-leader/set-key
+    "ncl" 'evilnc-comment-or-uncomment-lines
+    "nct" 'evilnc-quick-comment-or-uncomment-to-the-line
+    "ncy" 'evilnc-copy-and-comment-lines
+    "ncp" 'evilnc-comment-or-uncomment-paragraphs
+    "ncr" 'comment-or-uncomment-region
+    "nci" 'evilnc-toggle-invert-comment-line-by-line
+    "nco" 'evilnc-comment-operator
+    "ncc" 'evilnc-copy-and-comment-operator)
+  )
+
+(use-package evil-surround
+  :defer t
+  :config (global-evil-surround-mode)
+  )
+
+(use-package evil
+  :init
+  (setq evil-search-module 'evil-search
+        evil-split-window-below t
+        evil-vsplit-window-right t)
+  :config
+  (evil-mode)
+  (setq evil-default-state 'emacs)              ; default to emacs
+
+  (require 'evil-leader)
+  (require 'evil-nerd-commenter)
+  )
 #+END_SRC
 
 *** elfeed                                      :RSS_FEED:
@@ -1776,11 +1813,11 @@ auto-save buffers
 vim-like text folding
 
 #+BEGIN_SRC emacs-lisp
-(vimish-fold-global-mode t)
-(with-eval-after-load 'vimish-fold
-  (global-set-key (kbd "C-c v f") #'vimish-fold)
-  (global-set-key (kbd "C-c v d") #'vimish-fold-delete)
-  (global-set-key (kbd "C-c v t") #'vimish-fold-toggle)
+(use-package vimish-fold
+  :bind (("C-c v f" . vimish-fold)
+         ("C-c v d" . vimish-fold-delete)
+         ("C-c v t" . vimish-fold-toggle)
+         ("C-c v a" . vimish-fold-avy))
   )
 #+END_SRC
 
