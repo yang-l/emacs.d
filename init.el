@@ -14,6 +14,10 @@
   (require 'use-package))
 
 (setq load-prefer-newer t)                      ; always load newest byte code
-(require 'org)                                  ; init via org-mode
-(org-babel-load-file
-    (concat user-emacs-directory "README.org") t)
+(if (file-exists-p (concat user-emacs-directory "README.elc"))
+    (load-file
+     (concat user-emacs-directory "README.elc")); load byte-compiled init elc file
+  (require 'org)                                ; initialise via org-mode
+  (org-babel-load-file
+   (concat user-emacs-directory "README.org") t)
+  )

@@ -1982,7 +1982,17 @@ Undo Emacs window changes
 (add-hook 'org-shiftdown-final-hook 'windmove-down)
 (add-hook 'org-shiftright-final-hook 'windmove-right)
 (with-eval-after-load 'org
-  (org-defkey org-mode-map [remap imenu] #'helm-org-in-buffer-headings))
+  (org-defkey org-mode-map [remap imenu] #'helm-org-in-buffer-headings)
+
+  ;; recompile README.org/.el/.elc
+  (add-hook 'after-save-hook
+            #'(lambda ()
+                "Load and compile README.org"
+                (when (equal (buffer-file-name) (expand-file-name (concat user-emacs-directory "README.org")))
+                  (org-babel-tangle nil (expand-file-name (concat user-emacs-directory "README.el")) "emacs-lisp")
+                  (byte-compile-file (expand-file-name (concat user-emacs-directory "README.el"))))
+                ))
+  )
 #+END_SRC
 
 **** org-page
