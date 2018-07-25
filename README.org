@@ -1872,10 +1872,27 @@ Undo Emacs window changes
 **** helm
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'helm
-    (helm-adaptive-mode 1)
-    (helm-autoresize-mode 1)                    ; buffer window resizing
-    (setq helm-buffers-fuzzy-matching t         ; fuzzy matching when non-nil
+(use-package helm
+  :bind (("C-x b"   . helm-mini)                        ; remap switch-to-buffer
+         ("C-x C-b" . helm-mini)                        ; remap list-buffer
+         ("C-x C-f" . helm-find-files)                  ; remap find-file
+         ([remap apropos-command] . helm-apropos)       ; C-h a
+         ([remap dabbrev-expand]  . helm-dabbrev)       ; M-/
+         ([remap occur]           . helm-occur)         ; M-s o
+         ([remap execute-extended-command] . helm-M-x)  ; M-x
+         ([remap yank-pop] . helm-show-kill-ring)       ; M-y
+         )
+  :defer t
+  :init
+  (add-hook 'after-init-hook
+            #'(lambda ()
+                (helm-mode 1)
+                (diminish 'helm-mode)
+                ))
+  :config
+  (helm-adaptive-mode 1)
+  (helm-autoresize-mode 1)                      ; buffer window resizing
+  (setq helm-buffers-fuzzy-matching t           ; fuzzy matching when non-nil
         helm-mode-fuzzy-match t
         helm-semantic-fuzzy-match t
         helm-apropos-fuzzy-match t
@@ -1893,33 +1910,12 @@ Undo Emacs window changes
         helm-quick-update t                     ; do not display invisible candidates
         helm-split-window-inside-p t            ; open helm buffer inside current window, not occupy whole other window
         )
-    (add-hook 'eshell-mode-hook                 ; eshell
-        #'(lambda ()
-            (define-key eshell-mode-map
-                [remap eshell-pcomplete]
-                'helm-esh-pcomplete)))
-    (define-key (current-global-map)            ; remap switch-to-buffer
-      (kbd "C-x b") 'helm-mini)
-    (define-key (current-global-map)            ; remap list-buffer
-      (kbd "C-x C-b") 'helm-mini)
-    (define-key (current-global-map)            ; remap find-file
-      (kbd "C-x C-f") 'helm-find-files)
-    (define-key (current-global-map)            ; C-h a
-      [remap apropos-command] 'helm-apropos)
-    (define-key (current-global-map)            ; M-/
-      [remap dabbrev-expand] 'helm-dabbrev)
-    (define-key (current-global-map)            ; M-s o
-      [remap occur] 'helm-occur)
-    (define-key (current-global-map)            ; M-x
-      [remap execute-extended-command] 'helm-M-x)
-    (define-key (current-global-map)            ; M-y
-      [remap yank-pop] 'helm-show-kill-ring)
-    )
-(add-hook 'after-init-hook
-          (lambda ()
-            (helm-mode 1)
-            (diminish 'helm-mode)
-            ))
+  (add-hook 'eshell-mode-hook                   ; eshell
+            #'(lambda ()
+                (define-key eshell-mode-map
+                  [remap eshell-pcomplete]
+                  'helm-esh-pcomplete)))
+  )
 #+END_SRC
 
 **** swiper
@@ -1937,7 +1933,12 @@ Undo Emacs window changes
 **** ivy
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'helm
+(use-package ivy
+  :defer t
+  :diminish ivy-mode
+  :init
+  (add-hook 'after-init-hook #'(lambda () (ivy-mode 1)))
+  :config
   (setq ivy-use-virtual-buffers t
         ivy-display-style nil
         ivy-minibuffer-faces nil
@@ -1945,13 +1946,6 @@ Undo Emacs window changes
         )
   (define-key ivy-minibuffer-map                ; use 'Enter' on a directory to navigate into the directory, not open it with dired
     (kbd "C-m") 'ivy-alt-done)
-  )
-
-(use-package ivy
-  :defer t
-  :diminish ivy-mode
-  :init
-  (add-hook 'after-init-hook #'(lambda () (ivy-mode 1)))
   )
 #+END_SRC
 
