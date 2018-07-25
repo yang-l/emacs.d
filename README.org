@@ -77,6 +77,7 @@ Define packages and install them in case of missing
     undo-tree window-numbering helm ivy         ; Editing
     mwim multiple-cursors expand-region ztree
     drag-stuff scratch dumb-jump treemacs
+    smartparens
     evil evil-leader evil-nerd-commenter
     evil-surround
     indent-guide avy vimish-fold super-save
@@ -736,8 +737,6 @@ Zenburn & Solarized themes
         compilation-scroll-output 'first-error  ; Automatically scroll to first error
       )
     (dumb-jump-mode)                            ; jump to definition
-    (electric-pair-mode 1)                      ; auto close bracket insertion
-    (setq electric-pair-skip-whitespace 'chomp)
     (goto-address-prog-mode)                    ; highlight URL
     (push '(">=" . ?≥) prettify-symbols-alist)  ; prettify symbols
     (push '("<=" . ?≤) prettify-symbols-alist)
@@ -1701,6 +1700,22 @@ move where I mean
 (global-set-key (kbd "C-x t C-t") #'treemacs-find-file)
 (global-set-key (kbd "C-x t M-t") #'treemacs-find-tag)
 (global-set-key (kbd "C-x t p") #'treemacs-projectile)
+#+END_SRC
+
+*** smartparens                                 :EDIT:
+
+#+BEGIN_SRC emacs-lisp
+(use-package smartparens
+  :diminish smartparens-mode
+  :init
+  (require 'smartparens-config)
+  :config
+  (dolist (hook '(prog-mode-hook
+                  org-mode-hook))
+    (add-hook hook
+              #'(lambda ()
+                  (smartparens-mode))))
+  )
 #+END_SRC
 
 *** symon                                       :MONITOR:
