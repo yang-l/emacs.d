@@ -54,7 +54,8 @@ Path to personal/credential info in =~/.emacs.d/private.el=
         package-enable-at-startup nil)
   (when (boundp 'package-pinned-packages)
     (setq package-pinned-packages
-          '((lsp-mode     . "MELPA")))
+          '((lsp-mode     . "MELPA")
+            (evil         . "MELPA")))
     )
   (package-initialize))
 #+END_SRC
@@ -78,8 +79,7 @@ Define packages and install them in case of missing
     mwim multiple-cursors expand-region ztree
     drag-stuff scratch dumb-jump treemacs
     smartparens
-    evil evil-leader evil-nerd-commenter
-    evil-surround
+    evil evil-nerd-commenter evil-surround
     indent-guide avy vimish-fold super-save
     org-page
     dockerfile-mode terraform-mode              ; Infrastructure
@@ -87,6 +87,7 @@ Define packages and install them in case of missing
     restclient es-mode
     puppet-mode
     which-key symon elfeed bm benchmark-init    ; Misc
+    general
     exec-path-from-shell                        ; System
     multi-term                                  ; Terminal
     ))
@@ -1518,18 +1519,12 @@ moving word/line/region around
 vi layer for Emacs
 
 #+BEGIN_SRC emacs-lisp
-(use-package evil-leader
-  :defer t
-  :config
-  (global-evil-leader-mode)
-  (evil-leader/set-leader ",")
-  )
-
 (use-package evil-nerd-commenter
+  :after general
   :defer t
   :config
   (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
-  (evil-leader/set-key
+  (general-cust-def
     "ncl" 'evilnc-comment-or-uncomment-lines
     "nct" 'evilnc-quick-comment-or-uncomment-to-the-line
     "ncy" 'evilnc-copy-and-comment-lines
@@ -1590,6 +1585,22 @@ vi layer for Emacs
 #+BEGIN_SRC emacs-lisp
 (autoload 'er/expand-region "expand-region" nil t)
 (global-set-key (kbd "C-=") #'er/expand-region)
+#+END_SRC
+
+*** general
+
+Recompile elc (twice) if errored due to =Symbol’s function definition is void: general-cust-def=
+
+#+BEGIN_SRC emacs-lisp
+(use-package general
+  :config
+  (general-auto-unbind-keys)
+  (general-create-definer general-cust-def
+    :states '(normal visual motion insert emacs)
+    :keymaps 'override
+    :prefix ","
+    :non-normal-prefix "C-x ,")
+  )
 #+END_SRC
 
 *** flycheck
