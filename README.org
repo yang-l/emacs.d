@@ -1529,7 +1529,11 @@ vi layer for Emacs
   :defer t
   :config
   (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
-  (general-cust-def
+  (general-define-key
+    :states '(normal visual motion insert emacs)
+    :keymaps 'override
+    :prefix ","
+    :non-normal-prefix "C-x ,"
     "ncl" 'evilnc-comment-or-uncomment-lines
     "nct" 'evilnc-quick-comment-or-uncomment-to-the-line
     "ncy" 'evilnc-copy-and-comment-lines
@@ -1594,18 +1598,10 @@ vi layer for Emacs
 
 *** general
 
-Recompile elc (twice) if errored due to =Symbol’s function definition is void: general-cust-def=
+define keymap
 
 #+BEGIN_SRC emacs-lisp
-(use-package general
-  :config
-  (general-auto-unbind-keys)
-  (general-create-definer general-cust-def
-    :states '(normal visual motion insert emacs)
-    :keymaps 'override
-    :prefix ","
-    :non-normal-prefix "C-x ,")
-  )
+(use-package general)
 #+END_SRC
 
 *** flycheck
