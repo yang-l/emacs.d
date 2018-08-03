@@ -1876,7 +1876,10 @@ Undo Emacs window changes
 *** yasnippet
 
 #+BEGIN_SRC emacs-lisp
-(use-package yasnippet :defer t)
+(add-hook 'prog-mode-hook
+          #'(lambda ()
+              (use-package yasnippet)
+              ))
 #+END_SRC
 
 *** Helm                                        :EDIT:
