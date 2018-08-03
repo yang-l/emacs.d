@@ -1142,6 +1142,11 @@ MODE is the mode used in the parent frame."
   :config
   (add-hook 'go-mode-hook
     #'(lambda ()
+        (add-hook 'before-save-hook 'gofmt-before-save)     ; Gofmt format
+        (setq indent-tabs-mode 1
+              tab-width 4)                                  ; show tab as 4 space width
+
+        ;; Go LSP
         (defvar go-langserver-directory (concat backup-directory "venv-lsp-go"))
         (if (not (file-exists-p go-langserver-directory))
             (progn
@@ -1158,7 +1163,7 @@ MODE is the mode used in the parent frame."
         (setq exec-path (append (list (concat (expand-file-name go-langserver-directory) "/bin/")) exec-path))
         (setenv "PATH" (concat (expand-file-name go-langserver-directory) "/bin/:" (getenv "PATH")))
 
-        (require 'lsp-go)                       ; Go LSP
+        (require 'lsp-go)
         (lsp-go-enable)
         ) t)
   )
