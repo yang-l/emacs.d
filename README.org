@@ -1525,7 +1525,6 @@ vi layer for Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package evil-nerd-commenter
-  :after general
   :defer t
   :config
   (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
@@ -1550,6 +1549,7 @@ vi layer for Emacs
   )
 
 (use-package evil
+  :bind ("C-z" . evil-exit-emacs-state)
   :init
   (setq evil-search-module 'evil-search
         evil-split-window-below t
@@ -1558,8 +1558,8 @@ vi layer for Emacs
   (evil-mode)
   (setq evil-default-state 'emacs)              ; default to emacs
 
-  (require 'evil-leader)
   (require 'evil-nerd-commenter)
+  (require 'evil-surround)
   )
 #+END_SRC
 
