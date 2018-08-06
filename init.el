@@ -3,6 +3,8 @@
   (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
 
+(setq gc-cons-threshold (* 1024 1024 64))       ; set GC at beginning to speed up Emacs loading
+
 (require 'package)                              ; use-package bootstrap
 (setq package-enable-at-startup nil)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))

@@ -75,7 +75,7 @@ Define packages and install them in case of missing
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
     go-mode lsp-go                              ; Go
     zenburn-theme color-theme-solarized diminish; UI
-    undo-tree window-numbering helm ivy         ; Editing
+    undo-tree helm ivy                          ; Editing
     mwim multiple-cursors expand-region ztree
     drag-stuff scratch dumb-jump treemacs
     smartparens
@@ -86,7 +86,7 @@ Define packages and install them in case of missing
     ansible-doc yaml-mode jinja2-mode ansible
     restclient es-mode
     puppet-mode
-    which-key symon elfeed bm benchmark-init    ; Misc
+    which-key symon elfeed bm                   ; Misc
     general
     exec-path-from-shell                        ; System
     multi-term                                  ; Terminal
@@ -98,18 +98,6 @@ Define packages and install them in case of missing
         (package-refresh-contents)
         (setq refreshed t))
       (package-install p))))
-#+END_SRC
-
-*** Emacs Startup Benchmark & Profiling
-
-Start benchmark-init as soon as it initialised
-
-#+BEGIN_SRC emacs-lisp
-(use-package benchmark-init
-  :disabled                                     ; by default
-  :config
-  ;; To disable collection of benchmark data after init is done.
-  (add-hook 'after-init-hook 'benchmark-init/deactivate))
 #+END_SRC
 
 *** UTF-8 on everything
@@ -135,7 +123,6 @@ Start benchmark-init as soon as it initialised
     enable-recursive-minibuffers t              ; enable minibuffer recursive
     fill-column 80                              ; column space
     frame-title-format "emacs@%b"               ; show on title
-    gc-cons-threshold (* 1024 1024 64)          ; GC
     indent-tabs-mode nil                        ; space instead of tab
     inhibit-splash-screen t                     ; no splash
     inhibit-startup-message t
@@ -183,7 +170,9 @@ Start benchmark-init as soon as it initialised
 Run Emacs as a daemon, and edit via =emacsclient=. =emacsclient -t= for terminal / =emacsclient -c= for graphic
 
 #+BEGIN_SRC emacs-lisp
-(when (require 'server nil t)
+(use-package server
+  :defer 1
+  :config
   (unless (server-running-p)
     (server-start)))
 #+END_SRC
@@ -241,23 +230,20 @@ OSX-only key bindings
         (auto-compression-mode 1)               ; open compressed files on the fly
         (delete-selection-mode t)               ; delete marked text on typing
         (global-hl-line-mode +1)                ; highlight current line
-        (global-subword-mode 1)                 ; navigate into CamelCaseWords
-        (diminish 'subword-mode)
         (mouse-avoidance-mode 'animate)         ; mouse avoidance
-        (scroll-bar-mode -1)                    ; no scroll bars
+        (if (fboundp 'scroll-bar-mode)
+            (scroll-bar-mode -1))               ; no scroll bars
         (show-paren-mode 1)                     ; show matched parentheses
         (setq show-paren-style 'mixed)
-        (tool-bar-mode -1)                      ; hide toolbar
+        (if (fboundp 'tool-bar-mode)
+            (tool-bar-mode -1))                 ; hide toolbar
         (tooltip-mode -1)
         (visual-line-mode)                      ; soft line warp
         (diminish 'visual-line-mode)
-        (which-function-mode)                   ; which-function-mode
-        (setq which-func-unknown "⊥")
         (when (fboundp                          ; windmove
             'windmove-default-keybindings)
             (windmove-default-keybindings))
         (size-indication-mode +1)               ; show total buffer size
-        (symon-mode)                            ; system monitor
     )))
 (dolist
     (hook
@@ -277,9 +263,25 @@ OSX-only key bindings
       'tty-setup-hook
       ))
   (add-hook hook
-      (lambda () (progn
-          (menu-bar-mode -1)                    ; hide menu bar
-          ))))
+            (lambda ()
+              (progn
+                (if (fboundp 'menu-bar-mode)
+                    (menu-bar-mode -1))         ; hide menu bar
+                ))))
+; https://blog.d46.us/advanced-emacs-startup/
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "Emacs ready in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done)))
+; https://www.reddit.com/r/emacs/comments/3kqt6e/2_easy_little_known_steps_to_speed_up_emacs_start/
+(run-with-idle-timer 2 nil
+ #'(lambda ()
+     (setq gc-cons-threshold (* 1024 1024 2))   ; reset GC to a reasonable value
+     (message "gc-cons-threshold restored to %S"
+              gc-cons-threshold)))
 #+END_SRC
 
 *** Folder
@@ -335,16 +337,19 @@ OSX-only key bindings
 
 **** Minibuffer backup
 
-save the minibuffer histories
+savehist - save the minibuffer histories
 
 #+BEGIN_SRC emacs-lisp
-(setq-default savehist-additional-variables
-              '(kill-ring search-ring regexp-search-ring extended-command-history)
-              savehist-file (concat backup-directory "savehist")
-              savehist-autosave-interval 60
-              history-length 1000
-              )
-(savehist-mode +1)
+(use-package savehist
+  :defer 0.5
+  :config
+  (setq-default savehist-additional-variables '(kill-ring search-ring regexp-search-ring extended-command-history)
+                savehist-file (concat backup-directory "savehist")
+                savehist-autosave-interval 60
+                history-length 10000
+                )
+  (savehist-mode 1)
+  )
 #+END_SRC
 
 **** Folders for other modes
@@ -639,14 +644,28 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 **** uniquify
 
 #+BEGIN_SRC emacs-lisp
-(require 'uniquify)
-(setq uniquify-buffer-name-style 'post-forward)
+(use-package uniquify
+  :defer 2
+  :config
+  (setq uniquify-buffer-name-style 'post-forward)
+  )
 #+END_SRC
 
 **** view-mode
 
 #+BEGIN_SRC emacs-lisp
 (define-key ctl-x-map "\C-q" 'view-mode)        ; replace toggle-read-only with view-mode
+#+END_SRC
+
+**** which-func
+
+#+BEGIN_SRC emacs-lisp
+(use-package which-func
+  :defer 2
+  :config
+  (which-function-mode)
+  (setq which-func-unknown "⊥")
+  )
 #+END_SRC
 
 **** ZapUpToChar
@@ -856,10 +875,12 @@ web-mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package eldoc
+  :defer t
   :diminish eldoc-mode
+  :hook ((eval-expression-minibuffer-setup prog-mode) . eldoc-mode) ; show eldoc for 'Eval:'
+  :init
+  (global-eldoc-mode -1)                                            ; ignore eldoc globally
   :config
-  (add-hook 'eval-expression-minibuffer-setup-hook  ; show eldoc for 'Eval:'
-            #'eldoc-mode)
   (setq eldoc-idle-delay 0.2)
   )
 
@@ -1395,6 +1416,25 @@ Char-based jumping
 Visible bookmarks
 
 #+BEGIN_SRC emacs-lisp
+(use-package bm
+  :defer 2
+  :init
+  (setq bm-restore-repository-on-load t)        ; restore on load
+  :config
+  (setq bm-cycle-all-buffers t)                 ; cycle through bookmarks in all open buffers
+  (setq-default bm-buffer-persistence t)        ; save/load/restore bookmarks
+  (setq bm-repository-file
+        (concat backup-directory "bm-repository"))
+  (add-hook' after-init-hook #'bm-repository-load)
+  (add-hook 'find-file-hooks #'bm-buffer-restore)
+  (add-hook 'kill-buffer-hook #'bm-buffer-save)
+  (add-hook 'kill-emacs-hook #'(lambda nil
+                                 (bm-buffer-save-all)
+                                 (bm-repository-save)))
+  (add-hook 'after-save-hook #'bm-buffer-save)
+  (add-hook 'find-file-hooks   #'bm-buffer-restore)
+  (add-hook 'after-revert-hook #'bm-buffer-restore)
+  )
 #+END_SRC
 
 *** company mode
@@ -1448,13 +1488,14 @@ shorten mode-line
 moving word/line/region around
 
 #+BEGIN_SRC emacs-lisp
-(drag-stuff-global-mode 1)
-(eval-after-load 'drag-stuff
-  '(progn
-     (setq drag-stuff-modifier 'alt)            ; alt-up/down/left/rigth key bindings
-     (drag-stuff-define-keys)
-     (diminish 'drag-stuff-mode)
-     ))
+(use-package drag-stuff
+  :defer 2
+  :diminish drag-stuff-mode
+  :hook ((prog-mode org-mode text-mode) . drag-stuff-mode)
+  :config
+  (setq drag-stuff-modifier 'alt)               ; alt-up/down/left/rigth key bindings
+  (drag-stuff-define-keys)
+  )
 #+END_SRC
 
 *** erc                                         :IRC:
@@ -1596,12 +1637,14 @@ vi layer for Emacs
 (global-set-key (kbd "C-=") #'er/expand-region)
 #+END_SRC
 
-*** general
+*** general                                     :KEYBIND:
 
 define keymap
 
 #+BEGIN_SRC emacs-lisp
-(use-package general)
+(use-package general
+  :defer 1
+  )
 #+END_SRC
 
 *** flycheck
@@ -1727,75 +1770,54 @@ move where I mean
 
 *** symon                                       :MONITOR:
 
+Tiny system monitor
+
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'symon
-  (progn
-    (eval-and-compile
-      (setq symon-sparkline-type 'bounded)
-      (defmacro define-symon-monitor-local (name &rest plist)
-        (let* ((cell (make-vector 2 nil))
-               (sparkline (plist-get plist :sparkline))
-               (interval (or (plist-get plist :interval) 'symon-refresh-rate))
-               (display (plist-get plist :display))
-               (update-fn
-                `(lambda ()
-                   (ring-insert (aref ,cell 0) ,(plist-get plist :fetch))))
-               (setup-fn
-                `(lambda ()
-                   (aset ,cell 0 (symon--make-history-ring))
-                   (aset ,cell 1 (run-with-timer 0 ,interval ,update-fn))
-                   ,(plist-get plist :setup)
-                   (funcall ,update-fn)))
-               (cleanup-fn
-                `(lambda ()
-                   (cancel-timer (aref ,cell 1))
-                   ,(plist-get plist :cleanup)))
-               (display-fn
-                (if display `(lambda () (concat ,display " "))
-                  `(lambda ()
-                     (let* ((lst (ring-elements (aref ,cell 0)))
-                            (val (car lst)))
-                       (concat ,(plist-get plist :index)
-                               (if (not (numberp val)) "N/A "
-                                 (concat (format "%d%s " val ,(or (plist-get plist :unit) ""))
-                                         (let ((annot ,(plist-get plist :annotation)))
-                                           (when annot (concat "(" annot ") ")))))
-                               ,(when sparkline
-                                  `(when (window-system)
-                                     (let ((sparkline (symon--make-sparkline
-                                                       lst
-                                                       ,(plist-get plist :lower-bound)
-                                                       ,(plist-get plist :upper-bound))))
-                                       (when symon-sparkline-use-xpm
-                                         (setq sparkline
-                                               (symon--convert-sparkline-to-xpm sparkline)))
-                                       (concat (propertize " " 'display sparkline) " "))))))))))
-          `(put ',name 'symon-monitor (vector ,setup-fn ,cleanup-fn ,display-fn))))
-      (define-symon-monitor-local symon-current-date-time-monitor
-        :interval 5
-        :display (propertize
-                  (format-time-string "%k:%M %b %d %a     ")
-                  'face 'font-lock-type-face))
-      (setq symon-monitors
-            (cond ((memq system-type '(gnu/linux cygwin))
-                   '(symon-current-date-time-monitor
-                     symon-linux-memory-monitor
-                     symon-linux-cpu-monitor
-                     symon-linux-network-rx-monitor
-                     symon-linux-network-tx-monitor))
-                  ((memq system-type '(darwin))
-                   '(symon-current-date-time-monitor
-                     symon-darwin-memory-monitor
-                     symon-darwin-cpu-monitor
-                     symon-darwin-network-rx-monitor
-                     symon-darwin-network-tx-monitor))
-                  ((memq system-type '(windows-nt))
-                   '(symon-current-date-time-monitor
-                     symon-windows-memory-monitor
-                     symon-windows-cpu-monitor
-                     symon-windows-network-rx-monitor
-                     symon-windows-network-tx-monitor))))
-      )))
+(use-package symon
+  :defer 3
+  :config
+  (setq symon-sparkline-type 'bounded)
+  (define-symon-monitor symon-current-date-time-monitor
+    :interval 5
+    :display (propertize
+              (format-time-string "%k:%M %:z %d %b %Y %a      ")
+              'face 'font-lock-type-face))
+  (setq symon-monitors
+        (cond ((memq system-type '(gnu/linux cygwin))
+               '(symon-current-date-time-monitor
+                 symon-linux-memory-monitor
+                 symon-linux-cpu-monitor
+                 symon-linux-network-rx-monitor
+                 symon-linux-network-tx-monitor
+                 symon-linux-battery-monitor))
+              ((memq system-type '(darwin))
+               '(symon-current-date-time-monitor
+                 symon-darwin-memory-monitor
+                 symon-darwin-cpu-monitor
+                 symon-darwin-network-rx-monitor
+                 symon-darwin-network-tx-monitor
+                 symon-darwin-battery-monitor))
+              ((memq system-type '(windows-nt))
+               '(symon-current-date-time-monitor
+                 symon-windows-memory-monitor
+                 symon-windows-cpu-monitor
+                 symon-windows-network-rx-monitor
+                 symon-windows-network-tx-monitor
+                 symon-windows-battery-monitor))))
+  (symon-mode)
+  )
+#+END_SRC
+
+*** subword                                     :EDIT:
+
+navigate into CamelCaseWords
+
+#+BEGIN_SRC emacs-lisp
+(use-package subword
+  :defer 2
+  :diminish subword-mode
+  :hook ((prog-mode org-mode) . subword-mode)
+  )
 #+END_SRC
 
 *** super-save                                  :EDIT:
@@ -1803,31 +1825,29 @@ move where I mean
 auto-save buffers
 
 #+BEGIN_SRC emacs-lisp
-(super-save-mode +1)
-(with-eval-after-load 'super-save
-  (progn
-    (setq super-save-auto-save-when-idle t)
-    (diminish 'super-save-mode)
-    ))
+(use-package super-save
+  :defer 1
+  :diminish super-save-mode
+  :config
+  (super-save-mode +1)
+  (setq super-save-auto-save-when-idle t)
+  )
 #+END_SRC
 
 *** undo-tree                                   :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'undo-tree-mode "undo-tree" nil t)
-(eval-after-load "undo-tree" '(progn
+(use-package undo-tree
+  :defer 1
+  :diminish undo-tree-mode
+  :config
   (global-undo-tree-mode)
-  (defun modes/undo-tree-mode ()
-    "undo-tree-mode hook"
-    (setq undo-tree-visualizer-diff t
-          undo-tree-visualizer-timestamps t
-          undo-tree-history-directory-alist
-            `((".*" . ,backup-directory))
-          undo-tree-auto-save-history t
-          ))
-  (add-hook 'undo-tree-mode-hook 'modes/undo-tree-mode)
-  (diminish 'undo-tree-mode)
-  ))
+  (setq undo-tree-visualizer-diff t
+        undo-tree-visualizer-timestamps t
+        undo-tree-history-directory-alist
+        `((".*" . ,backup-directory))
+        undo-tree-auto-save-history t)
+  )
 #+END_SRC
 
 *** vimish-fold                                 :EDIT:
@@ -1848,29 +1868,25 @@ vim-like text folding
 Display the key bindings in a popup.
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'after-init-hook #'which-key-mode)
-(eval-after-load "which-key"
-    '(progn
-        (setq which-key-idle-delay 2.0)         ; popup delay
-        (which-key-setup-side-window-right-bottom)
-        (diminish 'which-key-mode)
-    ))
+(use-package which-key
+  :defer 2
+  :diminish which-key-mode
+  :config
+  (which-key-mode)
+  (setq which-key-idle-delay 2.0)               ; popup delay
+  (which-key-setup-side-window-right-bottom)
+  )
 #+END_SRC
 
-*** window-numbering
-
-buffers switching
-
-#+BEGIN_SRC emacs-lisp
-(window-numbering-mode 1)
-#+END_SRC
-
-*** winner-mode
+*** winner-mode                                 :EMACS:
 
 Undo Emacs window changes
 
 #+BEGIN_SRC emacs-lisp
-(winner-mode +1)
+(use-package winner
+  :defer 2
+  :config
+  (winner-mode))
 #+END_SRC
 
 *** yasnippet
@@ -2341,8 +2357,8 @@ Two stpes to write a blog
   (interactive "p")
   (indent-text (- count)))
 
-(global-set-key (kbd "C-c > >") (lambda () (interactive) (inc-line-indent 4)))
-(global-set-key (kbd "C-c < <") (lambda () (interactive) (dec-line-indent 4)))
+(global-set-key (kbd "C-c > >") #'(lambda () (interactive) (inc-line-indent 4)))
+(global-set-key (kbd "C-c < <") #'(lambda () (interactive) (dec-line-indent 4)))
 #+END_SRC
 
 *** File Format Convertion
