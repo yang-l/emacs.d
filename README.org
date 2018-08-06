@@ -256,6 +256,14 @@ OSX-only key bindings
             (toggle-frame-fullscreen)           ; fullscreen
             (toggle-frame-maximized))           ; maximised
           t)
+(when (daemonp)                                 ; when calling "emacsclient -c -n" under daemon
+  (add-hook 'after-make-frame-functions
+            (lambda (frame)
+              (when (display-graphic-p frame)
+                (toggle-frame-fullscreen)       ; fullscreen
+                (toggle-frame-maximized)        ; maximised
+                ))
+            ))
 (dolist
     (hook
      (list
