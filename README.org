@@ -1932,9 +1932,10 @@ Undo Emacs window changes
 
 #+BEGIN_SRC emacs-lisp
 (use-package swiper-helm
-  :after helm
   :bind (([remap isearch-forward]  . swiper-helm)   ; C-s
          ([remap isearch-backward] . swiper-helm))  ; C-r
+  :config
+  (require 'helm)
   )
 #+END_SRC
 
