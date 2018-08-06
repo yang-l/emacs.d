@@ -1945,18 +1945,18 @@ Undo Emacs window changes
 
 #+BEGIN_SRC emacs-lisp
 (use-package ivy
-  :defer t
+  :bind (:map ivy-minibuffer-map
+         ("C-m" . ivy-alt-done))                ; use 'Enter' on a directory to navigate into the directory, not open it with dired
   :diminish ivy-mode
-  :init
-  (add-hook 'after-init-hook #'(lambda () (ivy-mode 1)))
   :config
+  (ivy-mode 1)
   (setq ivy-use-virtual-buffers t
+        ivy-count-format "%d/%d "               ; show currnet and total number
         ivy-display-style nil
         ivy-minibuffer-faces nil
-        ivy-re-builders-alist '((t . ivy--regex-fuzzy))
-        )
-  (define-key ivy-minibuffer-map                ; use 'Enter' on a directory to navigate into the directory, not open it with dired
-    (kbd "C-m") 'ivy-alt-done)
+        ivy-re-builders-alist                   ; ivy fuzzy matching everywhere other than in swiper
+        '((swiper . regexp-quote)
+          (t      . ivy--regex-fuzzy)))
   )
 #+END_SRC
 
@@ -1964,11 +1964,12 @@ Undo Emacs window changes
 
 #+BEGIN_SRC emacs-lisp
 (use-package counsel
-  :after ivy
   :bind (("C-c i g" . counsel-git)
          ("C-c i j" . counsel-git-grep)
          ("C-c i a" . counsel-ag)
-         )
+         ([remap describe-bindings] . counsel-descbinds)
+         ([remap describe-function] . counsel-describe-function)
+         ([remap describe-variable] . counsel-describe-variable))
   )
 #+END_SRC
 
