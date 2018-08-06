@@ -1897,14 +1897,9 @@ Undo Emacs window changes
          ([remap execute-extended-command] . helm-M-x)  ; M-x
          ([remap yank-pop] . helm-show-kill-ring)       ; M-y
          )
-  :defer t
-  :init
-  (add-hook 'after-init-hook
-            #'(lambda ()
-                (helm-mode 1)
-                (diminish 'helm-mode)
-                ))
+  :diminish helm-mode
   :config
+  (helm-mode 1)
   (helm-adaptive-mode 1)
   (helm-autoresize-mode 1)                      ; buffer window resizing
   (setq helm-buffers-fuzzy-matching t           ; fuzzy matching when non-nil
