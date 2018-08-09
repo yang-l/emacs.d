@@ -389,14 +389,15 @@ savehist - save the minibuffer histories
 **** Abbrev Mode
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'abbrev
-  (progn
-    (setq abbrev-file-name
-          (concat backup-directory "abbrev-defs"))
-    (if (file-exists-p abbrev-file-name)
-        (quietly-read-abbrev-file))
-    (diminish 'abbrev-mode)
-    ))
+(use-package abbrev
+  :defer 2
+  :diminish abbrev-mode
+  :config
+  (setq abbrev-file-name
+        (concat backup-directory "abbrev-defs"))
+  (if (file-exists-p abbrev-file-name)
+      (quietly-read-abbrev-file))
+  )
 #+END_SRC
 
 **** Case
@@ -411,16 +412,16 @@ savehist - save the minibuffer histories
 **** Comint
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'comint
-  (progn
-    (add-hook 'comint-output-filter-functions
-              'comint-watch-for-password-prompt); hide password in shell
-    (add-hook 'comint-mode-hook
-              (function
-               (lambda ()
-                 (setq comint-scroll-show-maximum-output nil)
-                 )))
-    ))
+(use-package comint
+  :defer 2
+  :config
+  (add-hook 'comint-output-filter-functions
+            'comint-watch-for-password-prompt)  ; hide password in shell
+  (add-hook 'comint-mode-hook
+            (function
+             (lambda () (setq comint-scroll-show-maximum-output nil))
+             ))
+  )
 #+END_SRC
 
 **** Dired                                      :FILE:
@@ -543,7 +544,11 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 **** Imenu
 
 #+BEGIN_SRC emacs-lisp
-(set-default 'imenu-auto-rescan t)              ; automatic buffer rescan
+(use-package imenu
+  :defer 2
+  :config
+  (set-default 'imenu-auto-rescan t)            ; automatic buffer rescan
+  )
 #+END_SRC
 
 **** Narrowing
@@ -677,15 +682,24 @@ Call =ediff= or =ediff3= in Emace for file comparisons
   )
 #+END_SRC
 
+**** winner-mode                                :EMACS:
+
+Undo Emacs window changes
+
+#+BEGIN_SRC emacs-lisp
+(use-package winner
+  :defer 2
+  :config
+  (winner-mode))
+#+END_SRC
+
 **** ZapUpToChar
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'zap-up-to-char "misc"
-    "Kill up to, but not including ARGth occurrence of CHAR.
-
-  \(fn arg char)"
-    'interactive)
-(global-set-key "\M-z" 'zap-up-to-char)
+(use-package misc
+  :bind ("M-z" . zap-up-to-char)
+  :defer 2
+  )
 #+END_SRC
 
 *** Style
@@ -1416,8 +1430,10 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
 Char-based jumping
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'avy-goto-char-2 "avy")
-(global-set-key (kbd "C-\"") 'avy-goto-char-2)
+(use-package avy
+  :bind (("C-\"" . avy-goto-char-2))
+  :defer 2
+  )
 #+END_SRC
 
 *** bm                                          :BOOKMARK:
@@ -1489,7 +1505,7 @@ Visible bookmarks
 shorten mode-line
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'diminish "diminish" nil t)
+(use-package diminish)
 #+END_SRC
 
 *** drag-stuff                                  :EDIT:
@@ -1885,17 +1901,6 @@ Display the key bindings in a popup.
   (setq which-key-idle-delay 2.0)               ; popup delay
   (which-key-setup-side-window-right-bottom)
   )
-#+END_SRC
-
-*** winner-mode                                 :EMACS:
-
-Undo Emacs window changes
-
-#+BEGIN_SRC emacs-lisp
-(use-package winner
-  :defer 2
-  :config
-  (winner-mode))
 #+END_SRC
 
 *** yasnippet
