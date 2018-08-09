@@ -308,9 +308,10 @@ OSX-only key bindings
 
 #+BEGIN_SRC emacs-lisp
 (defvar backup-directory                        ; backup and autosave directory
-    (if (eq system-type 'windows-nt)            ; Windows
-        (concat "C:/tmp/emacs/" (user-login-name) "/")
-    (concat "~/emacs/" (user-login-name) "/")   ; Linux
+  (if (eq system-type 'windows-nt)              ; Windows
+      (concat "C:/tmp/emacs/" (user-login-name) "/")
+    (expand-file-name
+     (concat "~/emacs/" (user-login-name) "/"))   ; Linux
     ))
 (if (not (file-exists-p backup-directory))
     (make-directory backup-directory t))
@@ -1427,12 +1428,12 @@ Visible bookmarks
 (use-package bm
   :defer 2
   :init
+  (setq bm-repository-file
+        (concat backup-directory "bm-repository"))
   (setq bm-restore-repository-on-load t)        ; restore on load
   :config
   (setq bm-cycle-all-buffers t)                 ; cycle through bookmarks in all open buffers
   (setq-default bm-buffer-persistence t)        ; save/load/restore bookmarks
-  (setq bm-repository-file
-        (concat backup-directory "bm-repository"))
   (add-hook' after-init-hook #'bm-repository-load)
   (add-hook 'find-file-hooks #'bm-buffer-restore)
   (add-hook 'kill-buffer-hook #'bm-buffer-save)
