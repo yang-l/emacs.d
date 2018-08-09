@@ -290,6 +290,19 @@ OSX-only key bindings
      (setq gc-cons-threshold (* 1024 1024 2))   ; reset GC to a reasonable value
      (message "gc-cons-threshold restored to %S"
               gc-cons-threshold)))
+; https://emacs.stackexchange.com/questions/32150/how-to-add-a-timestamp-to-each-entry-in-emacs-messages-buffer
+(advice-add 'message :before                    ; add timestamp in *Messages* buffer
+            #'(lambda (FORMAT-STRING &rest args)
+                "Advice to run before `message' that prepends a timestamp to each message."
+                (if message-log-max
+                    (let ((deactivate-mark nil)
+                          (inhibit-read-only t))
+                      (with-current-buffer "*Messages*"
+                        (goto-char (point-max))
+                        (if (not (bolp))
+                            (newline))
+                        (insert (format-time-string "[%F %T.%3N %:z] ")))))
+                ))
 #+END_SRC
 
 *** Folder
