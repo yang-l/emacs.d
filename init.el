@@ -3,7 +3,19 @@
   (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
 
+;; Optimise startup speed
 (setq gc-cons-threshold (* 1024 1024 64))       ; set GC at beginning to speed up Emacs loading
+
+; https://github.com/Kaali/vj-emacs-0x12
+(defvar file-name-handler-alist-old file-name-handler-alist)
+(setq file-name-handler-alist nil)              ; remove file handler during startup
+(add-hook 'after-init-hook
+          #'(lambda ()
+              (run-with-idle-timer
+               1 nil
+               #'(lambda () (setq file-name-handler-alist file-name-handler-alist-old)))
+              ) t)
+;; end of optimise startup speed
 
 (require 'package)                              ; use-package bootstrap
 (setq package-enable-at-startup nil)
