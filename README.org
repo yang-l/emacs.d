@@ -42,10 +42,10 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 #+BEGIN_SRC emacs-lisp
 (unless (version< emacs-version "25.1")
   (setq package-archives
-        '(("GNU ELPA"     . "http://elpa.gnu.org/packages/")
+        '(("GNU ELPA"     . "https://elpa.gnu.org/packages/")
           ("MELPA Stable" . "https://stable.melpa.org/packages/")
           ("MELPA"        . "https://melpa.org/packages/")
-          ("Org"          . "http://orgmode.org/elpa/"))
+          ("Org"          . "https://orgmode.org/elpa/"))
         package-archive-priorities
         '(("Org"          . 15)
           ("MELPA Stable" . 10)
