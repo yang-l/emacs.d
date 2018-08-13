@@ -173,7 +173,8 @@ Run Emacs as a daemon, and edit via =emacsclient=. =emacsclient -t= for terminal
 (use-package server
   :defer 1
   :config
-  (unless (server-running-p)
+  (unless (and (fboundp 'server-running-p)
+               (server-running-p))
     (server-start)))
 #+END_SRC
 
