@@ -78,7 +78,7 @@ Define packages and install them in case of missing
     undo-tree helm ivy                          ; Editing
     mwim multiple-cursors expand-region ztree
     drag-stuff scratch dumb-jump treemacs
-    smartparens
+    treemacs-projectile smartparens
     evil evil-nerd-commenter evil-surround
     indent-guide avy vimish-fold super-save
     org-page
@@ -441,73 +441,76 @@ savehist - save the minibuffer histories
 **** Dired                                      :FILE:
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'dired (progn
-  (defun modes/dired-mode ()
-    "dired mode hook"
-    (load "dired-x")
-    ;; http://emacswiki.org/emacs/DiredOmitMode
-    (setq-default dired-omit-files-p t)
-    (setq dired-omit-files
-          (concat dired-omit-files "\\|^\\..+$"))
+(use-package dired
+  :disabled
+  :defer t
+  :init
+  (add-hook 'dired-load-hook
+            #'(lambda ()
+                "dired mode hook"
+                (load "dired-x")
+                ;; http://emacswiki.org/emacs/DiredOmitMode
+                (setq-default dired-omit-files-p t)
+                (setq dired-omit-files
+                      (concat dired-omit-files "\\|^\\..+$"))
 
-    ;; http://ann77.emacser.com/Emacs/EmacsDiredExt.html
-    ;; 排序功能
-    (make-local-variable  'dired-sort-map)
-    (setq dired-sort-map (make-sparse-keymap))
-    (define-key dired-mode-map "s" dired-sort-map)
-    (define-key dired-sort-map "s"
-      '(lambda () "sort by Size"
-         (interactive) (dired-sort-other (concat dired-listing-switches "S"))))
-    (define-key dired-sort-map "x"
-      '(lambda () "sort by eXtension"
-         (interactive) (dired-sort-other (concat dired-listing-switches "X"))))
-    (define-key dired-sort-map "t"
-      '(lambda () "sort by Time"
-         (interactive) (dired-sort-other (concat dired-listing-switches "t"))))
-    (define-key dired-sort-map "n"
-      '(lambda () "sort by Name"
-         (interactive) (dired-sort-other (concat dired-listing-switches ""))))
+                ;; http://ann77.emacser.com/Emacs/EmacsDiredExt.html
+                ;; 排序功能
+                (make-local-variable  'dired-sort-map)
+                (setq dired-sort-map (make-sparse-keymap))
+                (define-key dired-mode-map "s" dired-sort-map)
+                (define-key dired-sort-map "s"
+                  '(lambda () "sort by Size"
+                     (interactive) (dired-sort-other (concat dired-listing-switches "S"))))
+                (define-key dired-sort-map "x"
+                  '(lambda () "sort by eXtension"
+                     (interactive) (dired-sort-other (concat dired-listing-switches "X"))))
+                (define-key dired-sort-map "t"
+                  '(lambda () "sort by Time"
+                     (interactive) (dired-sort-other (concat dired-listing-switches "t"))))
+                (define-key dired-sort-map "n"
+                  '(lambda () "sort by Name"
+                     (interactive) (dired-sort-other (concat dired-listing-switches ""))))
 
-    ;; http://www.emacswiki.org/emacs/DiredSortDirectoriesFirst
-    (defun mydired-sort ()
-      "Sort dired listings with directories first."
-      (save-excursion
-        (let (buffer-read-only)
-          (forward-line 2) ;; beyond dir. header
-          (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max)))
-        (set-buffer-modified-p nil)))
-    (defadvice dired-readin
-        (after dired-after-updating-hook first () activate)
-      "Sort dired listings with directories first before adding marks."
-      (mydired-sort))
+                ;; http://www.emacswiki.org/emacs/DiredSortDirectoriesFirst
+                (defun mydired-sort ()
+                  "Sort dired listings with directories first."
+                  (save-excursion
+                    (let (buffer-read-only)
+                      (forward-line 2) ;; beyond dir. header
+                      (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max)))
+                    (set-buffer-modified-p nil)))
+                (defadvice dired-readin
+                    (after dired-after-updating-hook first () activate)
+                  "Sort dired listings with directories first before adding marks."
+                  (mydired-sort))
 
-    ;; single buffer
-    (put 'dired-find-alternate-file 'disabled nil)
-    ;; http://www.emacswiki.org/emacs/DiredReuseDirectoryBuffer
-    (define-key dired-mode-map (kbd "^")
-      (lambda () (interactive) (find-alternate-file "..")))
-    ;; http://ergoemacs.org/emacs/emacs_dired_tips.html
-    (define-key dired-mode-map (kbd "<return>")
-      'dired-find-alternate-file)
+                ;; single buffer
+                (put 'dired-find-alternate-file 'disabled nil)
+                ;; http://www.emacswiki.org/emacs/DiredReuseDirectoryBuffer
+                (define-key dired-mode-map (kbd "^")
+                  (lambda () (interactive) (find-alternate-file "..")))
+                ;; http://ergoemacs.org/emacs/emacs_dired_tips.html
+                (define-key dired-mode-map (kbd "<return>")
+                  'dired-find-alternate-file)
 
-    ;; copy split windows
-    ;; C-o / C-0 o to paste the original filename
-    ;: https://appsmth.appspot.com/smth/subject/Emacs/94609
-    (setq dired-dwim-target t)
+                ;; copy split windows
+                ;; C-o / C-0 o to paste the original filename
+                                        ;: https://appsmth.appspot.com/smth/subject/Emacs/94609
+                (setq dired-dwim-target t)
 
-    (setq dired-recursive-deletes 'top          ; recursive delection
-          dired-recursive-copies 'always)       ; recursive copy
+                (setq dired-recursive-deletes 'top          ; recursive delection
+                      dired-recursive-copies 'always)       ; recursive copy
 
-    (defadvice shell-command                    ; allow running multiple async commands simultaneously
-        (after shell-in-new-buffer
-               (command &optional output-buffer error-buffer))
-      (when (get-buffer "*Async Shell Command*")
-        (with-current-buffer "*Async Shell Command*"
-          (rename-uniquely))))
-    (ad-activate 'shell-command)
-    )
-  (add-hook 'dired-load-hook #'modes/dired-mode)
-  ))
+                (defadvice shell-command                    ; allow running multiple async commands simultaneously
+                    (after shell-in-new-buffer
+                           (command &optional output-buffer error-buffer))
+                  (when (get-buffer "*Async Shell Command*")
+                    (with-current-buffer "*Async Shell Command*"
+                      (rename-uniquely))))
+                (ad-activate 'shell-command)
+                ))
+  )
 #+END_SRC
 
 **** Ediff                                      :FILE:
@@ -515,44 +518,45 @@ savehist - save the minibuffer histories
 Call =ediff= or =ediff3= in Emace for file comparisons
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'ediff (progn
-  (defun modes/ediff-mode ()
-    "ediff-mode hook"
-    ;; http://emacswiki.org/emacs/EdiffMode
-    ;; save windows configurations
-    (add-hook 'ediff-before-setup-hook
-              (lambda ()
-                (setq ediff-saved-window-configuration (current-window-configuration))))
+(use-package ediff
+  :defer t
+  :init
+  (add-hook 'ediff-load-hook
+            #'(lambda ()
+                "ediff-mode hook"
+                ;; http://emacswiki.org/emacs/EdiffMode
+                ;; save windows configurations
+                (add-hook 'ediff-before-setup-hook
+                          (lambda ()
+                            (setq ediff-saved-window-configuration (current-window-configuration))))
 
-    (let ((restore-window-configuration
-           (lambda ()
-             (set-window-configuration ediff-saved-window-configuration))))
-      (add-hook 'ediff-quit-hook restore-window-configuration 'append)
-      (add-hook 'ediff-suspend-hook restore-window-configuration 'append))
+                (let ((restore-window-configuration
+                       (lambda ()
+                         (set-window-configuration ediff-saved-window-configuration))))
+                  (add-hook 'ediff-quit-hook restore-window-configuration 'append)
+                  (add-hook 'ediff-suspend-hook restore-window-configuration 'append))
 
-    ;; horizontal window split
-    (setq ediff-split-window-function 'split-window-horizontally)
-    (setq ediff-merge-split-window-function 'split-window-vertically)
-    (setq ediff-window-setup-function 'ediff-setup-windows-plain)
-    )
-  (add-hook 'ediff-load-hook #'modes/ediff-mode)
-  ))
+                ;; horizontal window split
+                (setq ediff-split-window-function 'split-window-horizontally)
+                (setq ediff-merge-split-window-function 'split-window-vertically)
+                (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+                ))
+  )
 #+END_SRC
 
 **** GnuTLS
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'gnutls
-  (progn
-    (setq-default
-     gnutls-verify-error t                      ; check tls/ssl
-     )
-    (cond
-     ((string-equal system-type "darwin")       ; Mac OS X
-      (progn
-        (add-to-list 'gnutls-trustfiles "/private/etc/ssl/cert.pem")
-        )))
-    ))
+(use-package gnutls
+  :defer t
+  :config
+  (setq-default gnutls-verify-error t)          ; check tls/ssl
+  (cond
+   ((string-equal system-type "darwin")         ; Mac OS X
+    (progn
+      (add-to-list 'gnutls-trustfiles "/private/etc/ssl/cert.pem")
+      )))
+  )
 #+END_SRC
 
 **** Imenu
@@ -579,71 +583,72 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 ***** term
 
 #+BEGIN_SRC emacs-lisp
-(defun modes/term-mode ()
-    "term mode hook"
-    (progn
-      (yas-minor-mode -1)
-      (setq bidi-paragraph-direction 'left-to-right
-            term-scroll-to-bottom-on-output t
-            )
-      (setq-local scroll-margin 0)
-      (eval-after-load 'evil-vars '(evil-set-initial-state 'term-mode 'emacs))
-      ))
-(add-hook 'term-mode-hook #'modes/term-mode)
+(use-package term
+  :defer t
+  :init
+  (add-hook 'term-mode-hook
+            #'(lambda ()
+                "term mode hook"
+                (yas-minor-mode -1)
+                (setq bidi-paragraph-direction 'left-to-right
+                      term-scroll-to-bottom-on-output t)
+                (setq-local scroll-margin 0)
+                (eval-after-load 'evil-vars '(evil-set-initial-state 'term-mode 'emacs))
+                ))
+  )
 #+END_SRC
 
 ***** multi-term
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'multi-term "multi-term" nil t)
-(with-eval-after-load 'multi-term
-  (progn
-    (setq multi-term-program "/bin/bash"        ; bash
-          multi-term-program-switches "-il"     ; FIXME - this switch does not work with any space characters in it. Set to interactive login shell, which will read "~/.bash_profile" and source the bashrc file
-          multi-term-buffer-name "mterm"        ; buffer name
-          term-buffer-maximum-size 0            ; keep all buffer
-          scroll-margin 0                       ; always make point visible at bottom of the window when auto-scrolling
-          multi-term-dedicated-close-back-to-open-buffer-p t
-          )
-    (add-to-list 'term-bind-key-alist '("M-[" . multi-term-prev))
-    (add-to-list 'term-bind-key-alist '("M-]" . multi-term-next))
-    (add-to-list 'term-bind-key-alist '("C-c t h" .
-                                        (lambda ()
-                                          "New terminal to the right"
-                                          (interactive)
-                                          (split-window-horizontally)
-                                          (other-window 1)
-                                          (multi-term)
-                                          (term-send-raw-string ". ~/.bash_profile\nclear\n")
-                                          )))
-    (add-to-list 'term-bind-key-alist '("C-c t v" .
-                                        (lambda ()
-                                          "New terminal to the below"
-                                          (interactive)
-                                          (split-window-vertically)
-                                          (other-window 1)
-                                          (multi-term)
-                                          (term-send-raw-string ". ~/.bash_profile\nclear\n")
-                                          )))
-    (add-to-list 'term-bind-key-alist '("C-c t x" .
-                                        (lambda ()
-                                          "Send C-x in term mode."
-                                          (interactive)
-                                          (term-send-raw-string "\C-x")
-                                          )))
-    (add-to-list 'term-bind-key-alist '("C-c t e" .
-                                        (lambda ()
-                                          "Send escape in term mode."
-                                          (interactive)
-                                          (term-send-raw-string "\e")
-                                          )))
-    ))
-(global-set-key (kbd "C-c t m") '(lambda ()
-                                 "Start a new multi-term"
-                                 (interactive)
-                                 (multi-term)
-                                 (term-send-raw-string ". ~/.bash_profile\nclear\n")
-                                 ))
+(use-package multi-term
+  :bind ("C-c t m" . (lambda ()
+                       "Start a new multi-term"
+                       (interactive)
+                       (multi-term)
+                       (term-send-raw-string ". ~/.bash_profile\nclear\n")
+                       ))
+  :config
+  (setq multi-term-program "/bin/bash"          ; bash
+        multi-term-program-switches "-il"       ; FIXME - this switch does not work with any space characters in it. Set to interactive login shell, which will read "~/.bash_profile" and source the bashrc file
+        multi-term-buffer-name "mterm"          ; buffer name
+        term-buffer-maximum-size 0              ; keep all buffer
+        scroll-margin 0                         ; always make point visible at bottom of the window when auto-scrolling
+        multi-term-dedicated-close-back-to-open-buffer-p t
+        )
+  (add-to-list 'term-bind-key-alist '("M-[" . multi-term-prev))
+  (add-to-list 'term-bind-key-alist '("M-]" . multi-term-next))
+  (add-to-list 'term-bind-key-alist '("C-c t h" .
+                                      (lambda ()
+                                        "New terminal to the right"
+                                        (interactive)
+                                        (split-window-horizontally)
+                                        (other-window 1)
+                                        (multi-term)
+                                        (term-send-raw-string ". ~/.bash_profile\nclear\n")
+                                        )))
+  (add-to-list 'term-bind-key-alist '("C-c t v" .
+                                      (lambda ()
+                                        "New terminal to the below"
+                                        (interactive)
+                                        (split-window-vertically)
+                                        (other-window 1)
+                                        (multi-term)
+                                        (term-send-raw-string ". ~/.bash_profile\nclear\n")
+                                        )))
+  (add-to-list 'term-bind-key-alist '("C-c t x" .
+                                      (lambda ()
+                                        "Send C-x in term mode."
+                                        (interactive)
+                                        (term-send-raw-string "\C-x")
+                                        )))
+  (add-to-list 'term-bind-key-alist '("C-c t e" .
+                                      (lambda ()
+                                        "Send escape in term mode."
+                                        (interactive)
+                                        (term-send-raw-string "\e")
+                                        )))
+  )
 #+END_SRC
 
 **** Tramp
@@ -651,22 +656,23 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 =M-x tramp-cleanup-all-connections= - flush remote connections
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'tramp
-  (progn
-    (setq tramp-default-method "ssh"            ; faster than the default scp
-          tramp-use-ssh-controlmaster-options nil
-          tramp-auto-save-directory backup-directory
-          tramp-persistency-file-name           ; tramp histroy file location
-            (expand-file-name "tramp" backup-directory)
-          )
-    (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
-    (tramp-set-completion-function
-     "ssh"
-     '((tramp-parse-sconfig "~/.ssh/config")
-       ))
-    (add-to-list 'backup-directory-alist        ; local backup directory for remote files
-                 (cons tramp-file-name-regexp (expand-file-name backup-directory)))
-    ))
+(use-package tramp
+  :defer t
+  :config
+  (setq tramp-default-method "ssh"              ; faster than the default scp
+        tramp-use-ssh-controlmaster-options nil
+        tramp-auto-save-directory backup-directory
+        tramp-persistency-file-name             ; tramp histroy file location
+        (expand-file-name "tramp" backup-directory)
+        )
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  (tramp-set-completion-function
+   "ssh"
+   '((tramp-parse-sconfig "~/.ssh/config")
+     ))
+  (add-to-list 'backup-directory-alist          ; local backup directory for remote files
+               (cons tramp-file-name-regexp (expand-file-name backup-directory)))
+  )
 #+END_SRC
 
 **** uniquify
@@ -681,8 +687,13 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 
 **** view-mode
 
+Buffer readonly mode
+
 #+BEGIN_SRC emacs-lisp
-(define-key ctl-x-map "\C-q" 'view-mode)        ; replace toggle-read-only with view-mode
+(use-package view
+  :bind(:map ctl-x-map
+        ("C-q" . view-mode))                    ; replace toggle-read-only with view-mode
+  )
 #+END_SRC
 
 **** which-func
@@ -712,7 +723,7 @@ Undo Emacs window changes
 #+BEGIN_SRC emacs-lisp
 (use-package misc
   :bind ("M-z" . zap-up-to-char)
-  :defer 2
+  :commands zap-up-to-char
   )
 #+END_SRC
 
@@ -1446,7 +1457,7 @@ Char-based jumping
 #+BEGIN_SRC emacs-lisp
 (use-package avy
   :bind (("C-\"" . avy-goto-char-2))
-  :defer 2
+  :commands avy-goto-char-2
   )
 #+END_SRC
 
@@ -1646,34 +1657,36 @@ vi layer for Emacs
 *** elfeed                                      :RSS_FEED:
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'elfeed "elfeed" nil t)
-(global-set-key (kbd "C-x w") #'elfeed)
-(with-eval-after-load 'elfeed
-  (progn
-    (setq elfeed-db-directory
-          (let
-              ((elfeed_db
-                (concat backup-directory
-                        "elfeed_db/")))         ; must end with /
-            (make-directory elfeed_db :parents)
-            elfeed_db)
-          my-elfeed-timer                       ; 1hr update timer
-          (run-at-time t (* 60 60) #'elfeed-update)
-          elfeed-feeds
-          '(("http://www.reddit.com/r/devops/.rss" devops reddit)
-            ("http://feeds.dzone.com/devops" devops dzone)
-            ("https://www.infoq.com/feed/devops/news" devops infoq)
-            ("http://www.reddit.com/r/emacs/.rss" emacs reddit)
-            )
+(use-package elfeed
+  :bind ("C-x w" . elfeed)
+  :init (setf url-queue-timeout 30)
+  :config
+  (setq elfeed-db-directory
+        (let
+            ((elfeed_db
+              (concat backup-directory
+                      "elfeed_db/")))           ; must end with /
+          (make-directory elfeed_db :parents)
+          elfeed_db)
+        my-elfeed-timer                         ; 1hr update timer
+        (run-at-time t (* 60 60) #'elfeed-update)
+        elfeed-feeds
+        '(("http://www.reddit.com/r/devops/.rss" devops reddit)
+          ("http://feeds.dzone.com/devops" devops dzone)
+          ("https://www.infoq.com/feed/devops/news" devops infoq)
+          ("http://www.reddit.com/r/emacs/.rss" emacs reddit)
           )
-    ))
+        )
+  )
 #+END_SRC
 
 *** expand-region                               :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'er/expand-region "expand-region" nil t)
-(global-set-key (kbd "C-=") #'er/expand-region)
+(use-package expand-region
+  :bind ("C-=" . er/expand-region)
+  :commands er/expand-region
+  )
 #+END_SRC
 
 *** general                                     :KEYBIND:
@@ -1689,43 +1702,33 @@ define keymap
 *** flycheck
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'flycheck "flycheck-mode" nil t)
-(eval-after-load 'flycheck
-  '(progn
-     (setq flycheck-check-syntax-automatically
-           '(save
-             idle-change
-             mode-enabled)
-           flycheck-idle-change-delay
-             (if flycheck-current-errors 0.5 30.0)
-           )
-     (flycheck-mode)
-     (flymake-mode -1)                          ; disable flymake
-     ))
-(dolist (mode-hook '(
-                     prog-mode-hook
-                     ))
-  (add-hook mode-hook #'flycheck-mode))
+(use-package flycheck
+  :diminish flycheck-mode
+  :hook (prog-mode . flycheck-mode)
+  :config
+  (setq flycheck-check-syntax-automatically
+        '(save
+          idle-change
+          mode-enabled)
+        flycheck-idle-change-delay
+        (if flycheck-current-errors 0.5 30.0)
+        )
+  (flymake-mode -1)                             ; disable flymake
+  )
 #+END_SRC
 
 *** indent-guide                                :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(dolist (hook '(prog-mode-hook
-                org-mode-hook
-                ))
-  (add-hook hook
-            (lambda ()
-              (indent-guide-mode 1)
-              )))
-(with-eval-after-load 'indent-guide
-  (progn
-    (set-face-foreground 'indent-guide-face "lightslategrey")
-    (setq indent-guide-char "¦"
-          indent-guide-delay 0.3
-          indent-guide-recursive t)
-    (diminish 'indent-guide-mode)
-    ))
+(use-package indent-guide
+  :diminish indent-guide-mode
+  :hook ((prog-mode org-mode) . indent-guide-mode)
+  :config
+  (set-face-foreground 'indent-guide-face "lightslategrey")
+  (setq indent-guide-char "¦"
+        indent-guide-delay 0.3
+        indent-guide-recursive t)
+  )
 #+END_SRC
 
 *** multiple-cursors                            :EDIT:
@@ -1747,16 +1750,25 @@ define keymap
 move where I mean
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'mwim-beginning-of-code-or-line "mwim" nil t)
-(autoload 'mwim-end-of-code-or-line "mwim" nil t)
-(global-set-key (kbd "C-a") #'mwim-beginning-of-code-or-line)
-(global-set-key (kbd "C-e") #'mwim-end-of-code-or-line)
+(use-package misc
+  :bind (("C-a" . mwim-beginning-of-code-or-line)
+         ("C-e" . mwim-end-of-code-or-line))
+  :commands (mwim-beginning-of-code-or-line mwim-end-of-code-or-line)
+  )
 #+END_SRC
 
 *** Treemacs                                    :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'treemacs
+(use-package treemacs
+  :bind (:map global-map
+         ("M-0" . treemacs-select-window)
+         ("C-x t 1" . treemacs-delete-other-windows)
+         ("C-x t t" . treemacs)
+         ("C-x t B" . treemacs-bookmark)
+         ("C-x t C-t" . treemacs-find-file)
+         ("C-x t M-t" . treemacs-find-tag))
+  :config
   (setq treemacs-collapse-dirs              (if (executable-find "python") 3 0)
         treemacs-file-event-delay           5000
         treemacs-follow-after-init          t
@@ -1787,13 +1799,10 @@ move where I mean
      (treemacs-git-mode 'simple)))
   )
 
-(global-set-key (kbd "M-0") #'treemacs-select-window)
-(global-set-key (kbd "C-x t 1") #'treemacs-delete-other-windows)
-(global-set-key (kbd "C-x t t") #'treemacs)
-(global-set-key (kbd "C-x t B") #'treemacs-bookmark)
-(global-set-key (kbd "C-x t C-t") #'treemacs-find-file)
-(global-set-key (kbd "C-x t M-t") #'treemacs-find-tag)
-(global-set-key (kbd "C-x t p") #'treemacs-projectile)
+(use-package treemacs-projectile
+  :bind (:map global-map
+         ("C-x t p" . treemacs-projectile))
+  )
 #+END_SRC
 
 *** smartparens                                 :EDIT:
@@ -1922,7 +1931,9 @@ Display the key bindings in a popup.
 #+BEGIN_SRC emacs-lisp
 (add-hook 'prog-mode-hook
           #'(lambda ()
-              (use-package yasnippet)
+              (use-package yasnippet
+                :diminish yas-minor-mode
+                )
               ))
 #+END_SRC
 
