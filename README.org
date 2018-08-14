@@ -73,7 +73,7 @@ Define packages and install them in case of missing
     pyvenv                                      ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
-    go-mode lsp-go                              ; Go
+    go-mode                                     ; Go
     zenburn-theme color-theme-solarized diminish; UI
     undo-tree helm ivy                          ; Editing
     mwim multiple-cursors expand-region ztree
