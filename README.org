@@ -997,7 +997,17 @@ web-mode
 Explore and test HTTP REST webservices
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'restclient-mode "restclient" nil t)
+(use-package restclient
+  :mode ("\\.\\(http\\|https\\|rest\\)$" . restclient-mode)
+  :config
+  (defun restclient-ignore-ssl ()
+    "Ignore SSL verification. Identical to 'curl -k'"
+    (interactive)
+    (custom-reevaluate-setting 'gnutls-verify-error)
+    (make-local-variable 'gnutls-verify-error)
+    (setq gnutls-verify-error nil)
+    )
+  )
 #+END_SRC
 
 **** Terraform
