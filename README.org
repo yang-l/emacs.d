@@ -602,6 +602,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 
 #+BEGIN_SRC emacs-lisp
 (use-package multi-term
+  :defer t
   :bind ("C-c t m" . (lambda ()
                        "Start a new multi-term"
                        (interactive)
@@ -951,45 +952,48 @@ web-mode
 **** yaml
 
 #+BEGIN_SRC emacs-lisp
-(defun modes/yaml-mode ()
-    "yaml-mode hook"
-    (progn
-      (run-hooks 'prog-mode-hook)
-      ))
-(add-hook 'yaml-mode-hook #'modes/yaml-mode)
-(add-to-list 'auto-mode-alist '("\\.ya?ml$" . yaml-mode))
-(add-to-list 'auto-mode-alist '("\\.ya?ml.erb\\'" . yaml-mode))
-(add-to-list 'auto-mode-alist '("\\.json\\'" . yaml-mode))
-(add-to-list 'auto-mode-alist '("\\.json.erb\\'" . yaml-mode))
+(use-package yaml-mode
+  :mode (("\\.ya?ml$"       . yaml-mode)
+         ("\\.ya?ml.erb\\'" . yaml-mode)
+         ("\\.json\\'"      . yaml-mode)
+         ("\\.json.erb\\'"  . yaml-mode))
+  )
 #+END_SRC
 
 **** js2
 
 #+BEGIN_SRC emacs-lisp
-(setq auto-mode-alist (cons '("\\.j2" . jinja2-mode) auto-mode-alist))
+(use-package jinja2-mode :mode ("\\.j2" . jinja2-mode))
 #+END_SRC
 
 **** ansiable
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'ansible-doc
-  (diminish 'ansible-doc-mode)
+(use-package ansible
+  :defer t
+  :diminish ansible
+  :hook (yaml-mode . ansible)
+  :config
+  (use-package ansible-doc
+    :diminish ansible-doc-mode
+    )
   )
-(with-eval-after-load 'ansible
-  (diminish 'ansible)
-  )
-(add-hook 'yaml-mode-hook #'ansible-doc-mode)
-(add-hook 'yaml-mode-hook '(lambda () (ansible 1)))
 #+END_SRC
 
 **** es-mode
 
 #+BEGIN_SRC emacs-lisp
+(use-package es-mode
+  :defer t
+  :config
+  (setq es-always-pretty-print t)
+  )
 #+END_SRC
 
 **** puppet-mode
 
 #+BEGIN_SRC emacs-lisp
+(use-package puppet-mode :mode ("\\.pp$" . puppet-mode))
 #+END_SRC
 
 **** restclient
@@ -1013,17 +1017,10 @@ Explore and test HTTP REST webservices
 **** Terraform
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'terraform-mode
-  (setq terraform-indent-level 2)
+(use-package terraform-mode
+  :defer t
+  :config (setq terraform-indent-level 2)
   )
-#+END_SRC
-
-**** ztree                                      :EDIT:
-
-Diff between directories
-
-#+BEGIN_SRC emacs-lisp
-(setq ztree-draw-unicode-lines t)
 #+END_SRC
 
 *** DB
@@ -1945,6 +1942,18 @@ Display the key bindings in a popup.
                 :diminish yas-minor-mode
                 )
               ))
+#+END_SRC
+
+**** ztree                                      :EDIT:
+
+Diff between directories
+
+#+BEGIN_SRC emacs-lisp
+(use-package ztree
+  :defer t
+  :config
+  (setq ztree-draw-unicode-lines t)
+  )
 #+END_SRC
 
 *** Helm                                        :EDIT:
