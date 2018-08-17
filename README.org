@@ -496,7 +496,7 @@ savehist - save the minibuffer histories
 
                 ;; copy split windows
                 ;; C-o / C-0 o to paste the original filename
-                                        ;: https://appsmth.appspot.com/smth/subject/Emacs/94609
+                ;; https://appsmth.appspot.com/smth/subject/Emacs/94609
                 (setq dired-dwim-target t)
 
                 (setq dired-recursive-deletes 'top          ; recursive delection
@@ -1124,7 +1124,8 @@ Language Server Protocol
           ((lsp-mode . lsp-ui-mode))
           :config
           (setq lsp-ui-doc-position 'bottom
-                lsp-ui-doc-include-signature t)
+                lsp-ui-doc-include-signature t
+                lsp-ui-sideline-ignore-duplicate t)
 
           (add-hook 'lsp-after-open-hook        ; flycheck
                     #'(lambda () (lsp-ui-flycheck-enable 1)))
