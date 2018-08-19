@@ -559,6 +559,18 @@ Call =ediff= or =ediff3= in Emace for file comparisons
   )
 #+END_SRC
 
+**** Hideshow                                   :CODEING:
+
+Code folding
+
+#+BEGIN_SRC emacs-lisp
+(use-package hideshow
+  :defer t
+  :diminish hs-minor-mode
+  :hook ((prog-mode) . hs-minor-mode)
+  )
+#+END_SRC
+
 **** Imenu
 
 #+BEGIN_SRC emacs-lisp
@@ -1399,7 +1411,7 @@ MODE is the mode used in the parent frame."
         (require 'lsp-python)                   ; lsp-python
         (lsp-python-enable)
 
-        (when (executable-find "jupyter")       ; use jupyter
+        (when (executable-find "jupyter")       ; use jupyter via C-c C-p
           (setq python-shell-interpreter "jupyter"
                 python-shell-interpreter-args "console --simple-prompt"
                 python-shell-prompt-detect-failure-warning nil)
@@ -2126,7 +2138,6 @@ Diff between directories
     (lambda ()
       (use-package projectile
         :defer t
-        :diminish projectile-mode
         :init
         (setq projectile-keymap-prefix (kbd "C-c i C-p"))   ; prefix
         :config
@@ -2146,6 +2157,12 @@ Diff between directories
             projectile-globally-ignored-files (append
                                                '(".DS_Store") projectile-globally-ignored-files)
             )
+        (setq-default
+         projectile-mode-line
+         '(:eval
+           (if (file-remote-p default-directory)
+	             " Pr"
+             (format " Proj[%s]" (projectile-project-name)))))
         (cond
          ((executable-find "ag")
           (setq projectile-generic-command
