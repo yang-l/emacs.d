@@ -234,11 +234,10 @@ OSX-only key bindings
         (mouse-avoidance-mode 'animate)         ; mouse avoidance
         (if (fboundp 'scroll-bar-mode)
             (scroll-bar-mode -1))               ; no scroll bars
-        (show-paren-mode 1)                     ; show matched parentheses
-        (setq show-paren-style 'mixed)
         (if (fboundp 'tool-bar-mode)
             (tool-bar-mode -1))                 ; hide toolbar
-        (tooltip-mode -1)
+        (if (fboundp 'tooltip-mode)
+            (tooltip-mode -1))
         (visual-line-mode)                      ; soft line warp
         (diminish 'visual-line-mode)
         (when (fboundp                          ; windmove
@@ -1900,9 +1899,11 @@ move where I mean
 #+BEGIN_SRC emacs-lisp
 (use-package smartparens
   :diminish smartparens-mode
-  :hook ((prog-mode org-mode) . smartparens-mode)
+  :hook (((prog-mode org-mode) . smartparens-mode)
+         ((prog-mode org-mode) . show-smartparens-mode))
   :config
   (use-package smartparens-config)
+  (setq sp-show-pair-from-inside t)             ; shown inside the matching paren delimiter
   )
 #+END_SRC
 
