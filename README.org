@@ -73,7 +73,7 @@ Define packages and install them in case of missing
     pyvenv                                      ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
-    go-mode                                     ; Go
+    go-mode godoctor                            ; Go
     zenburn-theme color-theme-solarized diminish; UI
     undo-tree helm ivy                          ; Editing
     mwim multiple-cursors expand-region ztree
@@ -1312,18 +1312,23 @@ MODE is the mode used in the parent frame."
               (when (executable-find "go")
                 (shell-command                              ; install go-language lsp
                  (concat
-                  "GOPATH=" (expand-file-name go-langserver-directory) " go get -u github.com/sourcegraph/go-langserver"
-                  ))
+                  "GOPATH=" (expand-file-name go-langserver-directory) " go get -u github.com/sourcegraph/go-langserver"))
+                (shell-command                              ; install godoctor
+                 (concat
+                  "GOPATH=" (expand-file-name go-langserver-directory) " go get -u github.com/godoctor/godoctor"))
                 )
               ))
 
         ; set go-langserver PATH
         (setq exec-path (append (list (concat (expand-file-name go-langserver-directory) "/bin/")) exec-path))
         (setenv "PATH" (concat (expand-file-name go-langserver-directory) "/bin/:" (getenv "PATH")))
+        (setenv "GOPATH" (expand-file-name go-langserver-directory))
 
         (require 'lsp-go)
         (lsp-go-enable)
         ) t)
+
+  (use-package godoctor)                                   ; godoctor - golang refactor
   )
 #+END_SRC
 
