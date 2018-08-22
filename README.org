@@ -149,11 +149,15 @@ Define packages and install them in case of missing
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
-(when (eq system-type 'darwin)                  ; only apply to under OSX graphic and console UI
-  (setq exec-path-from-shell-check-startup-files nil)
-  (exec-path-from-shell-initialize))
-(exec-path-from-shell-copy-env "SSH_AGENT_PID") ; inherent ssh-agent from system
-(exec-path-from-shell-copy-env "SSH_AUTH_SOCK")
+(use-package exec-path-from-shell
+  :defer 0.1
+  :config
+  (when (eq system-type 'darwin)                    ; only apply to under OSX graphic and console UI
+    (setq exec-path-from-shell-check-startup-files nil)
+    (exec-path-from-shell-initialize))
+  (exec-path-from-shell-copy-env "SSH_AGENT_PID")   ; inherent ssh-agent from system
+  (exec-path-from-shell-copy-env "SSH_AUTH_SOCK")
+  )
 #+END_SRC
 
 *** PATH
