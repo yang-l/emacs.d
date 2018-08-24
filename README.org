@@ -24,17 +24,20 @@ Path to non ELPA included lisp files
 
 Path to personal/credential info in =~/.emacs.d/private.el=
 #+BEGIN_SRC emacs-lisp
-(if (file-exists-p (concat user-emacs-directory "private.el"))
-    (load (expand-file-name "private.el" user-emacs-directory))
-(defvar default-directory                       ; default
+(defvar default-directory                       ; default folder
   (concat (getenv "HOME") "/"))
-(defvar my-win-default-directory                ; folder
-  default-directory)
-(defvar my-lin-default-directory
-  default-directory)
+(defvar my-win-default-directory default-directory)
+(defvar my-lin-default-directory default-directory)
 (defvar my-erc-nick "")                         ; ERC
 (defvar my-erc-user-full-name "")
-(defvar my-erc-email-userid ""))
+(defvar my-erc-email-userid "")
+(defvar my-op/repository-directory "")          ; org-page
+(defvar my-op/site-domain "")
+(defvar my-op/personal-github-link "")
+
+;; override
+(when (file-exists-p (concat user-emacs-directory "private.el"))
+    (load (expand-file-name "private.el" user-emacs-directory)))
 #+END_SRC
 
 *** ELPA
@@ -54,8 +57,9 @@ Path to personal/credential info in =~/.emacs.d/private.el=
         package-enable-at-startup nil)
   (when (boundp 'package-pinned-packages)
     (setq package-pinned-packages
-          '((lsp-mode     . "MELPA")
-            (evil         . "MELPA")))
+          '((evil         . "MELPA")
+            (lsp-mode     . "MELPA")
+            (org-page     . "MELPA")))
     )
   (package-initialize))
 #+END_SRC
@@ -2193,33 +2197,31 @@ Diff between directories
 **** org-mode
 
 #+BEGIN_SRC emacs-lisp
-(defun modes/org-mode ()
-    "org-mode hook"
-    (progn
-        (setq truncate-lines nil                ; line wrap
-              org-edit-src-content-indentation 0; no indentation in SRC block
-              org-export-with-smart-quotes t
-              org-log-done 'time
-              org-html-doctype "html5"
-              org-pretty-entities t             ; show symbols without math delimiters
-              org-src-preserve-indentation t
-              org-src-fontify-natively t        ; native fontification
-              org-src-tab-acts-natively t       ; mative tab in SRC block
-              org-use-speed-commands t          ; speed keys
-              )
-        (org-indent-mode t)                     ; list-oriented
-        (diminish 'org-indent-mode)
-        (setq org-startup-indented t
-              org-hide-leading-stars t
-              )
-        (global-set-key (kbd "C-c o b") 'org-switchb)
-    ))
-(add-hook 'org-mode-hook 'modes/org-mode)
-(add-hook 'org-shiftup-final-hook 'windmove-up) ; active windmove
-(add-hook 'org-shiftleft-final-hook 'windmove-left)
-(add-hook 'org-shiftdown-final-hook 'windmove-down)
-(add-hook 'org-shiftright-final-hook 'windmove-right)
-(with-eval-after-load 'org
+(use-package org
+  :bind ("C-c o b" . org-switchb)
+  :config
+  (setq truncate-lines nil                      ; line wrap
+        org-edit-src-content-indentation 0      ; no indentation in SRC block
+        org-export-with-smart-quotes t
+        org-log-done 'time
+        org-html-doctype "html5"
+        org-pretty-entities t                   ; show symbols without math delimiters
+        org-src-preserve-indentation t
+        org-src-fontify-natively t              ; native fontification
+        org-src-tab-acts-natively t             ; mative tab in SRC block
+        org-use-speed-commands t                ; speed keys
+        org-startup-indented t
+        org-hide-leading-stars t
+        )
+
+  (org-indent-mode t)                           ; list-oriented
+  (diminish 'org-indent-mode)
+
+  (add-hook 'org-shiftup-final-hook 'windmove-up)  ; active windmove
+  (add-hook 'org-shiftleft-final-hook 'windmove-left)
+  (add-hook 'org-shiftdown-final-hook 'windmove-down)
+  (add-hook 'org-shiftright-final-hook 'windmove-right)
+
   (org-defkey org-mode-map [remap imenu] #'helm-org-in-buffer-headings)
 
   ;; recompile README.org/.el/.elc
@@ -2241,18 +2243,24 @@ Two stpes to write a blog
 - op/new-post
 - op/do-publication
 
+To configure the org-page site variables, put the below settings into =~/.emacs.d/private.el=
+
+#+BEGIN_EXAMPLE
+(setq my-op/repository-directory "~/repos/public/yang-l.github.io"
+      my-op/site-domain "http://yang-l.github.io/"
+      my-op/personal-github-link "https://github.com/yang-l")
+#+END_EXAMPLE
+
 #+BEGIN_SRC emacs-lisp
-(autoload 'op/new-repository "org-page" nil t)
-(autoload 'op/new-post "org-page" nil t)
-(autoload 'op/do-publication "org-page" nil t)
-(with-eval-after-load 'org-page
-  (progn
-    (setq op/repository-directory "~/repos/public/yang-l.github.io"
-          op/site-domain "http://yang-l.github.io/"
-          op/personal-github-link "https://github.com/yang-l"
-          op/site-main-title "@Home"
-          op/site-sub-title ""
-          )))
+(use-package org-page
+  :commands (op/new-repository op/new-post op/do-publication)
+  :config
+  (setq op/repository-directory my-op/repository-directory
+        op/site-domain my-op/site-domain
+        op/personal-github-link my-op/personal-github-link
+        op/site-main-title "@Home"
+        op/site-sub-title "")
+  )
 #+END_SRC
 
 ** Research
