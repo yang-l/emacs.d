@@ -83,7 +83,7 @@ Define packages and install them in case of missing
     indent-guide avy vimish-fold super-save
     org-page
     dockerfile-mode terraform-mode              ; Infrastructure
-    ansible-doc yaml-mode jinja2-mode ansible
+    yaml-mode jinja2-mode ansible
     restclient es-mode
     puppet-mode
     which-key symon elfeed bm                   ; Misc
@@ -148,6 +148,8 @@ Define packages and install them in case of missing
 (defalias 'dabbrev-expand 'hippie-expand)
 #+END_SRC
 
+*** PATH
+
 #+BEGIN_SRC emacs-lisp
 (use-package exec-path-from-shell
   :defer 0.1
@@ -155,18 +157,15 @@ Define packages and install them in case of missing
   (when (eq system-type 'darwin)                    ; only apply to under OSX graphic and console UI
     (setq exec-path-from-shell-check-startup-files nil)
     (exec-path-from-shell-initialize))
+
   (exec-path-from-shell-copy-env "SSH_AGENT_PID")   ; inherent ssh-agent from system
   (exec-path-from-shell-copy-env "SSH_AUTH_SOCK")
+
+  (setenv "PATH"
+          (concat
+           (getenv "PATH")
+           ))
   )
-#+END_SRC
-
-*** PATH
-
-#+BEGIN_SRC emacs-lisp
-(setenv "PATH"
-        (concat
-         (getenv "PATH")
-         ))
 #+END_SRC
 
 *** Server mode
@@ -193,7 +192,7 @@ Use the stock key bindings when possible.
 (global-unset-key (kbd "C-x f"))                ; set-fill-column
 #+END_SRC
 
-passing tmux keystrokes
+passing tmux keystrokes within emacs terminal
 
 #+BEGIN_SRC emacs-lisp
 (defadvice terminal-init-screen
@@ -328,7 +327,7 @@ OSX-only key bindings
   (if (eq system-type 'windows-nt)              ; Windows
       (concat "C:/tmp/emacs/" (user-login-name) "/")
     (expand-file-name
-     (concat "~/emacs/" (user-login-name) "/"))   ; Linux
+     (concat "~/emacs/" (user-login-name) "/")) ; Linux & Mac
     ))
 (if (not (file-exists-p backup-directory))
     (make-directory backup-directory t))
@@ -987,10 +986,6 @@ web-mode
   :defer t
   :diminish ansible
   :hook (yaml-mode . ansible)
-  :config
-  (use-package ansible-doc
-    :diminish ansible-doc-mode
-    )
   )
 #+END_SRC
 
@@ -1554,7 +1549,7 @@ Char-based jumping
 
 #+BEGIN_SRC emacs-lisp
 (use-package avy
-  :bind (("C-\"" . avy-goto-char-2))
+  :bind (([remap goto-char] . avy-goto-char-2))
   :commands avy-goto-char-2
   )
 #+END_SRC
@@ -1603,8 +1598,7 @@ Visible bookmarks
             company-keywords                    ; keywords
             company-yasnippet
             ))
-       company-global-modes
-         '(not eshell-mode)
+       company-global-modes '(not eshell-mode)
        company-idle-delay 0.25                  ; delay before autocompletion popup shows
        company-minimum-prefix-length 2
        company-tooltip-align-annotations t
@@ -1617,8 +1611,7 @@ Visible bookmarks
        company-dabbrev-downcase nil             ; do not change case in dabbrev
        company-dabbrev-ignore-case t
        company-dabbrev-other-buffers t
-       company-transformers
-         '(company-sort-by-occurrence)
+       company-transformers '(company-sort-by-occurrence)
        )
     )
 #+END_SRC
@@ -1747,8 +1740,8 @@ vi layer for Emacs
   (evil-mode)
   (setq evil-default-state 'emacs)              ; default to emacs
 
-  (require 'evil-nerd-commenter)
-  (require 'evil-surround)
+  (eval-when-compile (require 'evil-nerd-commenter))
+  (eval-when-compile (require 'evil-surround))
   )
 #+END_SRC
 
@@ -1913,6 +1906,9 @@ move where I mean
   :config
   (use-package smartparens-config)
   (setq sp-show-pair-from-inside t)             ; shown inside the matching paren delimiter
+  (set-face-attribute 'sp-show-pair-match-face nil
+                      :background "#767676" :foreground "#00cd00"
+                      :weight 'bold)
   )
 #+END_SRC
 
@@ -2102,7 +2098,7 @@ Diff between directories
   :bind (([remap isearch-forward]  . swiper-helm)   ; C-s
          ([remap isearch-backward] . swiper-helm))  ; C-r
   :config
-  (require 'helm)
+  (eval-when-compile (require 'helm))
   )
 #+END_SRC
 
@@ -2261,212 +2257,212 @@ Two stpes to write a blog
 
 ** Research
 
-*** AUCTex
+*** AUCTex                                      :DISABLED:
 #+BEGIN_SRC emacs-lisp
-(when (locate-library "auctex") (progn
-    (defun modes/auctex-mode ()
-        "auctex-mode hook"
-        ;; set latexmk the default LaTeX compiler
-        (push
-         '("Latexmk" "latexmk -outdir=/tmp/emacs/latex -bibtex -pdf -pv %s" TeX-run-command nil t
-           :help "Run Latexmk on file")
-         TeX-command-list)
-        (setq TeX-command-default "Latexmk")
+;; (when (locate-library "auctex") (progn
+;;     (defun modes/auctex-mode ()
+;;         "auctex-mode hook"
+;;         ;; set latexmk the default LaTeX compiler
+;;         (push
+;;          '("Latexmk" "latexmk -outdir=/tmp/emacs/latex -bibtex -pdf -pv %s" TeX-run-command nil t
+;;            :help "Run Latexmk on file")
+;;          TeX-command-list)
+;;         (setq TeX-command-default "Latexmk")
 
-        ;; auto directory for auto-generated info
-        (setq TeX-auto-local "/tmp/emacs/latex/auctex-auto/")
-        (setq TeX-parse-self t) ; enable parse on load
-        (setq TeX-auto-save t) ; enable parse on save
+;;         ;; auto directory for auto-generated info
+;;         (setq TeX-auto-local "/tmp/emacs/latex/auctex-auto/")
+;;         (setq TeX-parse-self t) ; enable parse on load
+;;         (setq TeX-auto-save t) ; enable parse on save
 
-        (setq-default TeX-master nil)
-        (setq TeX-save-query nil) ; autosave before compiling
+;;         (setq-default TeX-master nil)
+;;         (setq TeX-save-query nil) ; autosave before compiling
 
-        (TeX-fold-mode 1) ; enable code folding
-        (TeX-fold-buffer)
+;;         (TeX-fold-mode 1) ; enable code folding
+;;         (TeX-fold-buffer)
 
-        ;; smart quotes
-        (setq TeX-open-quote "<<")
-        (setq TeX-close-quote ">>")
+;;         ;; smart quotes
+;;         (setq TeX-open-quote "<<")
+;;         (setq TeX-close-quote ">>")
 
-        ;; detect master files
-        (defun guess-TeX-master (filename)
-          "Guess the master file for FILENAME from currently open .tex files."
-          (let ((candidate nil)
-                (filename (file-name-nondirectory filename)))
-            (save-excursion
-              (dolist (buffer (buffer-list))
-                (with-current-buffer buffer
-                  (let ((name (buffer-name))
-                        (file buffer-file-name))
-                    (if (and file (string-match "\\.tex$" file))
-                        (progn
-                          (goto-char (point-min))
-                          (if (re-search-forward (concat "\\\\input{" filename "}") nil t)
-                              (setq candidate file))
-                          (if (re-search-forward (concat "\\\\include{" (file-name-sans-extension filename) "}") nil t)
-                              (setq candidate file))))))))
-            (if candidate
-                (message "TeX master document: %s" (file-name-nondirectory candidate)))
-            candidate))
-        (setq TeX-master (guess-TeX-master (buffer-file-name))))
-    (add-hook 'LaTeX-mode-hook 'modes/auctex-mode)
+;;         ;; detect master files
+;;         (defun guess-TeX-master (filename)
+;;           "Guess the master file for FILENAME from currently open .tex files."
+;;           (let ((candidate nil)
+;;                 (filename (file-name-nondirectory filename)))
+;;             (save-excursion
+;;               (dolist (buffer (buffer-list))
+;;                 (with-current-buffer buffer
+;;                   (let ((name (buffer-name))
+;;                         (file buffer-file-name))
+;;                     (if (and file (string-match "\\.tex$" file))
+;;                         (progn
+;;                           (goto-char (point-min))
+;;                           (if (re-search-forward (concat "\\\\input{" filename "}") nil t)
+;;                               (setq candidate file))
+;;                           (if (re-search-forward (concat "\\\\include{" (file-name-sans-extension filename) "}") nil t)
+;;                               (setq candidate file))))))))
+;;             (if candidate
+;;                 (message "TeX master document: %s" (file-name-nondirectory candidate)))
+;;             candidate))
+;;         (setq TeX-master (guess-TeX-master (buffer-file-name))))
+;;     (add-hook 'LaTeX-mode-hook 'modes/auctex-mode)
 
-    ;; activate the Ref mode
-    (add-hook 'LaTeX-mode-hook 'turn-on-reftex)     ; with AUCTeX LaTeX mode
+;;     ;; activate the Ref mode
+;;     (add-hook 'LaTeX-mode-hook 'turn-on-reftex)     ; with AUCTeX LaTeX mode
 
-    (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)    ; auctex LaTeX math mode
-    (add-hook 'LaTeX-mode-hook 'visual-line-mode)   ; with AUCTeX LaTeX mode
+;;     (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)    ; auctex LaTeX math mode
+;;     (add-hook 'LaTeX-mode-hook 'visual-line-mode)   ; with AUCTeX LaTeX mode
 
-    ;; enable flyspell-mode
-    (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+;;     ;; enable flyspell-mode
+;;     (add-hook 'LaTeX-mode-hook 'flyspell-mode)
 
-    ;; activate syntax highlighting - font-lock-mode
-    (add-hook 'LaTeX-mode-hook 'turn-on-font-lock)
+;;     ;; activate syntax highlighting - font-lock-mode
+;;     (add-hook 'LaTeX-mode-hook 'turn-on-font-lock)
 
-    ;; AUCTEX / EMACS / EVINCE - Forward & Inverse Search
-    (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
-    (setq TeX-source-correlate-method 'synctex)
-    (setq TeX-source-correlate-start-server t)
+;;     ;; AUCTEX / EMACS / EVINCE - Forward & Inverse Search
+;;     (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
+;;     (setq TeX-source-correlate-method 'synctex)
+;;     (setq TeX-source-correlate-start-server t)
 
-    ;; evince(pdf) -> emacs(latex) search - inverse search
-    ;; ctrl + mouse right button in evince
-    ;;(defun un-urlify (fname-or-url)
-    ;;  "A trivial function that replaces a prefix of file:/// with just /."
-    ;;  (if (string= (substring fname-or-url 0 8) "file:///")
-    ;;      (substring fname-or-url 7)
-    ;;    fname-or-url))
+;;     ;; evince(pdf) -> emacs(latex) search - inverse search
+;;     ;; ctrl + mouse right button in evince
+;;     ;;(defun un-urlify (fname-or-url)
+;;     ;;  "A trivial function that replaces a prefix of file:/// with just /."
+;;     ;;  (if (string= (substring fname-or-url 0 8) "file:///")
+;;     ;;      (substring fname-or-url 7)
+;;     ;;    fname-or-url))
 
-    (defun th-evince-sync (file linecol &rest ignored)
-      (let* ((fname (un-urlify file))
-             (buf (find-file fname))
-             (line (car linecol))
-             (col (cadr linecol)))
-        (if (null buf)
-            (message "[Synctex]: %s is not opened..." fname)
-          (switch-to-buffer buf)
-          (with-no-warnings
-            (goto-line (car linecol)))
-          (unless (= col -1)
-            (move-to-column col)))))
+;;     (defun th-evince-sync (file linecol &rest ignored)
+;;       (let* ((fname (un-urlify file))
+;;              (buf (find-file fname))
+;;              (line (car linecol))
+;;              (col (cadr linecol)))
+;;         (if (null buf)
+;;             (message "[Synctex]: %s is not opened..." fname)
+;;           (switch-to-buffer buf)
+;;           (with-no-warnings
+;;             (goto-line (car linecol)))
+;;           (unless (= col -1)
+;;             (move-to-column col)))))
 
-    (defvar *dbus-evince-signal* nil)
+;;     (defvar *dbus-evince-signal* nil)
 
-    (defun enable-evince-sync ()
-      (require 'dbus)
-      (when (and
-             (eq window-system 'x)
-             (fboundp 'dbus-register-signal))
-        (unless *dbus-evince-signal*
-          (setf *dbus-evince-signal*
-                (dbus-register-signal
-                 :session nil "/org/gnome/evince/Window/0"
-                 "org.gnome.evince.Window" "SyncSource"
-                 'th-evince-sync)))))
-    (add-hook 'LaTeX-mode-hook 'enable-evince-sync)
+;;     (defun enable-evince-sync ()
+;;       (eval-when-compile (require 'dbus))
+;;       (when (and
+;;              (eq window-system 'x)
+;;              (fboundp 'dbus-register-signal))
+;;         (unless *dbus-evince-signal*
+;;           (setf *dbus-evince-signal*
+;;                 (dbus-register-signal
+;;                  :session nil "/org/gnome/evince/Window/0"
+;;                  "org.gnome.evince.Window" "SyncSource"
+;;                  'th-evince-sync)))))
+;;     (add-hook 'LaTeX-mode-hook 'enable-evince-sync)
 
-    ;; emacs(latex) -> evince(pdf) - forward search
-    ;; c-c c-c -> View -> pdf-forward-search in emacs
-    (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-    (add-hook 'LaTeX-mode-hook (lambda()
-    ;; https://github.com/MassimoLauria/dotemacs/blob/42fd1978da3780df725198862fa9f28c0ac4218c/init-latex.le
-    ;; https://gist.github.com/2297447
+;;     ;; emacs(latex) -> evince(pdf) - forward search
+;;     ;; c-c c-c -> View -> pdf-forward-search in emacs
+;;     (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+;;     (add-hook 'LaTeX-mode-hook (lambda()
+;;     ;; https://github.com/MassimoLauria/dotemacs/blob/42fd1978da3780df725198862fa9f28c0ac4218c/init-latex.le
+;;     ;; https://gist.github.com/2297447
 
-    ;; http://tex.stackexchange.com/a/78051
-    ;; un-urlify and urlify-escape-only should be improved to handle all special characters, not only spaces.
-    ;; The fix for spaces is based on the first comment on http://emacswiki.org/emacs/AUCTeX#toc20
-    (defun un-urlify (fname-or-url)
-      "Transform file:///absolute/path from Gnome into /absolute/path with very limited support for special characters"
-      (if (string= (substring fname-or-url 0 8) "file:///")
-          (url-unhex-string (substring fname-or-url 7))
-        fname-or-url))
+;;     ;; http://tex.stackexchange.com/a/78051
+;;     ;; un-urlify and urlify-escape-only should be improved to handle all special characters, not only spaces.
+;;     ;; The fix for spaces is based on the first comment on http://emacswiki.org/emacs/AUCTeX#toc20
+;;     (defun un-urlify (fname-or-url)
+;;       "Transform file:///absolute/path from Gnome into /absolute/path with very limited support for special characters"
+;;       (if (string= (substring fname-or-url 0 8) "file:///")
+;;           (url-unhex-string (substring fname-or-url 7))
+;;         fname-or-url))
 
-    (defun urlify-escape-only (path)
-      "Handle special characters for urlify"
-      (replace-regexp-in-string " " "%20" path))
+;;     (defun urlify-escape-only (path)
+;;       "Handle special characters for urlify"
+;;       (replace-regexp-in-string " " "%20" path))
 
-    (defun urlify (absolute-path)
-      "Transform /absolute/path to file:///absolute/path for Gnome with very limited support for special characters"
-      (if (string= (substring absolute-path 0 1) "/")
-          (concat "file://" (urlify-escape-only absolute-path))
-        absolute-path))
+;;     (defun urlify (absolute-path)
+;;       "Transform /absolute/path to file:///absolute/path for Gnome with very limited support for special characters"
+;;       (if (string= (substring absolute-path 0 1) "/")
+;;           (concat "file://" (urlify-escape-only absolute-path))
+;;         absolute-path))
 
-    ;; universal time, need by evince
-    (defun utime ()
-      (let ((high (nth 0 (current-time)))
-            (low (nth 1 (current-time))))
-        (+ (* high (lsh 1 16) ) low)))
+;;     ;; universal time, need by evince
+;;     (defun utime ()
+;;       (let ((high (nth 0 (current-time)))
+;;             (low (nth 1 (current-time))))
+;;         (+ (* high (lsh 1 16) ) low)))
 
-    ;; Forward search.
-    ;; Adapted from http://dud.inf.tu-dresden.de/~ben/evince_synctex.tar.gz
-    (defun auctex-evince-forward-sync (pdffile texfile line)
-      (let ((dbus-name
-             (dbus-call-method :session
-                               "org.gnome.evince.Daemon"  ; service
-                               "/org/gnome/evince/Daemon" ; path
-                               "org.gnome.evince.Daemon"  ; interface
-                               "FindDocument"
-                               (urlify pdffile)
-                               t     ; Open a new window if the file is not opened.
-                               )))
-        (dbus-call-method :session
-                          dbus-name
-                          "/org/gnome/evince/Window/0"
-                          "org.gnome.evince.Window"
-                          "SyncView"
-                          (urlify-escape-only texfile)
-                          (list :struct :int32 line :int32 1)
-                          (utime))))
+;;     ;; Forward search.
+;;     ;; Adapted from http://dud.inf.tu-dresden.de/~ben/evince_synctex.tar.gz
+;;     (defun auctex-evince-forward-sync (pdffile texfile line)
+;;       (let ((dbus-name
+;;              (dbus-call-method :session
+;;                                "org.gnome.evince.Daemon"  ; service
+;;                                "/org/gnome/evince/Daemon" ; path
+;;                                "org.gnome.evince.Daemon"  ; interface
+;;                                "FindDocument"
+;;                                (urlify pdffile)
+;;                                t     ; Open a new window if the file is not opened.
+;;                                )))
+;;         (dbus-call-method :session
+;;                           dbus-name
+;;                           "/org/gnome/evince/Window/0"
+;;                           "org.gnome.evince.Window"
+;;                           "SyncView"
+;;                           (urlify-escape-only texfile)
+;;                           (list :struct :int32 line :int32 1)
+;;                           (utime))))
 
-    (defun pdf-forward-search ()
-      (let (
-            (pdf (concat "/tmp/emacs/latex/" (TeX-master-file (TeX-output-extension))))
-            (tex (buffer-file-name))
-            (line (line-number-at-pos)))
-        (auctex-evince-forward-sync pdf tex line)))
+;;     (defun pdf-forward-search ()
+;;       (let (
+;;             (pdf (concat "/tmp/emacs/latex/" (TeX-master-file (TeX-output-extension))))
+;;             (tex (buffer-file-name))
+;;             (line (line-number-at-pos)))
+;;         (auctex-evince-forward-sync pdf tex line)))
 
-    ;; PDF forward search : emacs -> dbus -> evince
-    (setq TeX-view-program-list '())
-    (add-to-list 'TeX-view-program-list
-                 '("EvinceForward" pdf-forward-search))
+;;     ;; PDF forward search : emacs -> dbus -> evince
+;;     (setq TeX-view-program-list '())
+;;     (add-to-list 'TeX-view-program-list
+;;                  '("EvinceForward" pdf-forward-search))
 
-    (setq TeX-view-program-selection '())
-    (add-to-list 'TeX-view-program-selection
-                 '(output-pdf "EvinceForward"))
-    ))))
+;;     (setq TeX-view-program-selection '())
+;;     (add-to-list 'TeX-view-program-selection
+;;                  '(output-pdf "EvinceForward"))
+;;     ))))
 #+END_SRC
 
-*** Maxima
+*** Maxima                                      :DISABLED:
 
 #+BEGIN_SRC emacs-lisp
-(when (locate-library "maxima")
-    (autoload 'maxima-mode "maxima" nil t)
-    (setq auto-mode-alist (cons '("\\.ma?[cx]" . maxima-mode) auto-mode-alist))
-    )
+;; (when (locate-library "maxima")
+;;     (autoload 'maxima-mode "maxima" nil t)
+;;     (setq auto-mode-alist (cons '("\\.ma?[cx]" . maxima-mode) auto-mode-alist))
+;;     )
 #+END_SRC
 
-*** Octave
+*** Octave                                      :DISABLED:
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'octave-mode "octave-mod" nil t)
-(setq auto-mode-alist (append '(("\\.m$" . octave-mode)) auto-mode-alist))
+;; (autoload 'octave-mode "octave-mod" nil t)
+;; (setq auto-mode-alist (append '(("\\.m$" . octave-mode)) auto-mode-alist))
 
-(with-eval-after-load 'octave-mod
-    '(progn
-        (abbrev-mode 1)
-        (auto-fill-mode 1)
-        (if (eq window-system 'x)
-            (font-lock-mode 1))
+;; (with-eval-after-load 'octave-mod
+;;     '(progn
+;;         (abbrev-mode 1)
+;;         (auto-fill-mode 1)
+;;         (if (eq window-system 'x)
+;;             (font-lock-mode 1))
 
-        (run-octave)
+;;         (run-octave)
 
-        (add-hook 'inferior-octave-mode-hook
-            (lambda ()
-                (turn-on-font-lock)
-                (define-key inferior-octave-mode-map [up]
-                  'comint-previous-input)
-                (define-key inferior-octave-mode-map [down]
-                  'comint-next-input)))
-        ))
+;;         (add-hook 'inferior-octave-mode-hook
+;;             (lambda ()
+;;                 (turn-on-font-lock)
+;;                 (define-key inferior-octave-mode-map [up]
+;;                   'comint-previous-input)
+;;                 (define-key inferior-octave-mode-map [down]
+;;                   'comint-next-input)))
+;;         ))
 #+END_SRC
 
 ** Useful Functions
