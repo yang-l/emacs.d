@@ -1712,9 +1712,7 @@ vi layer for Emacs
 #+BEGIN_SRC emacs-lisp
 (use-package evil-nerd-commenter
   :defer t
-  :config
-  (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
-  (general-define-key
+  :general (
     :states '(normal visual motion insert emacs)
     :keymaps 'override
     :prefix ","
@@ -1727,6 +1725,8 @@ vi layer for Emacs
     "nci" 'evilnc-toggle-invert-comment-line-by-line
     "nco" 'evilnc-comment-operator
     "ncc" 'evilnc-copy-and-comment-operator)
+  :config
+  (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
   )
 
 (use-package evil-surround
@@ -1735,7 +1735,7 @@ vi layer for Emacs
   )
 
 (use-package evil
-  :bind ("C-z" . evil-exit-emacs-state)
+  :general ("C-z" 'evil-exit-emacs-state)
   :init
   (setq evil-search-module 'evil-search
         evil-split-window-below t
@@ -1786,7 +1786,7 @@ vi layer for Emacs
 
 *** general                                     :KEYBIND:
 
-define keymap
+Define keymaps. It may require to compile the .el file again if an error message related to =:general= is shown on emacs startup.
 
 #+BEGIN_SRC emacs-lisp
 (use-package general
