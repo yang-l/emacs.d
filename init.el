@@ -17,15 +17,31 @@
               ) t)
 ;; end of optimise startup speed
 
-(require 'package)                              ; use-package bootstrap
-(setq package-enable-at-startup nil)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-(package-initialize)
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+;; setup use-package
+; add existing libraries to load-path
+(let ((default-directory
+        (concat user-emacs-directory
+                (convert-standard-filename "elpa/"))))
+  (if (not (file-exists-p default-directory))
+    (make-directory default-directory t))
+  (normal-top-level-add-subdirs-to-load-path))
+
+; (package-initialize) from package.el is slow, and try to avoid it when possible
+; only install use-package when not found
+(unless (locate-library "use-package")
+  (require 'package)                            ; use-package bootstrap
+  (setq package-enable-at-startup nil)
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+  (package-initialize)
+  (unless (package-installed-p 'use-package)
+    (package-refresh-contents)
+    (message "[Emacs Init] Installing `use-package' ... ")
+    (package-install 'use-package))
+  )
+
 (eval-when-compile
   (require 'use-package))
+;; end of setup use-package
 
 (setq load-prefer-newer t)                      ; always load newest byte code
 (if (file-exists-p (concat user-emacs-directory "README.elc"))

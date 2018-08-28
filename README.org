@@ -101,7 +101,15 @@ Define packages and install them in case of missing
       (unless refreshed
         (package-refresh-contents)
         (setq refreshed t))
+      (message "[Emacs Init] Installing `%s' ... " p)
       (package-install p))))
+#+END_SRC
+
+Configuration for `use-package'. The packages below should be loaded first before any `use-package' has been invoked
+
+#+BEGIN_SRC emacs-lisp
+(use-package diminish)                          ; shorten mode-line
+(use-package general)                           ; redefin keymaps
 #+END_SRC
 
 *** UTF-8 on everything
@@ -1620,14 +1628,6 @@ Visible bookmarks
     )
 #+END_SRC
 
-*** diminish
-
-shorten mode-line
-
-#+BEGIN_SRC emacs-lisp
-(use-package diminish)
-#+END_SRC
-
 *** drag-stuff                                  :EDIT:
 
 moving word/line/region around
@@ -1781,16 +1781,6 @@ vi layer for Emacs
 (use-package expand-region
   :bind ("C-=" . er/expand-region)
   :commands er/expand-region
-  )
-#+END_SRC
-
-*** general                                     :KEYBIND:
-
-Define keymaps. It may require to compile the .el file again if an error message related to =:general= is shown on emacs startup.
-
-#+BEGIN_SRC emacs-lisp
-(use-package general
-  :defer 1
   )
 #+END_SRC
 
