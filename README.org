@@ -78,7 +78,6 @@ Define packages and install them in case of missing
     pyvenv                                      ; Python
     groovy-mode                                 ; Groovy
     enh-ruby-mode rspec-mode inf-ruby           ; Ruby
-    go-mode godoctor                            ; Go
     zenburn-theme color-theme-solarized diminish; UI
     undo-tree helm ivy                          ; Editing
     mwim multiple-cursors expand-region ztree
@@ -1309,12 +1308,13 @@ MODE is the mode used in the parent frame."
 
 #+BEGIN_SRC emacs-lisp
 (use-package go-mode
+  :ensure t
   :defer t
   :config
   (add-hook 'go-mode-hook
     #'(lambda ()
         (add-hook 'before-save-hook 'gofmt-before-save)     ; Gofmt format
-        (setq indent-tabs-mode 1
+        (setq indent-tabs-mode 1                            ; default to TAB as specified in Go spec
               tab-width 4)                                  ; show tab as 4 space width
 
         ;; Go LSP
@@ -1341,7 +1341,24 @@ MODE is the mode used in the parent frame."
         (lsp-go-enable)
         ) t)
 
-  (use-package godoctor)                                   ; godoctor - golang refactor
+  (use-package godoctor :ensure t)                          ; godoctor - golang refactor
+
+  (use-package gotest
+    :bind (:map go-mode-map
+           ("C-x x f" . go-test-current-file)
+           ("C-x x t" . go-test-current-test)
+           ("C-x x x" . go-run))
+    :commands (go-test-current-file go-test-current-test go-run)
+    :ensure t
+    :general (
+      :states '(normal insert emacs)
+      :keymaps 'go-mode-map
+      :prefix ","
+      :non-normal-prefix "C-x ,"
+      "cgf" 'go-test-current-file
+      "cgt" 'go-test-current-test
+      "cgx" 'go-run)
+    )
   )
 #+END_SRC
 
@@ -1715,7 +1732,7 @@ vi layer for Emacs
 (use-package evil-nerd-commenter
   :defer t
   :general (
-    :states '(normal visual motion insert emacs)
+    :states '(normal insert emacs)
     :keymaps 'override
     :prefix ","
     :non-normal-prefix "C-x ,"
