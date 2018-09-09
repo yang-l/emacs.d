@@ -65,12 +65,8 @@ Path to personal/credential info in =~/.emacs.d/private.el=
     (package-initialize)
     )
 
-  ;; Define packages and install them in case of missing
-  (defvar my-packages '(
-    git-gutter magit                            ; Programming
-    zenburn-theme color-theme-solarized         ; UI
-    scratch dumb-jump                           ; Editing
-    ))
+  ;; Define packages and install them in case of missing (not in use atm and via use-package)
+  (defvar my-packages '())
   (let ((refreshed nil))
     (dolist (p my-packages)                     ; install the missing packages
       (when (not (package-installed-p p))
@@ -770,8 +766,17 @@ Emacs GUI font settings
 Zenburn & Solarized themes
 
 #+BEGIN_SRC emacs-lisp
-(load-theme 'zenburn t t)                       ; load but do not active theme
-(load-theme 'solarized t t)
+(use-package zenburn-theme
+  :ensure t
+  :config
+  (load-theme 'zenburn t)
+  )
+
+(use-package color-theme-solarized
+  :ensure t
+  :config
+  (load-theme 'solarized t t)                   ; load but do not active theme
+  )
 
 (if (daemonp)
     (add-hook 'after-make-frame-functions
@@ -784,7 +789,8 @@ Zenburn & Solarized themes
                       )
                   (progn                        ; emacsclient -t
                     (disable-theme 'zenburn)
-                    (set-frame-parameter nil 'background-mode 'dark)
+                    (set-frame-parameter frame 'background-mode 'dark)
+                    (set-terminal-parameter frame 'background-mode 'dark)
                     (enable-theme 'solarized)
                     ))
                 ))
@@ -809,7 +815,6 @@ Zenburn & Solarized themes
                                                 ; starting the new one
         compilation-scroll-output 'first-error  ; Automatically scroll to first error
       )
-    (dumb-jump-mode)                            ; jump to definition
     (goto-address-prog-mode)                    ; highlight URL
     (push '(">=" . ?≥) prettify-symbols-alist)  ; prettify symbols
     (push '("<=" . ?≤) prettify-symbols-alist)
@@ -855,43 +860,42 @@ Zenburn & Solarized themes
 **** git-gutter
 
 #+BEGIN_SRC emacs-lisp
-(with-eval-after-load 'git-gutter
-    (custom-set-variables                       ; backend
-        '(git-gutter:handled-backends
-        (quote (git svn))))
-    (diminish 'git-gutter-mode)
-    )
-(dolist (mode-hook '(web-mode-hook
-                     org-mode-hook
-                     yaml-mode-hook
-                     groovy-mode-hook
-                     puppet-mode-hook
-                     enh-ruby-mode-hook
-                     python-mode-hook
-                    ))
-    (add-hook mode-hook #'git-gutter-mode)
-    )
+(use-package git-gutter
+  :diminish git-gutter-mode
+  :ensure t
+  :hook ((web-mode org-mode yaml-mode groovy-mode puppet-mode enh-ruby-mode python-mode) . git-gutter-mode)
+  :config
+  (custom-set-variables                         ; backend
+   '(git-gutter:handled-backends
+     (quote (git svn))))
+  )
 #+END_SRC
 
 **** magit
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'magit-status "magit" nil t)
-(global-set-key (kbd "C-x g") #'magit-status)
-(eval-after-load "magit"
-    '(progn
-        (setq magit-completing-read-function
-                (quote magit-builtin-completing-read)
-              magit-diff-refine-hunk t          ; highlight changes
-              )
-        ;; full screen magit-status
-        (defadvice magit-status (around magit-fullscreen activate)
-          (window-configuration-to-register :magit-fullscreen)
-          ad-do-it
-          (delete-other-windows))
-        (eval-after-load 'evil-vars '(evil-set-initial-state 'magit-mode 'emacs))
-        (eval-after-load 'evil-vars '(evil-set-initial-state 'magit-mode 'emacs))
-        ))
+(use-package magit
+  :ensure t
+  :bind (("C-x g" . magit-status))
+  :config
+  (setq magit-completing-read-function
+        (quote magit-builtin-completing-read)
+        magit-diff-refine-hunk t                ; highlight changes
+        )
+
+  ;; full screen magit-status
+  (defadvice magit-status (around magit-fullscreen activate)
+    (window-configuration-to-register :magit-fullscreen)
+    ad-do-it
+    (delete-other-windows))
+
+  (with-eval-after-load 'evil-vars '(evil-set-initial-state 'magit-mode 'emacs))
+  )
+
+(use-package autorevert
+  :defer t
+  :diminish auto-revert-mode
+  )
 #+END_SRC
 
 *** Web
@@ -1663,6 +1667,18 @@ moving word/line/region around
   )
 #+END_SRC
 
+*** dumb-jump                                   :CODING:
+
+simple implementation of jumping to definition/source
+
+#+BEGIN_SRC emacs-lisp
+(use-package dumb-jump
+  :ensure t
+  :diminish dumb-jump-mode
+  :hook (prog-mode . dumb-jump-mode)
+  )
+#+END_SRC
+
 *** erc                                         :IRC:
 
 #+BEGIN_SRC emacs-lisp
@@ -1730,32 +1746,6 @@ moving word/line/region around
 vi layer for Emacs
 
 #+BEGIN_SRC emacs-lisp
-(use-package evil-nerd-commenter
-  :defer t
-  :ensure t
-  :general (
-    :states '(normal insert emacs)
-    :keymaps 'override
-    :prefix ","
-    :non-normal-prefix "C-x ,"
-    "ncl" 'evilnc-comment-or-uncomment-lines
-    "nct" 'evilnc-quick-comment-or-uncomment-to-the-line
-    "ncy" 'evilnc-copy-and-comment-lines
-    "ncp" 'evilnc-comment-or-uncomment-paragraphs
-    "ncr" 'comment-or-uncomment-region
-    "nci" 'evilnc-toggle-invert-comment-line-by-line
-    "nco" 'evilnc-comment-operator
-    "ncc" 'evilnc-copy-and-comment-operator)
-  :config
-  (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
-  )
-
-(use-package evil-surround
-  :defer t
-  :ensure t
-  :config (global-evil-surround-mode)
-  )
-
 (use-package evil
   :ensure t
   :general ("C-z" 'evil-exit-emacs-state)
@@ -1767,8 +1757,31 @@ vi layer for Emacs
   (evil-mode)
   (setq evil-default-state 'emacs)              ; default to emacs
 
-  (eval-when-compile (require 'evil-nerd-commenter))
-  (eval-when-compile (require 'evil-surround))
+  (use-package evil-nerd-commenter
+    :defer t
+    :ensure t
+    :general (
+      :states '(normal insert emacs)
+      :keymaps 'override
+      :prefix ","
+      :non-normal-prefix "C-x ,"
+      "ncl" 'evilnc-comment-or-uncomment-lines
+      "nct" 'evilnc-quick-comment-or-uncomment-to-the-line
+      "ncy" 'evilnc-copy-and-comment-lines
+      "ncp" 'evilnc-comment-or-uncomment-paragraphs
+      "ncr" 'comment-or-uncomment-region
+      "nci" 'evilnc-toggle-invert-comment-line-by-line
+      "nco" 'evilnc-comment-operator
+      "ncc" 'evilnc-copy-and-comment-operator)
+    :config
+    (evilnc-default-hotkeys t)                  ; enable recommended key bindings under non-evil (Emacs) mode only
+    )
+
+  (use-package evil-surround
+    :defer t
+    :ensure t
+    :config (global-evil-surround-mode)
+    )
   )
 #+END_SRC
 
@@ -1919,6 +1932,14 @@ move where I mean
          ("C-x t p" . treemacs-projectile))
   :ensure t
   )
+#+END_SRC
+
+*** scratch                                     :EDIT:
+
+create new & empty scratch buffer
+
+#+BEGIN_SRC emacs-lisp
+(use-package scratch :ensure t :commands (scratch))
 #+END_SRC
 
 *** smartparens                                 :EDIT:
