@@ -43,7 +43,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 *** ELPA
 
 #+BEGIN_SRC emacs-lisp
-(eval-and-compile
+(eval-when-compile
   (unless (version< emacs-version "25.1")
     (setq package-archives
           '(("GNU ELPA"     . "https://elpa.gnu.org/packages/")
