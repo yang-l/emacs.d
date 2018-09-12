@@ -3,6 +3,7 @@
 
 (setq mc/cmds-to-run-for-all
       '(
+        mwim-end-of-code-or-line
         org-self-insert-command
         ))
 

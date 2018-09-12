@@ -569,6 +569,21 @@ Code folding
   )
 #+END_SRC
 
+**** Line Numbering
+
+new line number mode since Emacs 26
+
+#+BEGIN_SRC emacs-lisp
+(use-package display-line-numbers
+  :hook ((prog-mode org-mode text-mode) . display-line-numbers-mode)
+  :config
+  (setq display-line-numbers-width-start t)
+  (set-face-foreground 'line-number "#5c5c5c")
+  (set-face-background 'line-number-current-line "#000000")
+  (set-face-foreground 'line-number-current-line "#ababab")
+  )
+#+END_SRC
+
 **** Narrowing
 
 #+BEGIN_SRC emacs-lisp
