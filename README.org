@@ -778,38 +778,45 @@ Emacs GUI font settings
 
 **** Theme
 
-Zenburn & Solarized themes
+Spacemacs dark theme
 
 #+BEGIN_SRC emacs-lisp
-(use-package zenburn-theme
-  :ensure t
+(use-package spacemacs-common
+  :ensure spacemacs-theme
+  :init
+  (custom-set-variables
+   '(spacemacs-theme-custom-colors
+     '((border . "#4f4f4f")
+       ))
+   )
   :config
-  (load-theme 'zenburn t)
+  (load-theme 'spacemacs-dark t)
   )
 
-(use-package color-theme-solarized
-  :ensure t
-  :config
-  (load-theme 'solarized t t)                   ; load but do not active theme
-  )
+(when (eq system-type 'darwin)                  ; mac only
+  (when (display-graphic-p)                     ; gui only
+    (let ((win-sys (window-system)))
+      (when (eq win-sys 'ns)                    ; emacs ns port
+        (setq
+         x-colors (ns-list-colors)              ; fix macports emacs-app port bug
+         ns-use-thin-smoothing t
+         )
+        )))
 
-(if (daemonp)
+  (when (daemonp)                               ; for emacsclient -c
     (add-hook 'after-make-frame-functions
-              (lambda (frame)
-                (select-frame frame)
-                (if (display-graphic-p frame)
-                    (progn                      ; emacsclient -c
-                      (disable-theme 'solarized)
-                      (enable-theme 'zenburn)
-                      )
-                  (progn                        ; emacsclient -t
-                    (disable-theme 'zenburn)
-                    (set-frame-parameter frame 'background-mode 'dark)
-                    (set-terminal-parameter frame 'background-mode 'dark)
-                    (enable-theme 'solarized)
-                    ))
-                ))
-  (enable-theme 'zenburn))                      ; emacs & emacs -nw
+              #'(lambda (frame)
+                  (select-frame frame)
+                  (when (display-graphic-p frame)
+                    (let ((win-sys (window-system)))
+                      (when (eq win-sys 'ns)                ; emacs ns port
+                        (setq
+                         x-colors (ns-list-colors)          ; fix macports emacs-app port bug
+                         ns-use-thin-smoothing t
+                         )
+                        ))))
+              ))
+  )
 #+END_SRC
 
 **** Transparent
