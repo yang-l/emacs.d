@@ -746,34 +746,55 @@ Undo Emacs window changes
 
 *** Style
 
-**** Face
+**** Font
 
 Emacs GUI font settings
 
 #+BEGIN_SRC emacs-lisp
-(if (display-graphic-p) (progn
-  (if (eq system-type 'windows-nt)
-      (set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100)
-    (cond                                       ; Linux
-     ((find-font (font-spec :name "Terminus"))
-      (set-face-attribute 'default nil :font "Terminus" :height 120))
-     ((find-font (font-spec :maker "misc"
-                            :family "fixed"
-                            :widthtype "normal"
-                            :pixels "14"
-                            :height "130"
-                            :horiz "75"
-                            :vert "75"
-                            ))                  ; fallback to "7x14" bitmap
-      ; 7x14 / -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-1
-      (set-face-attribute 'default nil :font "7x14"))
+(if (display-graphic-p)
+    (cond
+     ((eq system-type 'windows-nt)              ; Win
+      (set-face-attribute 'default nil :font "Consolas:antialias=natural" :height 100))
+     ((eq system-type 'gnu/linux)               ; Linux
+      (cond
+       ((find-font (font-spec :name "Terminus"))
+        (set-face-attribute 'default nil :font "Terminus" :height 120))
+       ((find-font (font-spec :maker "misc"
+                              :family "fixed"
+                              :widthtype "normal"
+                              :pixels "14"
+                              :height "130"
+                              :horiz "75"
+                              :vert "75"
+                              ))                ; fallback to "7x14" bitmap
+        ; 7x14 / -misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-1
+        (set-face-attribute 'default nil :font "7x14"))
+       )
+      (when (member "WenQuanYi Zen Hei Sharp" (font-family-list))
+        (set-fontset-font "fontset-default"     ; 中文字体
+                          'han '("WenQuanYi Zen Hei Sharp" . "unicode-bmp"))))
+     ((eq system-type 'darwin)                  ; macOS
+      (set-face-attribute 'default nil :font "Monaco" :height 120))
+     (t                                         ; default
+      (when (member "Inconsolata" (font-family-list))
+        (set-face-attribute 'default nil :font "Inconsolata" :height 120)))
      )
-    (set-fontset-font "fontset-default"         ; 中文字体
-                      'han '("WenQuanYi Zen Hei Sharp" . "unicode-bmp"))
-    ))
   (when (member "Terminus" (font-family-list))
     (add-to-list 'default-frame-alist '(font . "Terminus")))
   )
+
+(when (daemonp)                                 ; for emacsclient -c
+  (add-hook 'after-make-frame-functions
+            #'(lambda (frame)
+                (select-frame frame)
+                (cond
+                 ((eq system-type 'darwin)      ; macOS
+                  (set-face-attribute 'default nil :font "Monaco" :height 120))
+                 (t                             ; default
+                  (when (member "Inconsolata" (font-family-list))
+                    (set-face-attribute 'default nil :font "Inconsolata" :height 120)))
+                 )
+                )))
 #+END_SRC
 
 **** Theme
