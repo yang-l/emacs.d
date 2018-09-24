@@ -60,7 +60,8 @@ Path to personal/credential info in =~/.emacs.d/private.el=
       (setq package-pinned-packages
             '((evil         . "MELPA")
               (lsp-mode     . "MELPA")
-              (org-page     . "MELPA")))
+              (org-page     . "MELPA")
+              (counsel-projectile . "MELPA")))
       )
     (package-initialize)
     )
@@ -216,7 +217,7 @@ OSX-only key bindings
 
 #+BEGIN_SRC emacs-lisp
 (add-hook 'window-setup-hook
-    (lambda () (progn
+    #'(lambda () (progn
         (auto-compression-mode 1)               ; open compressed files on the fly
         (delete-selection-mode t)               ; delete marked text on typing
         (global-hl-line-mode +1)                ; highlight current line
@@ -233,6 +234,9 @@ OSX-only key bindings
             'windmove-default-keybindings)
             (windmove-default-keybindings))
         (size-indication-mode +1)               ; show total buffer size
+        (setq eval-expression-print-length nil  ; do not truncate output in the echo area
+              message-log-max 10000             ; increase number of lines in *Messages*
+              use-dialog-box nil)               ; disable usage of dialog box, and in echo area instead
     )))
 (dolist
     (hook
@@ -241,13 +245,13 @@ OSX-only key bindings
       ))
   (add-hook hook #'redraw-display))             ; force redraw
 (add-hook 'window-setup-hook
-          (lambda ()
+          #'(lambda ()
             (toggle-frame-fullscreen)           ; fullscreen
             (toggle-frame-maximized))           ; maximised
           t)
 (when (daemonp)                                 ; when calling "emacsclient -c -n" under daemon
   (add-hook 'after-make-frame-functions
-            (lambda (frame)
+            #'(lambda (frame)
               (when (display-graphic-p frame)
                 (toggle-frame-fullscreen)       ; fullscreen
                 (toggle-frame-maximized)        ; maximised
@@ -260,14 +264,14 @@ OSX-only key bindings
       'tty-setup-hook
       ))
   (add-hook hook
-            (lambda ()
+            #'(lambda ()
               (progn
                 (if (fboundp 'menu-bar-mode)
                     (menu-bar-mode -1))         ; hide menu bar
                 ))))
 ; https://blog.d46.us/advanced-emacs-startup/
 (add-hook 'emacs-startup-hook
-          (lambda ()
+          #'(lambda ()
             (message "Emacs ready in %s with %d garbage collections."
                      (format "%.2f seconds"
                              (float-time
@@ -2245,7 +2249,7 @@ Diff between directories
 #+BEGIN_SRC emacs-lisp
 (dolist (mode-hook '(prog-mode-hook))
   (add-hook mode-hook
-    (lambda ()
+    #'(lambda ()
       (use-package projectile
         :defer t
         :ensure t
