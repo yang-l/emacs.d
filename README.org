@@ -1575,7 +1575,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
             #'(lambda ()
                 (defvar ruby-workspace-directory        ; ruby language server
                   (expand-file-name (concat backup-directory "venv-lsp-ruby/")))
-                (defvar ruby-version "2.4.2")           ; ruby version
+                (defvar ruby-version "2.5.1")           ; ruby version
                 (if (not (file-exists-p ruby-workspace-directory))
                     (progn
                       (make-directory
@@ -1588,13 +1588,13 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
                          (expand-file-name (concat user-emacs-directory "bin/Gemfile.rubylsp.template"))
                          (expand-file-name (concat ruby-workspace-directory "Gemfile")) )
                         (shell-command                  ; install ruby lsp
-                         (concat "rbenv install -s " ruby-version " && cd " (expand-file-name ruby-workspace-directory) " && rbenv exec bundle install --path vendor/bundle/ && rbenv exec bundle exec solargraph download-core"))
+                         (concat "rbenv install -s " ruby-version " && cd " (expand-file-name ruby-workspace-directory) " && rbenv exec gem install bundle && rbenv exec bundle install --path vendor/bundle/ && rbenv exec bundle exec solargraph download-core"))
                         )
                       )
                   )
 
-                (setq exec-path (append (list (concat (expand-file-name "~/.rbenv/versions/") ruby-version  "/bin/")) exec-path))
-                (setenv "PATH" (concat (expand-file-name "~/.rbenv/versions/") ruby-version  "/bin/:" (getenv "PATH")))
+                (setq exec-path (append (list (concat (expand-file-name ruby-workspace-directory) "vendor/bundle/ruby/" ruby-version "/bin/") (concat (expand-file-name "~/.rbenv/versions/") ruby-version  "/bin/")) exec-path))
+                (setenv "PATH" (concat (expand-file-name ruby-workspace-directory) "vendor/bundle/ruby/" ruby-version "/bin/:" (expand-file-name "~/.rbenv/versions/") ruby-version "/bin/:" (getenv "PATH")))
                 (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
 
                 (require 'lsp-ruby)

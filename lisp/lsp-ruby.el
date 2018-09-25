@@ -1,180 +1,16 @@
-;;; lsp-ruby.el --- Ruby support for lsp-mode  -*- lexical-binding: t; -*-
-
-;; Copyright (C) 2018 George Pittarelli <g@gjp.cc>
-
-;; Author: George Pittarelli <g@gjp.cc>
-;; Version: 1.0
-;; Package-Requires: ((lsp-mode "3.0") (emacs "25.1"))
-;; Keywords: languages tools
-;; URL: https://github.com/emacs-lsp/lsp-ruby
-
-;; This program is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
-
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-;;; Commentary:
-
-;; Ruby support for lsp-mode using either the solargraph or the
-;; language_server gem
-
 ;;; Code:
 
 (require 'lsp-mode)
 (require 'ruby-mode)
 
-;; https://github.com/emacs-lsp/lsp-mode/pull/383
-
-(defun lsp--make-tcp-connection (name command command-fn host port stderr &key port-fn)
-  (lambda (filter sentinel)
-    (let* ((command (if command-fn (funcall command-fn) command))
-           (final-command (if (consp command) command (list command)))
-           proc tcp-proc)
-      (unless (executable-find (nth 0 final-command))
-        (error (format "Couldn't find executable %s" (nth 0 final-command))))
-      (setq proc (make-process
-                   :name name
-                   :connection-type 'pipe
-                   :coding 'no-conversion
-                   :command final-command
-                   :sentinel sentinel
-                   :stderr stderr
-                   :noquery t)
-        tcp-proc (open-network-stream (concat name " TCP connection")
-                                      nil host
-                                      (if port-fn (funcall port-fn proc stderr) port)
-                                      :type 'plain))
-      ;; TODO: Same :noquery issue (see above)
-      (set-process-query-on-exit-flag (get-buffer-process (get-buffer stderr)) nil)
-      (set-process-query-on-exit-flag tcp-proc nil)
-      (set-process-filter tcp-proc filter)
-      (cons proc tcp-proc))))
-
-(cl-defmacro lsp-define-tcp-client (name language-id get-root command host port
-                                     &key docstring
-                                     language-id-fn
-                                     command-fn
-                                     ignore-regexps
-                                     ignore-messages
-                                     extra-init-params
-                                     initialize
-                                     prefix-function
-				                             port-fn)
-  "Define a LSP client using TCP.
-NAME is the symbol to use for the name of the client.
-LANGUAGE-ID is the language id to be used when communication with
-the Language Server.  COMMAND is the command to run.  HOST is the
-host address.  PORT is the port number.
-Optional arguments:
-`:ignore-regexps' is a list of regexps.  When a data packet from the LSP server
- matches any of these regexps, it will be ignored.  This is intended for dealing
- with LSP servers that output non-protocol data.
-`:ignore-messages' is a list of regexps.  When a message from the LSP server
- matches any of these regexps, it will be ignored.  This is useful for filtering
- out unwanted messages; such as servers that send nonstandard message types, or
- extraneous `logMessage's.
-`:command-fn' is a function that returns the command string/list to be used to
- launch the language server. If non-nil, COMMAND is ignored.
-`:language-id-fn' is a function that returns the language-id string to be used
- while opening a new file. If non-nil, LANGUAGE-ID is ignored.
-`:extra-init-params' is a plist that specifies any (optional)
- initializeOptions parameters required by the LSP server. A function taking
- a single argument (LSP workspace) and returning a plist is also accepted.
-`:initialize' is a function called when the client is initialized. It takes a
-  single argument, the newly created client.
-`:prefix-function' is a function called for getting the prefix for completion.
- The function takes no parameter and returns a cons (start . end) representing
- the start and end bounds of the prefix. If it's not set, the client uses a
- default prefix function.
-`:port-fn' is a function called after starting the language server process, but
- before connecting to it. The function must return a number, which will be used
- as the port to connect to. This is useful for servers which use random port
- numbers, and also for delaying until the server is ready to accept connections."
-  (cl-check-type name symbol)
-  (let ((enable-name (intern (format "%s-enable" name))))
-    `(progn
-       (lsp-define-whitelist-add ,name ,get-root)
-       (lsp-define-whitelist-remove ,name ,get-root)
-       (defun ,enable-name ()
-         ,docstring
-         (interactive)
-         (lsp--enable-tcp-client ',name
-           :language-id ,language-id
-           :language-id-fn ,language-id-fn
-           :root-directory-fn ,get-root
-           :command ,command
-           :command-fn ,command-fn
-           :host ,host
-           :port ,port
-           :ignore-regexps ,ignore-regexps
-           :ignore-messages ,ignore-messages
-           :extra-init-params ,extra-init-params
-           :initialize-fn ,initialize
-           :enable-function (function ,enable-name)
-           :prefix-function ,prefix-function
-           :port-fn ,port-fn)))))
-
-(cl-defun lsp--enable-tcp-client (name &key language-id language-id-fn
-                                       root-directory-fn command command-fn
-                                       host port
-                                       ignore-regexps ignore-messages
-                                       extra-init-params initialize-fn
-                                       enable-function
-                                       prefix-function
-				                               port-fn)
-  (cl-check-type name symbol)
-  (cl-check-type language-id (or null string))
-  (cl-check-type language-id-fn (or null function))
-  (cl-check-type root-directory-fn (or null function))
-  (cl-check-type command list)
-  (cl-check-type command-fn (or null function))
-  (cl-check-type host string)
-  (cl-check-type port (integer 1 #xFFFF))
-  (cl-check-type ignore-regexps list)
-  (cl-check-type ignore-messages list)
-  (cl-check-type extra-init-params (or list function))
-  (cl-check-type initialize-fn (or null function))
-  (cl-check-type prefix-function (or null function))
-  (when (and (not lsp-mode) (buffer-file-name))
-    (let* ((stderr (generate-new-buffer-name
-                    (concat "*" (symbol-name name) " stderr*")))
-           (client (make-lsp--client
-                    :language-id (or language-id-fn (lambda (_) language-id))
-                    :new-connection (lsp--make-tcp-connection
-                                     (symbol-name name)
-                                     command
-                                     command-fn
-                                     host port
-                                     stderr
-				                             :port-fn port-fn)
-                    :stderr stderr
-                    :get-root root-directory-fn
-                    :ignore-regexps ignore-regexps
-                    :ignore-messages ignore-messages
-                    :enable-function enable-function
-                    :prefix-function prefix-function)))
-      (when initialize-fn
-        (funcall initialize-fn client))
-      (let ((root (funcall (lsp--client-get-root client))))
-        (if (lsp--should-start-p root)
-            (lsp--start client extra-init-params)
-          (message "Not initializing project %s" root))))))
-;; end of https://github.com/emacs-lsp/lsp-mode/pull/383
-
-;; https://github.com/emacs-lsp/lsp-ruby/pull/1
-
 (defconst lsp-ruby--get-root
   (lsp-make-traverser
    #'(lambda (dir)
        (directory-files dir nil "\\(Rakefile\\|Gemfile\\)"))))
+
+(defun lsp-ruby--lsp-command ()
+  "Generate LSP startup command."
+  `("rbenv" "exec" "bundle" "exec" "solargraph" "stdio"))
 
 (defun lsp-ruby--render-string (str)
   "Render STR with `ruby-mode' syntax highlighting."
@@ -185,43 +21,17 @@ Optional arguments:
       (font-lock-ensure)
       (buffer-string))))
 
-;; We have to wait until the language server outputs the following:
-;; "Solargraph is listening PORT=7658 PID=12345\n"
-(defun lsp-ruby--port-fn (proc stderr)
-  (let ((counter 50)
-        (msg ""))
-    (while (and (> counter 0) (string-empty-p msg))
-      (setq msg (with-current-buffer stderr (buffer-string)))
-      (setq counter (1- counter))
-      (sleep-for 0.1))
-    (when (not (string-match-p "PORT=\\([0-9]+\\)" msg))
-      (error "Solgaraph language server did not startup in time."))
-
-    (string-match "PORT=\\([0-9]+\\)" msg)
-    (let ((port (string-to-number (match-string 1 msg))))
-      (message "Solargraph language server is listening at %s" port)
-      port)))
-
 (defun lsp-ruby--initialize-client (client)
   "Initial setup for ruby LSP CLIENT."
   (lsp-provide-marked-string-renderer
    client "ruby" 'lsp-ruby--render-string))
 
-(lsp-define-tcp-client
+(lsp-define-stdio-client
  lsp-ruby "ruby"
  lsp-ruby--get-root
- ;; Use a random port:
- '("bundle" "exec" "solargraph" "socket" "-p" "0")
- "127.0.0.1"
- 7658
+ nil
  :initialize 'lsp-ruby--initialize-client
- :port-fn 'lsp-ruby--port-fn)
-
-(lsp-define-stdio-client
- lsp-ruby-mtsmfm "ruby"
- lsp-ruby--get-root
- '("language_server-ruby" "--experimental-features")
- :initialize 'lsp-ruby--initialize-client)
+ :command-fn 'lsp-ruby--lsp-command)
 
 (provide 'lsp-ruby)
 ;;; lsp-ruby.el ends here
