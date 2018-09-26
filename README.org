@@ -1593,8 +1593,8 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
                       )
                   )
 
-                (setq exec-path (append (list (concat (expand-file-name ruby-workspace-directory) "vendor/bundle/ruby/" ruby-version "/bin/") (concat (expand-file-name "~/.rbenv/versions/") ruby-version  "/bin/")) exec-path))
-                (setenv "PATH" (concat (expand-file-name ruby-workspace-directory) "vendor/bundle/ruby/" ruby-version "/bin/:" (expand-file-name "~/.rbenv/versions/") ruby-version "/bin/:" (getenv "PATH")))
+                (setq exec-path (append (list (concat (expand-file-name "~/.rbenv/versions/") ruby-version "/bin/")) exec-path))
+                (setenv "PATH" (concat (expand-file-name "~/.rbenv/versions/") ruby-version "/bin/:" (getenv "PATH")))
                 (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
 
                 (require 'lsp-ruby)
