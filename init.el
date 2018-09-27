@@ -1,4 +1,9 @@
-;;;;  INIT
+;;; Package --- Summary
+
+;;; Commentary:
+
+;;; Code:
+
 (let ((minver "26.1"))
   (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
@@ -51,3 +56,5 @@
   (org-babel-load-file
    (concat user-emacs-directory "README.org") t)
   )
+
+;;; init.el ends here
