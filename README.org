@@ -104,15 +104,11 @@ Configuration for `use-package'. The packages below should be loaded first befor
 (setq-default
     ad-redefinition-action 'accept              ; silence functions getting redefined messages
     column-number-mode t                        ; show cursor position
-    default-major-mode 'text-mode               ; set new buffers as test files
-    initial-major-mode 'text-mode
+    default-major-mode 'text-mode               ; set new buffers as text files
     enable-recursive-minibuffers t              ; enable minibuffer recursive
     fill-column 80                              ; column space
     frame-title-format "emacs@%b"               ; show on title
     indent-tabs-mode nil                        ; space instead of tab
-    inhibit-splash-screen t                     ; no splash
-    inhibit-startup-message t
-    initial-scratch-message nil
     kill-ring-max 500                           ; kill ring size
     mouse-wheel-scroll-amount '(1 ((shift) .1)) ; scroll one line at a time
     frame-resize-pixelwise t
@@ -130,7 +126,6 @@ Configuration for `use-package'. The packages below should be loaded first befor
     x-stretch-cursor t                          ; stretch cursor to cover wide characters
     confirm-kill-emacs 'y-or-n-p                ; prompts before kill
     )
-(defun display-startup-echo-area-message ())    ; disable minibufer welcome message
 (defalias 'dabbrev-expand 'hippie-expand)
 #+END_SRC
 

@@ -4,11 +4,12 @@
 
 ;;; Code:
 
+;; version check
 (let ((minver "26.1"))
   (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
 
-;; Optimise startup speed
+;; optimise startup speed
 (setq gc-cons-threshold (* 1024 1024 64))       ; set GC at beginning to speed up Emacs loading
 
 ; https://github.com/Kaali/vj-emacs-0x12
@@ -21,6 +22,15 @@
                #'(lambda () (setq file-name-handler-alist file-name-handler-alist-old)))
               ) t)
 ;; end of optimise startup speed
+
+;; silence emacs startup
+; disable minibufer welcome message
+(advice-add #'display-startup-echo-area-message :override #'ignore)
+(setq inhibit-startup-screen t                  ; no splash
+      initial-scratch-message nil
+      inhibit-startup-echo-area-message nil
+      initial-major-mode 'fundamental-mode
+      inhibit-default-init t)                   ; skip default.el
 
 ;; setup use-package
 ; add existing libraries to load-path
@@ -48,6 +58,7 @@
   (require 'use-package))
 ;; end of setup use-package
 
+;; load or compile elc file
 (setq load-prefer-newer t)                      ; always load newest byte code
 (if (file-exists-p (concat user-emacs-directory "README.elc"))
     (load-file
