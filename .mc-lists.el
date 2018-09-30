@@ -4,6 +4,7 @@
 (setq mc/cmds-to-run-for-all
       '(
         mwim-end-of-code-or-line
+        org-delete-char
         org-end-of-line
         org-self-insert-command
         ))
