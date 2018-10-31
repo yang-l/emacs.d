@@ -618,6 +618,32 @@ new line number mode since Emacs 26
   )
 #+END_SRC
 
+**** Makefile                                   :PROGRAMMING:
+
+build automation
+
+#+BEGIN_SRC emacs-lisp
+(use-package make-mode
+  ;; built-in BSDmakefile mode
+  :config
+  (add-hook 'makefile-bsdmake-mode-hook
+            #'(lambda ()
+                (setq-local tab-width 4)        ; 4 space indent per tab
+                ))
+  )
+#+END_SRC
+
+**** Markdown                                   :MARKUP_LANGUAGE:
+
+Markup language often for readme
+
+#+BEGIN_SRC emacs-lisp
+(use-package markdown-mode
+  :config
+  (setq markdown-fontify-code-blocks-natively t)
+  )
+#+END_SRC
+
 **** Narrowing
 
 #+BEGIN_SRC emacs-lisp
