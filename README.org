@@ -2431,6 +2431,7 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
 
 #+BEGIN_SRC emacs-lisp
 (use-package org-page
+  :disabled
   :commands (op/new-repository op/new-post op/do-publication)
   :ensure t
   :config
