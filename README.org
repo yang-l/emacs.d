@@ -1262,8 +1262,6 @@ Language Server Protocol
                 lsp-ui-doc-include-signature t
                 lsp-ui-sideline-ignore-duplicate t)
 
-          (add-hook 'lsp-after-open-hook        ; flycheck
-                    #'(lambda () (lsp-ui-flycheck-enable 1)))
           (yas-minor-mode)                      ; yasnippet
 
           ;; redefine the function in lsp-ui-doc
@@ -1355,6 +1353,12 @@ MODE is the mode used in the parent frame."
                     (overlay-put ov 'category 'indent-guide)
                     (overlay-put ov prop string)))))
             )
+          )
+
+        (use-package lsp-ui-flycheck
+          :after lsp-ui
+          :config
+          (add-hook 'lsp-after-open-hook #'(lambda () (lsp-ui-flycheck-enable 1)))
           )
 
         (use-package lsp-imenu

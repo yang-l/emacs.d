@@ -12,7 +12,7 @@
 
 (defun lsp-go--lsp-command ()
   "Generate LSP startup command."
-  `("go-langserver" "-mode=stdio" "-gocodecompletion"))
+  `("go-langserver" "-mode=stdio" "-gocodecompletion" "-maxparallelism" "2"))
 
 (defun lsp-go--render-string (str)
   "Render STR with `go-mode' syntax highlighting."
