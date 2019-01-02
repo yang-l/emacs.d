@@ -1077,6 +1077,13 @@ web-mode
   )
 #+END_SRC
 
+**** Powershell
+
+#+BEGIN_SRC emacs-lisp
+(use-package powershell
+  :ensure t)
+#+END_SRC
+
 *** Infrastructure
 
 **** yaml
