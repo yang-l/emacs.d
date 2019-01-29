@@ -1086,24 +1086,6 @@ web-mode
 
 *** Infrastructure
 
-**** yaml
-
-#+BEGIN_SRC emacs-lisp
-(use-package yaml-mode
-  :ensure t
-  :mode (("\\.ya?ml$"       . yaml-mode)
-         ("\\.ya?ml.erb\\'" . yaml-mode)
-         ("\\.json\\'"      . yaml-mode)
-         ("\\.json.erb\\'"  . yaml-mode))
-  )
-#+END_SRC
-
-**** js2
-
-#+BEGIN_SRC emacs-lisp
-(use-package jinja2-mode :ensure t :mode ("\\.j2" . jinja2-mode))
-#+END_SRC
-
 **** ansiable
 
 #+BEGIN_SRC emacs-lisp
@@ -1123,6 +1105,22 @@ web-mode
   :ensure t
   :config
   (setq es-always-pretty-print t)
+  )
+#+END_SRC
+
+**** js2
+
+#+BEGIN_SRC emacs-lisp
+(use-package jinja2-mode :ensure t :mode ("\\.j2" . jinja2-mode))
+#+END_SRC
+
+**** json
+
+#+BEGIN_SRC emacs-lisp
+(use-package json-mode
+  :ensure t
+  :mode (("\\.json\\'"      . json-mode)
+         ("\\.json.erb\\'"  . json-mode))
   )
 #+END_SRC
 
@@ -1151,13 +1149,23 @@ Explore and test HTTP REST webservices
   )
 #+END_SRC
 
-**** Terraform
+**** terraform
 
 #+BEGIN_SRC emacs-lisp
 (use-package terraform-mode
   :defer t
   :ensure t
   :config (setq terraform-indent-level 2)
+  )
+#+END_SRC
+
+**** yaml
+
+#+BEGIN_SRC emacs-lisp
+(use-package yaml-mode
+  :ensure t
+  :mode (("\\.ya?ml$"       . yaml-mode)
+         ("\\.ya?ml.erb\\'" . yaml-mode))
   )
 #+END_SRC
 
@@ -2768,6 +2776,18 @@ File manager
   (dired "~/")
   )
 #+END_SRC
+
+*** Json Formatter                              :EDIT:
+
+#+BEGIN_SRC emacs-lisp
+(defun json-format ()
+  (interactive)
+  (save-excursion
+    (shell-command-on-region (mark) (point) "python -m json.tool" (buffer-name) t)
+    )
+  )
+#+END_SRC
+
 * Tips
 
 ** Keybindings
