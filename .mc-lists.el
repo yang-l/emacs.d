@@ -3,10 +3,13 @@
 
 (setq mc/cmds-to-run-for-all
       '(
+        indent-for-tab-command
         mwim-end-of-code-or-line
         org-delete-char
         org-end-of-line
         org-self-insert-command
+        powershell-indent-line
+        yaml-electric-backspace
         ))
 
 (setq mc/cmds-to-run-once
