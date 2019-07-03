@@ -1,0 +1,5 @@
+pyls-mypy
+pyls-isort
+pyls-black
+# perfer 'yapf' over 'autopep8' for pyls code formatting
+python-language-server[mccabe,pycodestyle,pydocstyle,pyflakes,pylint,rope,yapf]
