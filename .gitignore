@@ -1,3 +1,5 @@
 README.el*
 elpa/
-.cache/treemacs-persist
+.cache/
+transient/
+.lsp-session-v1
