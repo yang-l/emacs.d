@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 # $1 - virtualenv path
 # $2 - pip packages

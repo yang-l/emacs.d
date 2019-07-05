@@ -1207,6 +1207,8 @@ Explore and test HTTP REST webservices
 
 **** Shared Functions
 
+Helper function to create a Python virtualenv used for LSP servers
+
 #+BEGIN_SRC emacs-lisp
 (dolist
     (mode-hook
@@ -1220,26 +1222,24 @@ Explore and test HTTP REST webservices
           "Create a python pip based virtualenv and install packages based on the supplied requirement file"
           (use-package pyvenv
             :ensure t
-            :config
-            (progn
-              (defvar python-virtualenv-directory
-                (concat backup-directory virtualenv-folder))
-              (if (not (file-exists-p python-virtualenv-directory))
-                  (progn
-                    (make-directory python-virtualenv-directory t)
-                    (shell-command
-                     (concat
-                      "bash" " "
-                      (expand-file-name (concat user-emacs-directory setup-cmd)) " "
-                      (expand-file-name (concat python-virtualenv-directory)) " "
-                      (expand-file-name (concat user-emacs-directory requirement-file))
-                      (when install-packages (concat " " install-packages))
-                      ))
+            :init
+            (defvar python-virtualenv-directory (concat backup-directory virtualenv-folder))
+            (if (not (file-exists-p python-virtualenv-directory))
+                (progn
+                  (make-directory python-virtualenv-directory t)
+                  (shell-command
+                   (concat
+                    "bash" " "
+                    (expand-file-name (concat user-emacs-directory setup-cmd)) " "
+                    (expand-file-name (concat python-virtualenv-directory)) " "
+                    (expand-file-name (concat user-emacs-directory requirement-file))
+                    (when install-packages (concat " " install-packages))
                     ))
-              (pyvenv-activate python-virtualenv-directory)
-              (pyvenv-tracking-mode t)
-              ))
-          ))))
+                  ))
+            (pyvenv-activate python-virtualenv-directory)
+            (pyvenv-tracking-mode t)
+            ))
+        )))
 #+END_SRC
 
 **** LSP
@@ -1259,6 +1259,7 @@ Language Server Protocol
   (add-hook mode-hook
     #'(lambda ()
         (use-package lsp-mode
+          :commands lsp
           :ensure t
           :config
           (setq lsp-message-project-root-warning t)
@@ -1266,6 +1267,7 @@ Language Server Protocol
 
         (use-package lsp-ui
           :after lsp-mode yasnippet
+          :commands lsp-ui-mode
           :ensure t
           :bind (:map lsp-ui-mode-map
                  ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
@@ -1372,24 +1374,35 @@ MODE is the mode used in the parent frame."
 
         (use-package lsp-ui-flycheck
           :after lsp-ui
+          :commands lsp-ui-flycheck-enable
           :config
           (add-hook 'lsp-after-open-hook #'(lambda () (lsp-ui-flycheck-enable 1)))
           )
 
-        (use-package lsp-imenu
-          :after lsp-mode
-          :hook
-          ((lsp-after-open . lsp-enable-imenu))
+        (use-package lsp-ui-imenu
+          :after lsp-ui
+          :commands lsp-ui-imenu-enable
           )
 
         (use-package company-lsp
           :after lsp-mode company
+          :commands company-lsp
           :ensure t
           :init
           (push 'company-lsp company-backends)
-          :config
-          (setq company-lsp-enable-recompletion t)
           )
+
+        (use-package helm-lsp
+          :commands helm-lsp-workspace-symbol
+          :ensure t
+          )
+
+        (use-package lsp-treemacs
+          :commands lsp-treemacs-errors-list
+          :ensure t
+          )
+
+        (use-package dap-mode :ensure t)
         ))
   )
 #+END_SRC
@@ -1566,9 +1579,10 @@ MODE is the mode used in the parent frame."
 
 #+BEGIN_SRC emacs-lisp
 (use-package python
+  :if (executable-find "python3")
   :interpreter ("python" . python-mode)
-  :mode ("\\.py\\'" . python-mode)
-        ("\\.wsgi$" . python-mode)
+  :mode (("\\.py\\'" . python-mode)
+         ("\\.wsgi$" . python-mode))
   :config
   (add-hook 'python-mode-hook
     #'(lambda ()
@@ -1578,8 +1592,20 @@ MODE is the mode used in the parent frame."
                            "bin/venv-python3.sh"
                            "bin/python3-pip-requirements.txt")
 
-        (require 'lsp-python)                   ; lsp-python
-        (lsp-python-enable)
+        (require 'lsp-pyls)                     ; LSP
+        (setq lsp-clients-python-library-directories
+              '((expand-file-name (concat backup-directory "venv-lsp-python3/"))))
+        (setq flycheck-python-pylint-executable
+              (expand-file-name (concat backup-directory "venv-lsp-python3/bin/pylint")))
+        (unless (file-exists-p (concat backup-directory "venv-lsp-python3/etc/pylintrc"))
+          (shell-command
+           (concat
+            "pylint --generate-rcfile > "
+            (concat backup-directory "venv-lsp-python3/etc/pylintrc")
+            )))
+        (setq flycheck-pylintrc (concat backup-directory "venv-lsp-python3/etc/pylintrc"))
+        (lsp)
+        (require 'dap-python)                   ; lsp debugger
 
         (when (executable-find "jupyter")       ; use jupyter via C-c C-p
           (setq python-shell-interpreter "jupyter"
