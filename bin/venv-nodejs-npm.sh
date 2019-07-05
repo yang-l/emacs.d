@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 # $1 - virtualenv path
 # $2 - pip packages
-# $3 - npm packages - comma separated package string
+# $3 - node.js version
+# $4 - npm packages - comma separated package string
 
 if [ -d "${1}" ]; then
     if [ ! -L "${1}" ]; then
@@ -14,9 +15,9 @@ if [ -d "${1}" ]; then
         python -m pip install -U -r "${2}"
 
         ## Node.js configure
-        nodeenv -p
+        nodeenv -p --node=${3}
         # /Applications/Python\ 3.6/Install\ Certificates.command
-        for APP in $(echo ${3} | sed 's/,/ /g')
+        for APP in $(echo ${4} | sed 's/,/ /g')
         do
             npm i -g "${APP}"
         done

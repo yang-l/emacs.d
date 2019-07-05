@@ -1218,7 +1218,7 @@ Helper function to create a Python virtualenv used for LSP servers
        sh-mode-hook))
   (add-hook mode-hook
     #'(lambda ()
-        (defun create-virtualenv (virtualenv-folder setup-cmd requirement-file &optional install-packages)
+        (defun create-virtualenv (virtualenv-folder setup-cmd requirement-file &optional version install-packages)
           "Create a python pip based virtualenv and install packages based on the supplied requirement file"
           (use-package pyvenv
             :ensure t
@@ -1233,6 +1233,7 @@ Helper function to create a Python virtualenv used for LSP servers
                     (expand-file-name (concat user-emacs-directory setup-cmd)) " "
                     (expand-file-name (concat python-virtualenv-directory)) " "
                     (expand-file-name (concat user-emacs-directory requirement-file))
+                    (when version (concat " " version))
                     (when install-packages (concat " " install-packages))
                     ))
                   ))
@@ -1420,12 +1421,17 @@ MODE is the mode used in the parent frame."
                       sh-indentation 2
                       sh-indent-comment t)
 
+        ; node-gyp - only working under python 2.x
+        ; tree-sitter - not working under node v12
+        ; Fixing OSX/ndoe "Operation not permitted" - add 'node' under "Security & Privacy"
+        ;; -> http://osxdaily.com/2018/10/09/fix-operation-not-permitted-terminal-error-macos/
         (create-virtualenv "venv-lsp-bash/"     ; bash lsp
                            "bin/venv-nodejs-npm.sh"
                            "bin/nodejs-pip-requirements.txt"
+                           "11.15.0"
                            "bash-language-server")
-        (require 'lsp-bash)
-        (lsp-bash-enable)
+        (require 'lsp-clients)
+        (lsp)
         ) t)
   )
 #+END_SRC
