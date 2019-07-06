@@ -1448,10 +1448,17 @@ MODE is the mode used in the parent frame."
         (create-virtualenv "venv-lsp-dockerfile/"   ; lsp venv folder
                            "bin/venv-nodejs-npm.sh"
                            "bin/nodejs-pip-requirements.txt"
+                           "12.6.0"
                            "dockerfile-language-server-nodejs")
 
-        (require 'lsp-dockerfile)               ; LSP
-        (lsp-dockerfile-enable)
+        (require 'lsp-mode)                     ; LSP
+        (lsp-register-client
+         (make-lsp-client :new-connection (lsp-stdio-connection '("docker-langserver" "--stdio"))
+                          :major-modes '(dockerfile-mode)
+                          :priority -1
+                          :server-id 'dockerfile-ls))
+        (add-to-list 'lsp-language-id-configuration '(dockerfile-mode . "dockerfile-mode"))
+        (lsp)
         ) t)
   )
 #+END_SRC
