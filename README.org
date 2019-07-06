@@ -1469,6 +1469,7 @@ MODE is the mode used in the parent frame."
 (use-package go-mode
   :ensure t
   :defer t
+  :if (executable-find "go")
   :config
   (add-hook 'go-mode-hook
     #'(lambda ()
@@ -1484,7 +1485,7 @@ MODE is the mode used in the parent frame."
               (when (executable-find "go")
                 (shell-command                              ; install go-language lsp
                  (concat
-                  "GOPATH=" (expand-file-name go-langserver-directory) " go get -u github.com/sourcegraph/go-langserver"))
+                  "GOPATH=" (expand-file-name go-langserver-directory) " go get -u golang.org/x/tools/cmd/gopls"))
                 (shell-command                              ; install godoctor
                  (concat
                   "GOPATH=" (expand-file-name go-langserver-directory) " go get -u github.com/godoctor/godoctor"))
@@ -1497,7 +1498,7 @@ MODE is the mode used in the parent frame."
         (setenv "GOPATH" (expand-file-name go-langserver-directory))
 
         (require 'lsp-go)
-        (lsp-go-enable)
+        (lsp)
         ) t)
 
   (use-package godoctor :ensure t)                          ; godoctor - golang refactor
