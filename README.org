@@ -1262,8 +1262,11 @@ Language Server Protocol
         (use-package lsp-mode
           :commands lsp
           :ensure t
-          :config
-          (setq lsp-message-project-root-warning t)
+          :custom
+          (lsp-auto-guess-root t)
+          (lsp-document-sync-method 'incremental)
+          (lsp-prefer-flymake nil)
+          (lsp-response-timeout 5)
           )
 
         (use-package lsp-ui
@@ -1275,31 +1278,16 @@ Language Server Protocol
                  ([remap xref-find-references]  . lsp-ui-peek-find-references))
           :hook
           ((lsp-mode . lsp-ui-mode))
+          :custom
+          (lsp-ui-doc-delay 0.5)
+          (lsp-ui-doc-include-signature t)
+          (lsp-ui-doc-position 'bottom)
+          (lsp-ui-sideline-ignore-duplicate t)
+          (lsp-ui-flycheck-enable t)
+          (lsp-ui-flycheck-list-position 'right)
+          (lsp-ui-flycheck-live-reporting nil)
           :config
-          (setq lsp-ui-doc-position 'bottom
-                lsp-ui-doc-include-signature t
-                lsp-ui-sideline-ignore-duplicate t)
-
           (yas-minor-mode)                      ; yasnippet
-
-          ;; redefine the function in lsp-ui-doc
-          ;; may need to sync the content with the latest version of lsp-ui-doc.el
-          (defun lsp-ui-doc--setup-markdown (mode)
-            "Setup the ‘markdown-mode’ in the frame.
-MODE is the mode used in the parent frame."
-            (make-local-variable 'markdown-code-lang-modes)
-            (dolist (mark (alist-get mode lsp-ui-doc-custom-markup-modes))
-              (add-to-list 'markdown-code-lang-modes (cons mark mode)))
-            (setq-local markdown-fontify-code-blocks-natively nil)      ; disabled
-            (setq-local markdown-fontify-code-block-default-mode mode)
-            (setq-local markdown-hide-markup t)
-
-            ; lsp-ui-doc is using (markdown-view-mode)
-            ; ignore rendering code block for background and text style in order to prevent hard to read rendered texts
-            (set-face-attribute 'markdown-code-face nil
-                                :inherit 'default
-                                :background nil)
-            )
 
           ;; workaroud for misplaced indent guide lines with "indent-guide" & "lsp-ui-sideline"
           ;; https://github.com/emacs-lsp/lsp-ui/issues/32
@@ -1383,19 +1371,36 @@ MODE is the mode used in the parent frame."
         (use-package lsp-ui-imenu
           :after lsp-ui
           :commands lsp-ui-imenu-enable
+          :custom
+          (lsp-ui-imenu-enable t)
           )
 
         (use-package company-lsp
           :after lsp-mode company
           :commands company-lsp
           :ensure t
+          :custom
+          (company-lsp-async t)
+          (company-lsp-cache-candidates nil)
           :init
           (push 'company-lsp company-backends)
+          :config
+          (setq company-transformers nil)
           )
 
         (use-package helm-lsp
           :commands helm-lsp-workspace-symbol
           :ensure t
+          :config
+          (defun helm-lsp-workspace-symbol-at-point ()
+            (interactive)
+            (let ((current-prefix-arg t))
+              (call-interactively #'helm-lsp-workspace-symbol)))
+
+          (defun helm-lsp-global-workspace-symbol-at-point ()
+            (interactive)
+            (let ((current-prefix-arg t))
+              (call-interactively #'helm-lsp-global-workspace-symbol)))
           )
 
         (use-package lsp-treemacs
@@ -2009,11 +2014,11 @@ vi layer for Emacs
   :hook (prog-mode . flycheck-mode)
   :config
   (setq flycheck-check-syntax-automatically
-        '(save
+        '(new-line
           idle-change
-          mode-enabled)
+          save)
         flycheck-idle-change-delay
-        (if flycheck-current-errors 0.5 30.0)
+        (if flycheck-current-errors 0.5 15.0)
         )
   (flymake-mode -1)                             ; disable flymake
   )
