@@ -1262,6 +1262,21 @@ Language Server Protocol
         (use-package lsp-mode
           :commands lsp
           :ensure t
+          :general
+          (:states '(normal insert emacs)
+           :keymaps 'lsp-mode-map
+           :prefix ","
+           :non-normal-prefix "C-x ,"
+           "lsrn" 'lsp-rename
+           "lsfb" 'lsp-format-buffer
+           "lsoi" 'lsp-organize-imports
+           "lsgi" 'lsp-goto-implementation
+           "lsgd" 'lsp-goto-type-definition
+           "lssh" 'lsp-symbol-highlight
+           "lshi" 'helm-imenu
+           "lsfd" 'lsp-find-definition
+           "lsfr" 'lsp-find-references
+           )
           :custom
           (lsp-auto-guess-root t)
           (lsp-document-sync-method 'incremental)
@@ -1278,6 +1293,16 @@ Language Server Protocol
                  ([remap xref-find-references]  . lsp-ui-peek-find-references))
           :hook
           ((lsp-mode . lsp-ui-mode))
+          :general
+          (:states '(normal insert emacs)
+           :keymaps 'lsp-ui-mode-map
+           :prefix ","
+           :non-normal-prefix "C-x ,"
+           "lspr" 'lsp-ui-peek-find-references
+           "lspd" 'lsp-ui-peek-find-definitions
+           "lspi" 'lsp-ui-peek-find-implementation
+           "lsui" 'lsp-ui-imenu
+           )
           :custom
           (lsp-ui-doc-delay 0.5)
           (lsp-ui-doc-include-signature t)
@@ -1406,6 +1431,13 @@ Language Server Protocol
         (use-package lsp-treemacs
           :commands lsp-treemacs-errors-list
           :ensure t
+          :general
+          (:states '(normal insert emacs)
+           :keymaps 'lsp-mode-map
+           :prefix ","
+           :non-normal-prefix "C-x ,"
+           "lstr" 'lsp-treemacs-errors-list
+           )
           )
 
         (use-package dap-mode :ensure t)
