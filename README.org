@@ -1645,7 +1645,8 @@ Language Server Protocol
 
         (require 'lsp-pyls)                     ; LSP
         (setq lsp-clients-python-library-directories
-              '((expand-file-name (concat backup-directory "venv-lsp-python3/"))))
+              (list
+               (expand-file-name (concat backup-directory "venv-lsp-python3/"))))
         (setq flycheck-python-pylint-executable
               (expand-file-name (concat backup-directory "venv-lsp-python3/bin/pylint")))
         (unless (file-exists-p (concat backup-directory "venv-lsp-python3/etc/pylintrc"))
