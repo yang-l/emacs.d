@@ -1191,8 +1191,8 @@ Explore and test HTTP REST webservices
     (local-set-key (kbd "C-c +")
                    'senator-unfold-tag)
 
-    (add-to-list 'company-backends '(company-gtags
-                                     company-semantic))
+    (add-to-list (make-local-variable 'company-backends)
+                 '(company-gtags company-semantic))
     ))
 
 (dolist
@@ -1408,10 +1408,35 @@ Language Server Protocol
           :custom
           (company-lsp-async t)
           (company-lsp-cache-candidates nil)
-          :init
-          (push 'company-lsp company-backends)
           :config
-          (setq company-transformers nil)
+          ;; https://emacs-china.org/t/tabnine/9988/39
+          (defun company//sort-by-tabnine (candidates)
+            "The first two candidates will be from company-lsp, the following two
+candidates will be from company-tabnine, others keeping their own origin order."
+            (if (or (functionp company-backend)
+                    (not (and (listp company-backend) (memq 'company-tabnine company-backend))))
+                candidates
+              (let ((candidates-table (make-hash-table :test #'equal))
+                    candidates-1
+                    candidates-2)
+                (dolist (candidate candidates)
+                  (if (eq (get-text-property 0 'company-backend candidate)
+                          'company-tabnine)
+                      (unless (gethash candidate candidates-table)
+                        (push candidate candidates-2))
+                    (push candidate candidates-1)
+                    (puthash candidate t candidates-table)))
+                (setq candidates-1 (nreverse candidates-1))
+                (setq candidates-2 (nreverse candidates-2))
+                (nconc (seq-take candidates-1 2)
+                       (seq-take candidates-2 2)
+                       (seq-drop candidates-1 2)
+                       (seq-drop candidates-2 2)))))
+          (add-to-list (make-local-variable 'company-transformers) 'company//sort-by-tabnine)
+          (make-local-variable 'company-backends)
+          (setq company-backends (delete 'company-tabnine company-backends))
+          (setq company-backends (delete 'company-lsp company-backends))
+          (add-to-list 'company-backends '(company-lsp :with company-tabnine :separate))
           )
 
         (use-package helm-lsp
@@ -1831,27 +1856,33 @@ Visible bookmarks
   )
 #+END_SRC
 
-*** company mode
+*** company
 
 #+BEGIN_SRC emacs-lisp
 (use-package company
-  :bind (([remap hippie-expand] . company-complete))
+  :bind (([remap hippie-expand] . company-complete)
+         :map company-mode-map
+         ([remap indent-for-tab-command] . company-indent-or-complete-common))
   :diminish company-mode
   :ensure t
   :hook ((prog-mode) . company-mode)
   :config
   (setq-default
        company-backends                         ; default backends
-         '((company-abbrev
-            company-dabbrev
-            company-dabbrev-code
-            company-files
-            company-ispell
-            company-keywords                    ; keywords
-            company-yasnippet
-            ))
+         '(company-yasnippet
+           (company-dabbrev-code
+            company-ispell)
+           (company-capf
+            company-files                       ; files & directory
+            company-keywords)                   ; keywords
+           (company-abbrev
+            company-dabbrev))
+       company-frontends
+         '(company-tng-frontend
+           company-pseudo-tooltip-frontend
+           company-echo-metadata-frontend)
        company-global-modes '(not eshell-mode)
-       company-idle-delay 0.25                  ; delay before autocompletion popup shows
+       company-idle-delay 0.07                  ; delay before autocompletion popup shows
        company-minimum-prefix-length 2
        company-tooltip-align-annotations t
        company-tooltip-limit 10                 ; popup window size
@@ -1865,7 +1896,25 @@ Visible bookmarks
        company-dabbrev-other-buffers t
        company-transformers '(company-sort-by-occurrence)
        )
-    )
+  (company-tng-configure-default)               ; TAB selection
+  )
+
+(use-package company-tabnine
+  :after company
+  :commands company-tabnine
+  :ensure t
+  :init
+  (push 'company-tabnine company-backends)
+  :config
+  (setq company-tabnine-max-num-results 3)
+  ;; https://emacs-china.org/t/tabnine/9988/50
+  (defadvice company-echo-show (around disable-tabnine-upgrade-message activate)
+    (let ((company-message-func (ad-get-arg 0)))
+      (when (and company-message-func
+                 (stringp (funcall company-message-func)))
+        (unless (string-match "The free version of TabNine only indexes up to" (funcall company-message-func))
+          ad-do-it))))
+  )
 #+END_SRC
 
 *** drag-stuff                                  :EDIT:
