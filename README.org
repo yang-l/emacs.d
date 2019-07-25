@@ -37,7 +37,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 
 ;; override
 (when (file-exists-p (concat user-emacs-directory "private.el"))
-    (load (expand-file-name "private.el" user-emacs-directory)))
+  (load (expand-file-name "private.el" user-emacs-directory) 'no-error))
 #+END_SRC
 
 *** ELPA
@@ -60,9 +60,10 @@ Path to personal/credential info in =~/.emacs.d/private.el=
       (setq package-pinned-packages
             '((evil         . "MELPA")
               (lsp-mode     . "MELPA")
+              (no-littering . "MELPA")
               (org-page     . "MELPA")
-              (treemacs-magit     . "MELPA")
-              (counsel-projectile . "MELPA")))
+              (counsel-projectile . "MELPA")
+              (treemacs-magit     . "MELPA")))
       )
     (package-initialize)
     )
@@ -91,6 +92,24 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 Configuration for `use-package'. The packages below should be loaded first before any `use-package' has been invoked
 
 #+BEGIN_SRC emacs-lisp
+(defvar backup-directory                        ; backup and autosave directory
+  (if (eq system-type 'windows-nt)              ; Windows
+      (concat "C:/tmp/emacs/" (user-login-name) "/")
+    (expand-file-name
+     (concat "~/emacs/" (user-login-name) "/")) ; Linux & Mac
+    ))
+(if (not (file-exists-p backup-directory))
+    (make-directory backup-directory t))
+
+(use-package no-littering                       ; keep `litter` files in one location
+  :ensure t
+  :custom
+  (no-littering-var-directory (expand-file-name (convert-standard-filename "cache/var/") backup-directory))
+  (no-littering-etc-directory (expand-file-name (convert-standard-filename "cache/etc/") backup-directory))
+  )
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
 (use-package diminish :ensure t)                ; shorten mode-line
 (use-package general :ensure t)                 ; redefin keymaps
 #+END_SRC
@@ -113,6 +132,8 @@ Configuration for `use-package'. The packages below should be loaded first befor
 (setq-default
     ad-redefinition-action 'accept              ; silence functions getting redefined messages
     column-number-mode t                        ; show cursor position
+    custom-file                                 ; save customisations into a sibling file
+    (no-littering-expand-etc-file-name "custom.el")
     default-major-mode 'text-mode               ; set new buffers as text files
     enable-recursive-minibuffers t              ; enable minibuffer recursive
     fill-column 80                              ; column space
@@ -311,17 +332,9 @@ OSX-only key bindings
 **** Emacs backup folder
 
 #+BEGIN_SRC emacs-lisp
-(defvar backup-directory                        ; backup and autosave directory
-  (if (eq system-type 'windows-nt)              ; Windows
-      (concat "C:/tmp/emacs/" (user-login-name) "/")
-    (expand-file-name
-     (concat "~/emacs/" (user-login-name) "/")) ; Linux & Mac
-    ))
-(if (not (file-exists-p backup-directory))
-    (make-directory backup-directory t))
 (setq backup-directory-alist `((".*" . ,backup-directory)))
 (setq auto-save-list-file-prefix backup-directory)
-(setq auto-save-file-name-transforms `((".*", backup-directory t)))
+(setq auto-save-file-name-transforms `((".*" ,backup-directory t)))
 (setq make-backup-files t                       ; backup of a file the first time it is saved.
       backup-by-copying t                       ; don't clobber symlinks
       version-control t                         ; version numbers for backup files
@@ -357,24 +370,11 @@ savehist - save the minibuffer histories
   :defer 0.5
   :config
   (setq-default savehist-additional-variables '(kill-ring search-ring regexp-search-ring extended-command-history)
-                savehist-file (concat backup-directory "savehist")
                 savehist-autosave-interval 60
                 history-length 10000
                 )
   (savehist-mode 1)
   )
-#+END_SRC
-
-**** Folders for other modes
-
-#+BEGIN_SRC emacs-lisp
-(setq semanticdb-default-save-directory
-        (expand-file-name "semanticdb" backup-directory)
-      recentf-save-file
-        (expand-file-name "recentf" backup-directory)
-      vimish-fold-dir
-        (expand-file-name "vimish-fold" backup-directory)
-    )
 #+END_SRC
 
 **** Create missing parent directories
@@ -397,8 +397,6 @@ savehist - save the minibuffer histories
   :defer 2
   :diminish abbrev-mode
   :config
-  (setq abbrev-file-name
-        (concat backup-directory "abbrev-defs"))
   (if (file-exists-p abbrev-file-name)
       (quietly-read-abbrev-file))
   )
@@ -749,11 +747,7 @@ Markup language often for readme
   :defer t
   :config
   (setq tramp-default-method "ssh"              ; faster than the default scp
-        tramp-use-ssh-controlmaster-options nil
-        tramp-auto-save-directory backup-directory
-        tramp-persistency-file-name             ; tramp histroy file location
-        (expand-file-name "tramp" backup-directory)
-        )
+        tramp-use-ssh-controlmaster-options nil)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (tramp-set-completion-function
    "ssh"
@@ -1838,8 +1832,6 @@ Visible bookmarks
   :defer 2
   :ensure t
   :init
-  (setq bm-repository-file
-        (concat backup-directory "bm-repository"))
   (setq bm-restore-repository-on-load t)        ; restore on load
   :config
   (setq bm-cycle-all-buffers t)                 ; cycle through bookmarks in all open buffers
@@ -2059,14 +2051,7 @@ vi layer for Emacs
   :ensure t
   :init (setf url-queue-timeout 30)
   :config
-  (setq elfeed-db-directory
-        (let
-            ((elfeed_db
-              (concat backup-directory
-                      "elfeed_db/")))           ; must end with /
-          (make-directory elfeed_db :parents)
-          elfeed_db)
-        my-elfeed-timer                         ; 1hr update timer
+  (setq my-elfeed-timer                         ; 1hr update timer
         (run-at-time t (* 60 60) #'elfeed-update)
         elfeed-feeds
         '(("http://www.reddit.com/r/devops/.rss" devops reddit)
@@ -2179,7 +2164,6 @@ move where I mean
   (treemacs-no-png-images                 nil)
   (treemacs-no-delete-other-windows       t)
   (treemacs-project-follow-cleanup        nil)
-  (treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory))
   (treemacs-position                      'left)
   (treemacs-recenter-distance             0.1)
   (treemacs-recenter-after-file-follow    nil)
@@ -2322,8 +2306,6 @@ auto-save buffers
   (global-undo-tree-mode)
   (setq undo-tree-visualizer-diff t
         undo-tree-visualizer-timestamps t
-        undo-tree-history-directory-alist
-        `((".*" . ,backup-directory))
         undo-tree-auto-save-history t)
   )
 #+END_SRC
@@ -2417,8 +2399,6 @@ Diff between directories
         helm-M-x-fuzzy-match t
         helm-recentf-fuzzy-match t
         helm-semantic-fuzzy-match t
-        helm-adaptive-history-file
-            (expand-file-name "helm-adaptive-history" backup-directory)
         helm-candidate-number-limit 100         ; candidate limit
         helm-ff-search-library-in-sexp t        ; search for library in `require' and `declare-function' sexp
         helm-move-to-line-cycle-in-source t     ; move to end or beginning of source when reaching top or bottom of source
@@ -2497,12 +2477,8 @@ Diff between directories
             projectile-completion-system 'ivy               ; via ivy backend
             projectile-enable-caching t                     ; enable caching unconditionally
             projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
-            projectile-known-projects-file (expand-file-name
-                                            "projectile-bookmarks.eld" backup-directory)
             projectile-remember-window-configs t
             projectile-switch-project-action 'counsel-projectile-find-file-or-buffer
-            projectile-cache-file (expand-file-name         ; Projectile cache file
-                                   "projectile.cache" backup-directory)
             projectile-sort-order 'modification-time
             projectile-globally-ignored-directories (append
                                                      '(".metadata") projectile-globally-ignored-directories)
