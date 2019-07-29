@@ -1632,16 +1632,11 @@ candidates will be from company-tabnine, others keeping their own origin order."
         (create-virtualenv "venv-lsp-js/"       ; js lsp venv folder
                            "bin/venv-nodejs-npm.sh"
                            "bin/nodejs-pip-requirements.txt"
-                           "typescript,typescript-language-server")
+                           "12.7.0"
+                           "typescript-language-server,typescript")
 
-        (use-package lsp-javascript-typescript  ; JS LSP
-          :ensure t
-          )
-        (setq lsp-javascript-typescript-server
-                "typescript-language-server"
-              lsp-javascript-typescript-server-args
-                '("--stdio" "--tsserver-path=tsserver"))
-        (lsp-javascript-typescript-enable)
+        (require 'lsp-clients)
+        (lsp)
         ) t)
   )
 #+END_SRC
