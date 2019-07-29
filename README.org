@@ -1213,7 +1213,7 @@ Helper function to create a Python virtualenv used for LSP servers
        sh-mode-hook))
   (add-hook mode-hook
     #'(lambda ()
-        (defun create-virtualenv (virtualenv-folder setup-cmd requirement-file &optional version install-packages)
+        (defun create-virtualenv (virtualenv-folder setup-cmd python-version requirement-file &optional version install-packages)
           "Create a python pip based virtualenv and install packages based on the supplied requirement file"
           (use-package pyvenv
             :ensure t
@@ -1227,6 +1227,7 @@ Helper function to create a Python virtualenv used for LSP servers
                     "bash" " "
                     (expand-file-name (concat user-emacs-directory setup-cmd)) " "
                     (expand-file-name (concat python-virtualenv-directory)) " "
+                    python-version " "
                     (expand-file-name (concat user-emacs-directory requirement-file))
                     (when version (concat " " version))
                     (when install-packages (concat " " install-packages))
@@ -1484,6 +1485,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
         ;; -> http://osxdaily.com/2018/10/09/fix-operation-not-permitted-terminal-error-macos/
         (create-virtualenv "venv-lsp-bash/"     ; bash lsp
                            "bin/venv-nodejs-npm.sh"
+                           "python"
                            "bin/nodejs-pip-requirements.txt"
                            "11.15.0"
                            "bash-language-server")
@@ -1504,8 +1506,9 @@ candidates will be from company-tabnine, others keeping their own origin order."
     #'(lambda ()
         (create-virtualenv "venv-lsp-dockerfile/"   ; lsp venv folder
                            "bin/venv-nodejs-npm.sh"
+                           "python3"
                            "bin/nodejs-pip-requirements.txt"
-                           "12.6.0"
+                           "12.7.0"
                            "dockerfile-language-server-nodejs")
 
         (require 'lsp-mode)                     ; LSP
@@ -1631,6 +1634,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
 
         (create-virtualenv "venv-lsp-js/"       ; js lsp venv folder
                            "bin/venv-nodejs-npm.sh"
+                           "python3"
                            "bin/nodejs-pip-requirements.txt"
                            "12.7.0"
                            "typescript-language-server,typescript")
@@ -1656,6 +1660,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
 
         (create-virtualenv "venv-lsp-python3/"  ; create virtualenv
                            "bin/venv-python3.sh"
+                           "python3"
                            "bin/python3-pip-requirements.txt")
 
         (require 'lsp-pyls)                     ; LSP
