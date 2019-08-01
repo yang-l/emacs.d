@@ -1461,7 +1461,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
            )
           )
 
-        (use-package dap-mode :ensure t)
+        (use-package dap-mode :ensure t :defer t)
         ))
   )
 #+END_SRC
@@ -1778,7 +1778,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
             #'(lambda ()
                 (defvar ruby-workspace-directory        ; ruby language server
                   (expand-file-name (concat backup-directory "venv-lsp-ruby/")))
-                (defvar ruby-version "2.5.1")           ; ruby version
+                (defvar ruby-version "2.6.3")           ; ruby version
                 (if (not (file-exists-p ruby-workspace-directory))
                     (progn
                       (make-directory
@@ -1800,26 +1800,32 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
                 (setenv "PATH" (concat (expand-file-name "~/.rbenv/versions/") ruby-version "/bin/:" (getenv "PATH")))
                 (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
 
-                (require 'lsp-ruby)
-                (lsp-ruby-enable)
+                (require 'lsp-solargraph)               ; LSP
+                (lsp-register-client                    ; using rbenv/bundle instead to start ls
+                 (make-lsp-client :new-connection (lsp-stdio-connection '("rbenv" "exec" "bundle" "exec" "solargraph" "stdio"))
+                                  :major-modes '(ruby-mode enh-ruby-mode)
+                                  :priority 0
+                                  :multi-root t
+                                  :server-id 'ruby-ls
+                                  :initialized-fn (lambda (workspace)
+                                                    (with-lsp-workspace workspace
+                                                      (lsp--set-configuration
+                                                       (lsp-configuration-section "solargraph"))))))
+                (lsp)
                 ) t)
-  )
-#+END_SRC
 
-#+BEGIN_SRC emacs-lisp
-(use-package inf-ruby
-  :after enh-ruby-mode
-  :ensure t
-  :hook (compilation-filter . inf-ruby-auto-enter)
-  )
-#+END_SRC
+  (use-package inf-ruby
+    :after enh-ruby-mode
+    :ensure t
+    :hook (compilation-filter . inf-ruby-auto-enter)
+    )
 
-#+BEGIN_SRC emacs-lisp
-(use-package rspec-mode
-  :after enh-ruby-mode
-  :diminish rspec-mode
-  :ensure t
-  :hook (enh-ruby-mode . rspec-mode)
+  (use-package rspec-mode
+    :after enh-ruby-mode
+    :diminish rspec-mode
+    :ensure t
+    :hook (enh-ruby-mode . rspec-mode)
+    )
   )
 #+END_SRC
 
@@ -1902,7 +1908,6 @@ Visible bookmarks
        company-dabbrev-other-buffers t
        company-transformers '(company-sort-by-occurrence)
        )
-  (company-tng-configure-default)               ; TAB selection
   )
 
 (use-package company-tabnine
