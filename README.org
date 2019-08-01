@@ -107,11 +107,26 @@ Configuration for `use-package'. The packages below should be loaded first befor
   (no-littering-var-directory (expand-file-name (convert-standard-filename "cache/var/") backup-directory))
   (no-littering-etc-directory (expand-file-name (convert-standard-filename "cache/etc/") backup-directory))
   )
-#+END_SRC
 
-#+BEGIN_SRC emacs-lisp
 (use-package diminish :ensure t)                ; shorten mode-line
 (use-package general :ensure t)                 ; redefin keymaps
+#+END_SRC
+
+straight.el
+
+#+BEGIN_SRC emacs-lisp
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
 #+END_SRC
 
 *** UTF-8 on everything
