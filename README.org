@@ -1087,13 +1087,6 @@ web-mode
   )
 #+END_SRC
 
-**** Powershell
-
-#+BEGIN_SRC emacs-lisp
-(use-package powershell
-  :ensure t)
-#+END_SRC
-
 *** Infrastructure
 
 **** ansiable
@@ -1266,6 +1259,7 @@ Language Server Protocol
        go-mode-hook
        java-mode-hook
        js2-mode-hook
+       powershell-mode-hook
        python-mode-hook
        sh-mode-hook))
   (add-hook mode-hook
@@ -1672,6 +1666,28 @@ candidates will be from company-tabnine, others keeping their own origin order."
         (lsp)
         ) t)
   )
+#+END_SRC
+
+**** Powershell
+
+#+BEGIN_SRC emacs-lisp
+(use-package powershell
+  :defer t
+  :ensure t
+  :config
+  (use-package lsp-pwsh
+    :defer t
+    :if (executable-find "pwsh")
+    :straight (lsp-pwsh
+               :host github
+               :repo "kiennq/lsp-powershell")
+    :init
+    (setq lsp-pwsh-dir (expand-file-name "lsp-pwsh/.extension/pwsh/PowerShellEditorServices" no-littering-var-directory))
+    (setq lsp-pwsh-cache-dir (expand-file-name "lsp-pwsh/.lsp-pwsh" no-littering-var-directory))
+    :hook (powershell-mode . (lambda ()
+                               (require 'lsp-pwsh)
+                               (lsp)))
+    ))
 #+END_SRC
 
 **** Python
