@@ -1318,77 +1318,6 @@ Language Server Protocol
           (lsp-ui-flycheck-live-reporting nil)
           :config
           (yas-minor-mode)                      ; yasnippet
-
-          ;; workaroud for misplaced indent guide lines with "indent-guide" & "lsp-ui-sideline"
-          ;; https://github.com/emacs-lsp/lsp-ui/issues/32
-          (with-eval-after-load 'indent-guide
-            (defun indent-guide--make-overlay (line col)
-              "draw line at (line, col)"
-              (let (diff string ov prop)
-                (save-excursion
-                  ;; try to goto (line, col)
-                  (goto-char (point-min))
-                  (forward-line (1- line))
-                  (move-to-column col)
-                  ;; calculate difference from the actual col
-                  (setq diff (- col (current-column)))
-                  ;; make overlay or not
-                  (cond ((and (eolp) (<= 0 diff))   ; the line is too short
-                         ;; <-line-width->  <-diff->
-                         ;;               []        |
-                         (if (setq ov (cl-some
-                                       (lambda (ov)
-                                         (when (eq (overlay-get ov 'category) 'indent-guide)
-                                           ov))
-                                       (overlays-in (point) (point))))
-                             ;; we already have an overlay here => append to the existing overlay
-                             ;; (important when "recursive" is enabled)
-                             (setq string (let ((str (overlay-get ov 'before-string)))
-                                            (concat str
-                                                    (make-string (- diff (length str)) ?\s)
-                                                    (propertize indent-guide-char 'face 'indent-guide-face)))
-                                   ;; prop   'before-string); <--------------
-                                   prop   'after-string)    ; <--------------
-                           (setq string (concat (make-string diff ?\s)
-                                                (propertize indent-guide-char 'face 'indent-guide-face))
-                                 ;; prop   'before-string   ; <--------------
-                                 prop   'display            ; <--------------
-                                 ov     (make-overlay (point) (point)))))
-                        ((< diff 0)                 ; the column is inside a tab
-                         ;;  <---tab-width-->
-                         ;;      <-(- diff)->
-                         ;;     |            []
-                         (if (setq ov (cl-some
-                                       (lambda (ov)
-                                         (when (eq (overlay-get ov 'category) 'indent-guide)
-                                           ov))
-                                       (overlays-in (1- (point)) (point))))
-                             ;; we already have an overlay here => modify the existing overlay
-                             ;; (important when "recursive" is enabled)
-                             (setq string (let ((str (overlay-get ov 'display)))
-                                            (aset str (+ 1 tab-width diff) ?|)
-                                            str)
-                                   prop   'display)
-                           (setq string (concat (make-string (+ tab-width diff) ?\s)
-                                                (propertize indent-guide-char 'face 'indent-guide-face)
-                                                (make-string (1- (- diff)) ?\s))
-                                 prop   'display
-                                 ov     (make-overlay (point) (1- (point))))))
-                        ((looking-at "\t")          ; okay but looking at tab
-                         ;;    <-tab-width->
-                         ;; [|]
-                         (setq string (concat (propertize indent-guide-char 'face 'indent-guide-face)
-                                              (make-string (1- tab-width) ?\s))
-                               prop   'display
-                               ov     (make-overlay (point) (1+ (point)))))
-                        (t                          ; okay and looking at a space
-                         (setq string (propertize indent-guide-char 'face 'indent-guide-face)
-                               prop   'display
-                               ov     (make-overlay (point) (1+ (point))))))
-                  (when ov
-                    (overlay-put ov 'category 'indent-guide)
-                    (overlay-put ov prop string)))))
-            )
           )
 
         (use-package lsp-ui-flycheck
@@ -2142,18 +2071,19 @@ vi layer for Emacs
   )
 #+END_SRC
 
-*** indent-guide                                :EDIT:
+*** highlight-indent-guides                     :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(use-package indent-guide
-  :diminish indent-guide-mode
+(use-package highlight-indent-guides
+  :diminish highlight-indent-guides-mode
   :ensure t
-  :hook ((prog-mode org-mode) . indent-guide-mode)
+  :hook ((prog-mode org-mode) . highlight-indent-guides-mode)
   :config
-  (set-face-foreground 'indent-guide-face "lightslategrey")
-  (setq indent-guide-char "¦"
-        indent-guide-delay 0.3
-        indent-guide-recursive t)
+  (setq highlight-indent-guides-auto-enabled nil)
+  (set-face-foreground 'highlight-indent-guides-character-face "lightslategrey")
+  (setq highlight-indent-guides-method 'character
+        highlight-indent-guides-character ?\┊
+        highlight-indent-guides-delay 0.3)
   )
 #+END_SRC
 
