@@ -424,9 +424,7 @@ Open compressed files on the fly
 
 #+BEGIN_SRC emacs-lisp
 (use-package jka-cmpr-hook
-  :defer 2
-  :hook (window-setup . auto-compression-mode)
-  )
+  :hook (window-setup . auto-compression-mode))
 #+END_SRC
 
 **** Case
@@ -459,9 +457,7 @@ delete marked text on typing
 
 #+BEGIN_SRC emacs-lisp
 (use-package delsel
-  :defer 2
-  :hook (window-setup . delete-selection-mode)
-  )
+  :hook (window-setup . delete-selection-mode))
 #+END_SRC
 
 **** Dired                                      :FILE:
@@ -591,10 +587,8 @@ Code folding
 
 #+BEGIN_SRC emacs-lisp
 (use-package hideshow
-  :defer t
   :diminish hs-minor-mode
-  :hook ((prog-mode) . hs-minor-mode)
-  )
+  :hook ((prog-mode) . hs-minor-mode))
 #+END_SRC
 
 **** HL                                         :EMACS:
@@ -603,9 +597,7 @@ Highlight the current line
 
 #+BEGIN_SRC emacs-lisp
 (use-package hl-line
-  :defer 2
-  :hook (window-setup . global-hl-line-mode)
-  )
+  :hook (window-setup . global-hl-line-mode))
 #+END_SRC
 
 **** Imenu
@@ -640,6 +632,7 @@ build automation
 #+BEGIN_SRC emacs-lisp
 (use-package make-mode
   ;; built-in BSDmakefile mode
+  :defer 1
   :config
   (add-hook 'makefile-bsdmake-mode-hook
             #'(lambda ()
@@ -654,6 +647,7 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package markdown-mode
+  :defer 1
   :config
   (setq markdown-fontify-code-blocks-natively t)
   )
@@ -698,7 +692,6 @@ Markup language often for readme
                        (multi-term)
                        (term-send-raw-string ". ~/.bash_profile\nclear\n")
                        ))
-  :defer t
   :ensure t
   :config
   (setq multi-term-program "/bin/bash"          ; bash
@@ -747,7 +740,6 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package simple
-  :defer 1
   :diminish visual-line-mode
   :hook ((window-setup . visual-line-mode)      ; soft line warpping
          (window-setup . size-indication-mode)) ; show total buffer size
@@ -1063,7 +1055,6 @@ web-mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package eldoc
-  :defer t
   :diminish eldoc-mode
   :hook ((eval-expression-minibuffer-setup prog-mode) . eldoc-mode) ; show eldoc for 'Eval:'
   :init
@@ -1073,6 +1064,7 @@ web-mode
   )
 
 (use-package lisp-mode
+  :defer 1
   :config
   (add-hook 'emacs-lisp-mode-hook #'eldoc-mode)
   (add-hook 'lisp-interaction-mode-hook #'eldoc-mode)
@@ -1094,7 +1086,6 @@ web-mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package ansible
-  :defer t
   :diminish ansible
   :ensure t
   :hook (yaml-mode . ansible)
@@ -1480,8 +1471,8 @@ candidates will be from company-tabnine, others keeping their own origin order."
 
 #+BEGIN_SRC emacs-lisp
 (use-package go-mode
-  :ensure t
   :defer t
+  :ensure t
   :if (executable-find "go")
   :config
   (add-hook 'go-mode-hook
@@ -1514,7 +1505,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
         (lsp)
         ) t)
 
-  (use-package godoctor :ensure t)                          ; godoctor - golang refactor
+  (use-package godoctor :ensure t :defer t)                 ; godoctor - golang refactor
 
   (use-package gotest
     :bind (:map go-mode-map
@@ -1544,7 +1535,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
     (c-set-style "intellij" t)                  ; code style
     (setq c-basic-offset 2)
 
-    (use-package lsp-java :ensure t)            ; Java LSP
+    (use-package lsp-java :defer t :ensure t)   ; Java LSP
                                                 ; check on github on how to install the server
     ; set workspace
     (setq lsp-java-workspace-dir (expand-file-name (concat backup-directory "jdt-workspace/"))
@@ -1896,7 +1887,6 @@ moving word/line/region around
 
 #+BEGIN_SRC emacs-lisp
 (use-package drag-stuff
-  :defer 2
   :diminish drag-stuff-mode
   :ensure t
   :hook ((prog-mode org-mode text-mode) . drag-stuff-mode)
@@ -1986,6 +1976,7 @@ vi layer for Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package evil
+  :defer t
   :ensure t
   :general ("C-z" 'evil-exit-emacs-state)
   :init
@@ -2175,6 +2166,7 @@ move where I mean
 
 (use-package treemacs-magit
   :after treemacs magit
+  :defer t
   :ensure t)
 
 (use-package treemacs-projectile
@@ -2201,7 +2193,7 @@ create new & empty scratch buffer
   :hook (((prog-mode org-mode) . smartparens-mode)
          ((prog-mode org-mode) . show-smartparens-mode))
   :config
-  (use-package smartparens-config)
+  (use-package smartparens-config :defer t)
   (setq sp-show-pair-from-inside t)             ; shown inside the matching paren delimiter
   (set-face-attribute 'sp-show-pair-match-face nil
                       :background "#767676" :foreground "#00cd00"
@@ -2256,7 +2248,6 @@ navigate into CamelCaseWords
 
 #+BEGIN_SRC emacs-lisp
 (use-package subword
-  :defer 2
   :diminish subword-mode
   :hook ((prog-mode org-mode) . subword-mode)
   )
@@ -2331,8 +2322,8 @@ Display the key bindings in a popup.
                 :diminish yas-minor-mode
                 :ensure t
                 :config
-                (use-package yasnippet-snippets :ensure t)
-                (use-package ivy-yasnippet :ensure t)
+                (use-package yasnippet-snippets :defer t :ensure t)
+                (use-package ivy-yasnippet :defer t :ensure t)
                 )
               ))
 #+END_SRC
