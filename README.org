@@ -58,7 +58,8 @@ Path to personal/credential info in =~/.emacs.d/private.el=
           package-enable-at-startup nil)
     (when (boundp 'package-pinned-packages)
       (setq package-pinned-packages
-            '((evil         . "MELPA")
+            '((dap-mode     . "MELPA")
+              (evil         . "MELPA")
               (lsp-mode     . "MELPA")
               (no-littering . "MELPA")
               (org-page     . "MELPA")
@@ -1652,6 +1653,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
         (setq flycheck-pylintrc (concat backup-directory "venv-lsp-python3/etc/pylintrc"))
         (lsp)
         (require 'dap-python)                   ; lsp debugger
+        (setq dap-python-executable (expand-file-name (convert-standard-filename "venv-lsp-python3/bin/python") backup-directory))
 
         (when (executable-find "jupyter")       ; use jupyter via C-c C-p
           (setq python-shell-interpreter "jupyter"
