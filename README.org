@@ -40,7 +40,27 @@ Path to personal/credential info in =~/.emacs.d/private.el=
   (load (expand-file-name "private.el" user-emacs-directory) 'no-error))
 #+END_SRC
 
-*** ELPA
+*** Package management
+
+straight.el
+
+If =README.el= and =README.elc= are not presented, there is a need to recompile =README.org= again (most likely only required when initialising on a new installation for the first time).
+
+#+BEGIN_SRC emacs-lisp
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+(straight-use-package 'use-package)
+#+END_SRC
 
 #+BEGIN_SRC emacs-lisp
 (eval-when-compile
@@ -111,23 +131,6 @@ Configuration for `use-package'. The packages below should be loaded first befor
 
 (use-package diminish :ensure t)                ; shorten mode-line
 (use-package general :ensure t)                 ; redefin keymaps
-#+END_SRC
-
-straight.el
-
-#+BEGIN_SRC emacs-lisp
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
 #+END_SRC
 
 *** UTF-8 on everything
