@@ -2886,6 +2886,24 @@ File manager
   )
 #+END_SRC
 
+*** URL Encode & Decode
+
+#+BEGIN_SRC emacs-lisp
+(defun urldecode ()
+  (interactive)
+  (save-excursion
+    (shell-command-on-region (mark) (point) "python3 -c \"import sys; from urllib.parse import unquote_plus; print(unquote_plus(sys.stdin.read()));\" " (buffer-name) t)
+    )
+  )
+
+(defun urlencode ()
+  (interactive)
+  (save-excursion
+    (shell-command-on-region (mark) (point) "python3 -c \"import sys; from urllib.parse import quote_plus; print(quote_plus(sys.stdin.read()));\""  (buffer-name) t)
+    )
+  )
+#+END_SRC
+
 * Tips
 
 ** Keybindings
