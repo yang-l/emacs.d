@@ -1333,6 +1333,8 @@ Language Server Protocol
           :after lsp-mode company
           :commands company-lsp
           :ensure t
+          :init
+          (setq company-tabnine-executable-args '("-c" "emacs"))
           :custom
           (company-lsp-async t)
           (company-lsp-cache-candidates nil)
@@ -1480,29 +1482,34 @@ candidates will be from company-tabnine, others keeping their own origin order."
   :config
   (add-hook 'go-mode-hook
     #'(lambda ()
-        (add-hook 'before-save-hook 'gofmt-before-save)     ; Gofmt format
+        (when (executable-find "goimports")                 ; use goimports instead of gofmt
+          (setq gofmt-command "goimports"))
+        (add-hook 'before-save-hook 'gofmt-before-save)
         (setq indent-tabs-mode 1                            ; default to TAB as specified in Go spec
               tab-width 4)                                  ; show tab as 4 space width
 
         ;; Go LSP
-        (defvar go-langserver-directory (concat backup-directory "venv-lsp-go"))
-        (if (not (file-exists-p go-langserver-directory))
+        (defvar golang-lsp-directory (concat backup-directory "venv-lsp-go"))
+        (if (not (file-exists-p golang-lsp-directory))
             (progn
-              (make-directory go-langserver-directory t)    ; create go-langserver directory
+              (make-directory golang-lsp-directory t)       ; create go lsp directory
               (when (executable-find "go")
-                (shell-command                              ; install go-language lsp
+                (shell-command                              ; install gopls lsp
                  (concat
-                  "GOPATH=" (expand-file-name go-langserver-directory) " go get -u golang.org/x/tools/cmd/gopls"))
+                  "GOPATH=" (expand-file-name golang-lsp-directory) " GO111MODULE=on go get golang.org/x/tools/gopls@latest"))
                 (shell-command                              ; install godoctor
                  (concat
-                  "GOPATH=" (expand-file-name go-langserver-directory) " go get -u github.com/godoctor/godoctor"))
+                  "GOPATH=" (expand-file-name golang-lsp-directory) " go get github.com/godoctor/godoctor"))
+                (shell-command                              ; install goimports
+                 (concat
+                  "GOPATH=" (expand-file-name golang-lsp-directory) " go get golang.org/x/tools/cmd/goimports"))
                 )
               ))
 
         ; set go-langserver PATH
-        (setq exec-path (append (list (concat (expand-file-name go-langserver-directory) "/bin/")) exec-path))
-        (setenv "PATH" (concat (expand-file-name go-langserver-directory) "/bin/:" (getenv "PATH")))
-        (setenv "GOPATH" (expand-file-name go-langserver-directory))
+        (setq exec-path (append (list (concat (expand-file-name golang-lsp-directory) "/bin/")) exec-path))
+        (setenv "PATH" (concat (expand-file-name golang-lsp-directory) "/bin/:" (getenv "PATH")))
+        (setenv "GOPATH" (expand-file-name golang-lsp-directory))
 
         (require 'lsp-go)
         (lsp)
@@ -1622,11 +1629,11 @@ candidates will be from company-tabnine, others keeping their own origin order."
   :interpreter ("python" . python-mode)
   :mode (("\\.py\\'" . python-mode)
          ("\\.wsgi$" . python-mode))
+  :custom
+  (python-indent-offset 4)                      ; tab space
   :config
   (add-hook 'python-mode-hook
     #'(lambda ()
-        (setq python-indent-offset 4)           ; tab space
-
         (create-virtualenv "venv-lsp-python3/"  ; create virtualenv
                            "bin/venv-python3.sh"
                            "python3"
@@ -1756,6 +1763,17 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
                 (setenv "PATH" (concat (expand-file-name "~/.rbenv/versions/") ruby-version "/bin/:" (getenv "PATH")))
                 (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
 
+                (write-region                           ; create a wrapper script for ruby lsp - solargraph
+                 (concat
+                  "#!/usr/bin/env bash\n"
+                  "\n\n"
+                  "export PATH=\"" (concat (expand-file-name "~/.rbenv/versions/") ruby-version) "/bin/:$PATH\"\n"
+                  "export BUNDLE_GEMFILE=\"" (expand-file-name ruby-workspace-directory) "Gemfile\"\n"
+                  "\n"
+                  "rbenv exec bundle exec solargraph stdio\n"
+                  ) nil (expand-file-name (concat user-emacs-directory "/files/rubylsp.sh")))
+                (set-file-modes (expand-file-name (concat user-emacs-directory "/files/rubylsp.sh")) #o755)
+
                 (require 'lsp-solargraph)               ; LSP
                 (lsp-register-client                    ; using rbenv/bundle instead to start ls
                  (make-lsp-client :new-connection (lsp-stdio-connection '("rbenv" "exec" "bundle" "exec" "solargraph" "stdio"))
@@ -1872,6 +1890,25 @@ Visible bookmarks
   :ensure t
   :init
   (push 'company-tabnine company-backends)
+  ;; dynamicly create TabNine.toml file
+  ;; to enable sem for each language by typing "TabNine::sem" once opened the mode
+  (when (eq system-type 'darwin)
+    (setq tabnine-toml-file (expand-file-name "~/Library/Preferences/TabNine/TabNine.toml")))
+  (write-region
+   (concat
+    "[language.go]\n"
+    "command = \"gopls\"\n"
+    "args = [\"serve\"]\n"
+    "synchronous_timeout_ms = 100\n"
+    "num_server_instances = 2\n"
+    "[language.python]\n"
+    "command = \"pyls\"\n"
+    "synchronous_timeout_ms = 100\n"
+    "num_server_instances = 2\n"
+    "[language.ruby]\n"
+    "command = \"" (expand-file-name user-emacs-directory) "/files/rubylsp.sh\"\n"
+    "num_server_instances = 2\n"
+    ) nil tabnine-toml-file)
   :config
   (setq company-tabnine-max-num-results 3)
   ;; https://emacs-china.org/t/tabnine/9988/50
@@ -2292,7 +2329,7 @@ vim-like text folding
 
 #+BEGIN_SRC emacs-lisp
 (use-package vimish-fold
-  :bind (("C-c v f" . vimish-fold)
+  :bind (("C-c v r" . vimish-fold-delete-all)
          ("C-c v d" . vimish-fold-delete)
          ("C-c v t" . vimish-fold-toggle)
          ("C-c v a" . vimish-fold-avy))
