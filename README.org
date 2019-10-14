@@ -1414,15 +1414,13 @@ candidates will be from company-tabnine, others keeping their own origin order."
                       sh-indentation 2
                       sh-indent-comment t)
 
-        ; node-gyp - only working under python 2.x
-        ; tree-sitter - not working under node v12
-        ; Fixing OSX/ndoe "Operation not permitted" - add 'node' under "Security & Privacy"
+        ; Fixing OSX/node "Operation not permitted" - add 'node' under "Security & Privacy"
         ;; -> http://osxdaily.com/2018/10/09/fix-operation-not-permitted-terminal-error-macos/
         (create-virtualenv "venv-lsp-bash/"     ; bash lsp
                            "bin/venv-nodejs-npm.sh"
-                           "python"
+                           "python3"
                            "bin/nodejs-pip-requirements.txt"
-                           "11.15.0"
+                           "12.12.0"
                            "bash-language-server")
 
         (require 'lsp-clients)
@@ -1480,6 +1478,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
   :ensure t
   :if (executable-find "go")
   :config
+  (defvar golang-lsp-directory (concat backup-directory "venv-lsp-go"))
   (add-hook 'go-mode-hook
     #'(lambda ()
         (when (executable-find "goimports")                 ; use goimports instead of gofmt
@@ -1489,7 +1488,6 @@ candidates will be from company-tabnine, others keeping their own origin order."
               tab-width 4)                                  ; show tab as 4 space width
 
         ;; Go LSP
-        (defvar golang-lsp-directory (concat backup-directory "venv-lsp-go"))
         (if (not (file-exists-p golang-lsp-directory))
             (progn
               (make-directory golang-lsp-directory t)       ; create go lsp directory
@@ -1533,6 +1531,20 @@ candidates will be from company-tabnine, others keeping their own origin order."
       "cgt" 'go-test-current-test
       "cgx" 'go-run)
     )
+
+  (use-package go-playground                                ; local golang playground
+    :defer t
+    :diminish go-playground-mode
+    :ensure t
+    :custom
+    (go-playground-basedir (concat (expand-file-name golang-lsp-directory) "/src/playground"))
+    )
+
+  (use-package go-tag                                       ; edit field tags for golang
+    :defer t
+    :ensure t
+    :custom
+    (go-tag-args (list "-transform" "camelcase")))
   )
 #+END_SRC
 
@@ -1896,11 +1908,20 @@ Visible bookmarks
     (setq tabnine-toml-file (expand-file-name "~/Library/Preferences/TabNine/TabNine.toml")))
   (write-region
    (concat
+    "[language.dockerfile]\n"
+    "command = \"docker-langserver\"\n"
+    "args = [\"--stdio\"]\n"
+    "num_server_instances = 2\n"
     "[language.go]\n"
     "command = \"gopls\"\n"
     "args = [\"serve\"]\n"
     "synchronous_timeout_ms = 100\n"
     "num_server_instances = 2\n"
+    "[language.javascript]\n"
+    "command = \"typescript-language-server\"\n"
+    "args = [\"--stdio\"]\n"
+    "num_server_instances = 2\n"
+    "always_prefer = false\n"
     "[language.python]\n"
     "command = \"pyls\"\n"
     "synchronous_timeout_ms = 100\n"
