@@ -2239,10 +2239,18 @@ move where I mean
 
 *** scratch                                     :EDIT:
 
-create new & empty scratch buffer
+create new & empty scratch buffer in the same mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package scratch :ensure t :commands (scratch))
+#+END_SRC
+
+*** scratches                                   :EDIT:
+
+multi scratches
+
+#+BEGIN_SRC emacs-lisp
+(use-package scratches :ensure t)
 #+END_SRC
 
 *** smartparens                                 :EDIT:
