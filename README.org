@@ -2239,7 +2239,7 @@ move where I mean
 
 *** scratch                                     :EDIT:
 
-create new & empty scratch buffer in the same mode
+create new & empty scratch buffer in the same mode as the current buffer
 
 #+BEGIN_SRC emacs-lisp
 (use-package scratch :ensure t :commands (scratch))
@@ -2250,7 +2250,9 @@ create new & empty scratch buffer in the same mode
 multi scratches
 
 #+BEGIN_SRC emacs-lisp
-(use-package scratches :ensure t)
+(use-package scratches
+  :ensure t
+  :config (scratches-global-mode))
 #+END_SRC
 
 *** smartparens                                 :EDIT:
