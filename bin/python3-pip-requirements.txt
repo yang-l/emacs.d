@@ -1,5 +1,6 @@
 autoflake
 jupyter
+future
 pyls-mypy
 pyls-isort
 pyls-black

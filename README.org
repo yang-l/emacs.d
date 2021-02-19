@@ -47,19 +47,19 @@ straight.el
 If =README.el= and =README.elc= are not presented, there is a need to recompile =README.org= again (most likely only required when initialising on a new installation for the first time).
 
 #+BEGIN_SRC emacs-lisp
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-(straight-use-package 'use-package)
+;(defvar bootstrap-version)
+;(let ((bootstrap-file
+;       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+;      (bootstrap-version 5))
+;  (unless (file-exists-p bootstrap-file)
+;    (with-current-buffer
+;        (url-retrieve-synchronously
+;         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+;         'silent 'inhibit-cookies)
+;      (goto-char (point-max))
+;      (eval-print-last-sexp)))
+;  (load bootstrap-file nil 'nomessage))
+;(straight-use-package 'use-package)
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -81,6 +81,7 @@ If =README.el= and =README.elc= are not presented, there is a need to recompile 
             '((dap-mode     . "MELPA")
               (evil         . "MELPA")
               (lsp-mode     . "MELPA")
+              (lsp-ui       . "MELPA")
               (no-littering . "MELPA")
               (org-page     . "MELPA")
               (counsel-projectile . "MELPA")
@@ -89,16 +90,16 @@ If =README.el= and =README.elc= are not presented, there is a need to recompile 
     (package-initialize)
     )
 
-  ;; Define packages and install them in case of missing (not in use atm and via use-package)
-  (defvar my-packages '())
-  (let ((refreshed nil))
-    (dolist (p my-packages)                     ; install the missing packages
-      (when (not (package-installed-p p))
-        (unless refreshed
-          (package-refresh-contents)
-          (setq refreshed t))
-        (message "[Emacs Init] Installing `%s' ... " p)
-        (package-install p))))
+;  ;; Define packages and install them in case of missing (not in use atm and via use-package)
+;  (defvar my-packages '())
+;  (let ((refreshed nil))
+;    (dolist (p my-packages)                     ; install the missing packages
+;      (when (not (package-installed-p p))
+;        (unless refreshed
+;          (package-refresh-contents)
+;          (setq refreshed t))
+;        (message "[Emacs Init] Installing `%s' ... " p)
+;        (package-install p))))
   )
 
 ;; benchmarking emacs boot sequence
@@ -1178,27 +1179,27 @@ Explore and test HTTP REST webservices
 *** C/C++
 
 #+BEGIN_SRC emacs-lisp
-(defun modes/c-mode ()
-  "c/c++ mode hook"
-  (progn
-    (setq gdb-many-windows t)                   ; gdb
+;(defun modes/c-mode ()
+;  "c/c++ mode hook"
+;  (progn
+;    (setq gdb-many-windows t)                   ; gdb
 
-    (local-set-key (kbd "C-c -")                ; fold tag
-                   'senator-fold-tag)
-    (local-set-key (kbd "C-c +")
-                   'senator-unfold-tag)
+;    (local-set-key (kbd "C-c -")                ; fold tag
+;                   'senator-fold-tag)
+;    (local-set-key (kbd "C-c +")
+;                   'senator-unfold-tag)
 
-    (add-to-list (make-local-variable 'company-backends)
-                 '(company-gtags company-semantic))
-    ))
+;    (add-to-list (make-local-variable 'company-backends)
+;                 '(company-gtags company-semantic))
+;    ))
 
-(dolist
-    (hook
-     (list
-      'c-mode-hook
-      'c++-mode-hook
-      ))
-  (add-hook hook #'modes/c-mode))
+;(dolist
+;    (hook
+;     (list
+;      'c-mode-hook
+;      'c++-mode-hook
+;      ))
+;  (add-hook hook #'modes/c-mode))
 #+END_SRC
 
 *** Programming / Scripting
@@ -1219,6 +1220,7 @@ Helper function to create a Python virtualenv used for LSP servers
         (defun create-virtualenv (virtualenv-folder setup-cmd python-version requirement-file &optional version install-packages)
           "Create a python pip based virtualenv and install packages based on the supplied requirement file"
           (use-package pyvenv
+            :commands pyvenv-activate
             :ensure t
             :init
             (defvar python-virtualenv-directory (concat backup-directory virtualenv-folder))
@@ -1260,6 +1262,7 @@ Language Server Protocol
   (add-hook mode-hook
     #'(lambda ()
         (use-package lsp-mode
+          :after which-key
           :commands lsp
           :ensure t
           :general
@@ -1277,12 +1280,16 @@ Language Server Protocol
            "lsfd" 'lsp-find-definition
            "lsfr" 'lsp-find-references
            )
+          :hook ((lsp-mode . lsp-enable-which-key-integration)
+                 (lsp-managed-mode . lsp-modeline-diagnostics-mode))
           :custom
-          (lsp-auto-guess-root t)
-          (lsp-document-sync-method 'incremental)
           (lsp-prefer-flymake nil)
           (lsp-response-timeout 5)
+          (gc-cons-threshold (* 1024 1024 64))      ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
+          (read-process-output-max (* 1024 1024 2))
           )
+
+        (use-package lsp-modeline :after lsp-mode :ensure lsp-mode)
 
         (use-package lsp-ui
           :after lsp-mode yasnippet
@@ -1307,69 +1314,19 @@ Language Server Protocol
           (lsp-ui-doc-delay 1.5)
           (lsp-ui-doc-include-signature t)
           (lsp-ui-doc-position 'bottom)
+          (lsp-ui-sideline-show-hover t)
           (lsp-ui-sideline-ignore-duplicate t)
-          (lsp-ui-flycheck-enable t)
           (lsp-ui-flycheck-list-position 'right)
-          (lsp-ui-flycheck-live-reporting nil)
           :config
           (yas-minor-mode)                      ; yasnippet
           )
 
-        (use-package lsp-ui-flycheck
-          :after lsp-ui
-          :commands lsp-ui-flycheck-enable
-          :config
-          (add-hook 'lsp-after-open-hook #'(lambda () (lsp-ui-flycheck-enable 1)))
-          )
-
-        (use-package lsp-ui-imenu
-          :after lsp-ui
-          :commands lsp-ui-imenu-enable
-          :custom
-          (lsp-ui-imenu-enable t)
-          )
-
-        (use-package company-lsp
-          :after lsp-mode company
-          :commands company-lsp
-          :ensure t
-          :init
-          (setq company-tabnine-executable-args '("-c" "emacs"))
-          :custom
-          (company-lsp-async t)
-          (company-lsp-cache-candidates nil)
-          :config
-          ;; https://emacs-china.org/t/tabnine/9988/39
-          (defun company//sort-by-tabnine (candidates)
-            "The first two candidates will be from company-lsp, the following two
-candidates will be from company-tabnine, others keeping their own origin order."
-            (if (or (functionp company-backend)
-                    (not (and (listp company-backend) (memq 'company-tabnine company-backend))))
-                candidates
-              (let ((candidates-table (make-hash-table :test #'equal))
-                    candidates-1
-                    candidates-2)
-                (dolist (candidate candidates)
-                  (if (eq (get-text-property 0 'company-backend candidate)
-                          'company-tabnine)
-                      (unless (gethash candidate candidates-table)
-                        (push candidate candidates-2))
-                    (push candidate candidates-1)
-                    (puthash candidate t candidates-table)))
-                (setq candidates-1 (nreverse candidates-1))
-                (setq candidates-2 (nreverse candidates-2))
-                (nconc (seq-take candidates-1 2)
-                       (seq-take candidates-2 2)
-                       (seq-drop candidates-1 2)
-                       (seq-drop candidates-2 2)))))
-          (add-to-list (make-local-variable 'company-transformers) 'company//sort-by-tabnine)
-          (make-local-variable 'company-backends)
-          (setq company-backends (delete 'company-tabnine company-backends))
-          (setq company-backends (delete 'company-lsp company-backends))
-          (add-to-list 'company-backends '(company-lsp :with company-tabnine :separate))
-          )
+        (use-package lsp-ui-flycheck :after lsp-ui :defer 2)
+        (use-package lsp-ui-imenu :after lsp-ui :defer 2)
 
         (use-package helm-lsp
+          :bind (:map lsp-mode-map
+                 ([remap xref-find-apropos] . helm-lsp-workspace-symbol))
           :commands helm-lsp-workspace-symbol
           :ensure t
           :config
@@ -1396,7 +1353,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
            )
           )
 
-        (use-package dap-mode :ensure t :defer t)
+        (use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode :ensure t)
         ))
   )
 #+END_SRC
@@ -1437,6 +1394,11 @@ candidates will be from company-tabnine, others keeping their own origin order."
            "    awk 'NR>L-5 && NR<L+3 { printf \"%-5d%3s%s\\n\",NR,(NR==L?\">> \":\"\"),$0 }' L=$1 $0\n"
            "}\n"
            "trap 'err $LINENO' ERR\n"
+           "\n\n\n\n"
+           "main() {\n"
+           "    return\n"
+           "}\n"
+           "main \"$@\"\n"
            ))
         ) t)
   )
@@ -1615,22 +1577,21 @@ candidates will be from company-tabnine, others keeping their own origin order."
 
 #+BEGIN_SRC emacs-lisp
 (use-package powershell
-  :defer t
   :ensure t
   :config
   (use-package lsp-pwsh
-    :defer t
+    :after lsp-mode
+    :ensure lsp-mode
     :if (executable-find "pwsh")
-    :straight (lsp-pwsh
-               :host github
-               :repo "kiennq/lsp-powershell")
     :init
-    (setq lsp-pwsh-dir (expand-file-name "lsp-pwsh/.extension/pwsh/PowerShellEditorServices" no-littering-var-directory))
-    (setq lsp-pwsh-cache-dir (expand-file-name "lsp-pwsh/.lsp-pwsh" no-littering-var-directory))
-    :hook (powershell-mode . (lambda ()
-                               (require 'lsp-pwsh)
-                               (lsp)))
-    ))
+    (setq
+     lsp-pwsh-ext-path (expand-file-name "lsp-pwsh/.cache/lsp/pwsh" no-littering-var-directory)
+     lsp-pwsh-dir (expand-file-name "PowerShellEditorServices" lsp-pwsh-ext-path)
+     lsp-pwsh-exe (executable-find "pwsh"))
+    :config
+    (lsp)
+    )
+  )
 #+END_SRC
 
 **** Python
@@ -1642,6 +1603,8 @@ candidates will be from company-tabnine, others keeping their own origin order."
   :mode (("\\.py\\'" . python-mode)
          ("\\.wsgi$" . python-mode))
   :custom
+  (python-indent-guess-indent-offset t)
+  (python-indent-guess-indent-offset-verbose nil)
   (python-indent-offset 4)                      ; tab space
   :config
   (add-hook 'python-mode-hook
@@ -1665,7 +1628,7 @@ candidates will be from company-tabnine, others keeping their own origin order."
             )))
         (setq flycheck-pylintrc (concat backup-directory "venv-lsp-python3/etc/pylintrc"))
         (lsp)
-        (require 'dap-python)                   ; lsp debugger
+        (use-package dap-python :after dap-mode :ensure dap-mode :defer 2)      ; lsp debugger
         (setq dap-python-executable (expand-file-name (convert-standard-filename "venv-lsp-python3/bin/python") backup-directory))
 
         (when (executable-find "jupyter")       ; use jupyter via C-c C-p
@@ -1843,18 +1806,18 @@ Visible bookmarks
   (setq bm-cycle-all-buffers t)                 ; cycle through bookmarks in all open buffers
   (setq-default bm-buffer-persistence t)        ; save/load/restore bookmarks
   (add-hook' after-init-hook #'bm-repository-load)
-  (add-hook 'find-file-hooks #'bm-buffer-restore)
+  (add-hook 'find-file-hook #'bm-buffer-restore)
   (add-hook 'kill-buffer-hook #'bm-buffer-save)
   (add-hook 'kill-emacs-hook #'(lambda nil
                                  (bm-buffer-save-all)
                                  (bm-repository-save)))
   (add-hook 'after-save-hook #'bm-buffer-save)
-  (add-hook 'find-file-hooks   #'bm-buffer-restore)
+  (add-hook 'find-file-hook  #'bm-buffer-restore)
   (add-hook 'after-revert-hook #'bm-buffer-restore)
   )
 #+END_SRC
 
-*** company
+*** company                                     :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package company
@@ -1864,36 +1827,51 @@ Visible bookmarks
   :diminish company-mode
   :ensure t
   :hook ((prog-mode) . company-mode)
-  :config
-  (setq-default
-       company-backends                         ; default backends
-         '(company-yasnippet
-           (company-dabbrev-code
-            company-ispell)
-           (company-capf
-            company-files                       ; files & directory
-            company-keywords)                   ; keywords
-           (company-abbrev
-            company-dabbrev))
-       company-frontends
-         '(company-tng-frontend
-           company-pseudo-tooltip-frontend
-           company-echo-metadata-frontend)
-       company-global-modes '(not eshell-mode)
-       company-idle-delay 0.07                  ; delay before autocompletion popup shows
-       company-minimum-prefix-length 2
-       company-tooltip-align-annotations t
-       company-tooltip-limit 10                 ; popup window size
-       company-tooltip-flip-when-above   t      ; flip the popup menu when near the bottom of windows
-       company-selection-wrap-around t          ; loop over candidates
-       company-show-numbers t                   ; show number
-       company-begin-commands
-         '(self-insert-command)                 ; start autocompletion only after typing
-       company-dabbrev-downcase nil             ; do not change case in dabbrev
-       company-dabbrev-ignore-case t
-       company-dabbrev-other-buffers t
-       company-transformers '(company-sort-by-occurrence)
-       )
+  :custom
+  (company-begin-commands
+   (quote
+    (self-insert-command)                    ; start autocompletion only after typing
+    ))
+  (company-dabbrev-downcase nil)             ; do not change case in dabbrev
+  (company-dabbrev-ignore-case t)
+  (company-dabbrev-other-buffers t)
+  (company-global-modes
+   (quote
+    (not eshell-mode)
+    ))
+  (company-idle-delay 0.07)                  ; delay before autocompletion popup shows
+  (company-minimum-prefix-length 2)
+  (company-selection-wrap-around t)          ; loop over candidates
+  (company-show-numbers t)                   ; show number
+  (company-transformers
+   (quote
+    (company-sort-by-occurrence)
+    ))
+  (company-tooltip-align-annotations t)
+  (company-tooltip-flip-when-above   t)      ; flip the popup menu when near the bottom of windows
+  (company-tooltip-limit 10)                 ; popup window size
+  (company-backends                          ; default backends
+   (quote
+    ((company-capf
+      company-yasnippet)
+     (company-dabbrev-code
+      company-ispell)
+     (company-files                          ; files & directory
+      company-keywords)                      ; keywords
+     (company-abbrev
+      company-dabbrev)
+     )))
+  (company-frontends
+   (quote
+    (company-pseudo-tooltip-frontend
+     company-echo-metadata-frontend)
+    ))
+  )
+
+(use-package company-tng
+  :after company
+  :custom
+  (company-selection-default nil)
   )
 
 (use-package company-tabnine
@@ -1901,13 +1879,19 @@ Visible bookmarks
   :commands company-tabnine
   :ensure t
   :init
-  (push 'company-tabnine company-backends)
+  (make-local-variable 'company-backends)
+  (setq company-backends (delete '(company-capf company-yasnippet) company-backends))
+  (add-to-list 'company-backends '(company-capf company-yasnippet company-tabnine :separate))
   ;; dynamicly create TabNine.toml file
   ;; to enable sem for each language by typing "TabNine::sem" once opened the mode
   (when (eq system-type 'darwin)
     (setq tabnine-toml-file (expand-file-name "~/Library/Preferences/TabNine/TabNine.toml")))
   (write-region
    (concat
+    "[language.bash]\n"
+    "command = \"bash-language-server\"\n"
+    "args = [\"start\"]\n"
+    "num_server_instances = 2\n"
     "[language.dockerfile]\n"
     "command = \"docker-langserver\"\n"
     "args = [\"--stdio\"]\n"
@@ -1965,7 +1949,7 @@ simple implementation of jumping to definition/source
 (use-package dumb-jump
   :ensure t
   :diminish dumb-jump-mode
-  :hook (prog-mode . dumb-jump-mode)
+  :hook (prog-mode . (lambda () (add-hook 'xref-backend-functions #'dumb-jump-xref-activate) ))
   )
 #+END_SRC
 
@@ -2037,7 +2021,6 @@ vi layer for Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package evil
-  :defer t
   :ensure t
   :general ("C-z" 'evil-exit-emacs-state)
   :init
@@ -2046,14 +2029,12 @@ vi layer for Emacs
         evil-vsplit-window-right t)
   :config
   (evil-mode)
-  (setq evil-default-state 'emacs)              ; default to emacs
 
   (use-package evil-nerd-commenter
     :defer t
     :ensure t
     :general (
       :states '(normal insert emacs)
-      :keymaps 'override
       :prefix ","
       :non-normal-prefix "C-x ,"
       "ncl" 'evilnc-comment-or-uncomment-lines
@@ -2069,9 +2050,13 @@ vi layer for Emacs
     )
 
   (use-package evil-surround
-    :defer t
     :ensure t
-    :config (global-evil-surround-mode)
+    :commands
+    (evil-surround-edit
+     evil-Surround-edit
+     evil-surround-region
+     evil-Surround-region)
+    :config (global-evil-surround-mode 1)
     )
   )
 #+END_SRC
@@ -2374,6 +2359,7 @@ Display the key bindings in a popup.
 
 #+BEGIN_SRC emacs-lisp
 (use-package which-key
+  :commands which-key-add-major-mode-key-based-replacements
   :defer 2
   :diminish which-key-mode
   :ensure t
@@ -2390,16 +2376,20 @@ Display the key bindings in a popup.
 (add-hook 'prog-mode-hook
           #'(lambda ()
               (use-package yasnippet
+                :commands yas-minor-mode
                 :diminish yas-minor-mode
                 :ensure t
+                :custom
+                (yas-keymap-disable-hook t)
                 :config
-                (use-package yasnippet-snippets :defer t :ensure t)
-                (use-package ivy-yasnippet :defer t :ensure t)
+                (use-package yasnippet-snippets :ensure t)
+                (use-package ivy-yasnippet :commands ivy-yasnippet :ensure t)
+                (yas-reload-all)
                 )
               ))
 #+END_SRC
 
-**** ztree                                      :EDIT:
+*** ztree                                       :EDIT:
 
 Diff between directories
 
@@ -2429,12 +2419,14 @@ Diff between directories
          )
   :diminish helm-mode
   :ensure t
+  :preface (require 'helm-config)
   :config
   (helm-mode 1)
   (helm-adaptive-mode 1)
   (helm-autoresize-mode 1)                      ; buffer window resizing
   (setq helm-buffers-fuzzy-matching t           ; fuzzy matching when non-nil
-        helm-mode-fuzzy-match t
+        completion-styles `(basic partial-completion emacs22 initials
+                                  ,(if (version<= emacs-version "27.0") 'helm-flex 'flex))
         helm-semantic-fuzzy-match t
         helm-apropos-fuzzy-match t
         helm-lisp-fuzzy-completion t
