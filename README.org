@@ -319,7 +319,7 @@ OSX-only key bindings
 ; https://www.reddit.com/r/emacs/comments/3kqt6e/2_easy_little_known_steps_to_speed_up_emacs_start/
 (run-with-idle-timer 2 nil
  #'(lambda ()
-     (setq gc-cons-threshold (* 1024 1024 2))   ; reset GC to a reasonable value
+     (setq gc-cons-threshold (* 1024 1024 32))  ; reset GC to a reasonable value
      (message "gc-cons-threshold restored to %S"
               gc-cons-threshold)))
 ; https://emacs.stackexchange.com/questions/32150/how-to-add-a-timestamp-to-each-entry-in-emacs-messages-buffer
@@ -1285,7 +1285,7 @@ Language Server Protocol
           :custom
           (lsp-prefer-flymake nil)
           (lsp-response-timeout 5)
-          (gc-cons-threshold (* 1024 1024 64))      ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
+          (gc-cons-threshold (* 1024 1024 128))     ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
           (read-process-output-max (* 1024 1024 2))
           )
 

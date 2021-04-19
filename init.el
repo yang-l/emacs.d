@@ -9,9 +9,6 @@
   (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
 
-;; optimise startup speed
-(setq gc-cons-threshold (* 1024 1024 64))       ; set GC at beginning to speed up Emacs loading
-
 ; https://github.com/Kaali/vj-emacs-0x12
 (defvar file-name-handler-alist-old file-name-handler-alist)
 (setq file-name-handler-alist nil)              ; remove file handler during startup
@@ -59,7 +56,6 @@
 ;; end of setup use-package
 
 ;; load or compile elc file
-(setq load-prefer-newer t)                      ; always load newest byte code
 (if (file-exists-p (concat user-emacs-directory "README.elc"))
     (load-file
      (concat user-emacs-directory "README.elc")); load byte-compiled init elc file

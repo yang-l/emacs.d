@@ -4,6 +4,10 @@
 
 ;;; Code:
 
+;; optimise startup speed
+(setq gc-cons-threshold most-positive-fixnum)   ; set GC at beginning to speed up Emacs loading
+
+(setq load-prefer-newer noninteractive)
 (setq package-enable-at-startup nil)
 
 ; disable at the earliest stage
