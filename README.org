@@ -1631,13 +1631,12 @@ Language Server Protocol
         (use-package dap-python :after dap-mode :ensure dap-mode :defer 2)      ; lsp debugger
         (setq dap-python-executable (expand-file-name (convert-standard-filename "venv-lsp-python3/bin/python") backup-directory))
 
-        (when (executable-find "jupyter")       ; use jupyter via C-c C-p
-          (setq python-shell-interpreter "jupyter"
-                python-shell-interpreter-args "console --simple-prompt"
-                python-shell-prompt-detect-failure-warning nil)
-          (add-to-list 'python-shell-completion-native-disabled-interpreters
-                       "jupyter")
-          )
+        ; use dockerised jupyter via C-c C-p
+        (setq python-shell-interpreter "jupyter-console"
+              python-shell-interpreter-args "--simple-prompt"
+              python-shell-prompt-detect-failure-warning nil)
+        (add-to-list 'python-shell-completion-native-disabled-interpreters
+                     "jupyter")
 
         (when (eq 1 (point-max))                ; new file template
           (insert
@@ -2222,22 +2221,15 @@ move where I mean
   :ensure t)
 #+END_SRC
 
-*** scratch                                     :EDIT:
-
-create new & empty scratch buffer in the same mode as the current buffer
+*** scratch-pop                                 :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(use-package scratch :ensure t :commands (scratch))
-#+END_SRC
-
-*** scratches                                   :EDIT:
-
-multi scratches
-
-#+BEGIN_SRC emacs-lisp
-(use-package scratches
+(use-package scratch-pop
   :ensure t
-  :config (scratches-global-mode))
+  :init
+  (setq scratch-pop-backup-directory (expand-file-name (convert-standard-filename "scratch-pop/") no-littering-var-directory))
+  (add-hook 'kill-emacs-hook #'scratch-pop-backup-scratches)
+  )
 #+END_SRC
 
 *** smartparens                                 :EDIT:
