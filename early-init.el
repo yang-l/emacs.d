@@ -15,4 +15,7 @@
       menu-bar-mode   nil
       scroll-bar-mode nil)
 
+; disable 'Package cl is deprecated' message
+(setq byte-compile-warnings '(not obsolete))
+
 ;;; early-init.el ends here

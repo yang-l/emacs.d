@@ -88,6 +88,7 @@ If =README.el= and =README.elc= are not presented, there is a need to recompile 
               (treemacs-magit     . "MELPA")))
       )
     (package-initialize)
+;    (package-refresh-contents)
     )
 
 ;  ;; Define packages and install them in case of missing (not in use atm and via use-package)
@@ -320,9 +321,10 @@ OSX-only key bindings
 ; https://www.reddit.com/r/emacs/comments/3kqt6e/2_easy_little_known_steps_to_speed_up_emacs_start/
 (run-with-idle-timer 2 nil
  #'(lambda ()
+     (unless (= gc-cons-threshold (* 1024 1024 128))
      (setq gc-cons-threshold (* 1024 1024 32))  ; reset GC to a reasonable value
-     (message "gc-cons-threshold restored to %S"
-              gc-cons-threshold)))
+     (message "gc-cons-threshold restored to %S" gc-cons-threshold)))
+)
 ; https://emacs.stackexchange.com/questions/32150/how-to-add-a-timestamp-to-each-entry-in-emacs-messages-buffer
 (advice-add 'message :before                    ; add timestamp in *Messages* buffer
             #'(lambda (FORMAT-STRING &rest args)
@@ -1210,40 +1212,36 @@ Explore and test HTTP REST webservices
 Helper function to create a Python virtualenv used for LSP servers
 
 #+BEGIN_SRC emacs-lisp
-(dolist
-    (mode-hook
-     '(dockerfile-mode-hook
-;       js2-mode-hook
-       python-mode-hook
-       sh-mode-hook
-       typescript-mode-hook))
-  (add-hook mode-hook
-    #'(lambda ()
-        (defun create-virtualenv (virtualenv-folder setup-cmd python-version requirement-file &optional version install-packages)
-          "Create a python pip based virtualenv and install packages based on the supplied requirement file"
-          (use-package pyvenv
-            :commands pyvenv-activate
-            :ensure t
-            :init
-            (defvar python-virtualenv-directory (concat backup-directory virtualenv-folder))
-            (if (not (file-exists-p python-virtualenv-directory))
-                (progn
-                  (make-directory python-virtualenv-directory t)
-                  (shell-command
-                   (concat
-                    "bash" " "
-                    (expand-file-name (concat user-emacs-directory setup-cmd)) " "
-                    (expand-file-name (concat python-virtualenv-directory)) " "
-                    python-version " "
-                    (expand-file-name (concat user-emacs-directory requirement-file))
-                    (when version (concat " " version))
-                    (when install-packages (concat " " install-packages))
-                    ))
-                  ))
-            (pyvenv-activate python-virtualenv-directory)
-            (pyvenv-tracking-mode t)
-            ))
-        )))
+;(dolist
+;    (mode-hook
+;     '(python-mode-hook))
+;  (add-hook mode-hook
+;    #'(lambda ()
+;        (defun create-virtualenv (virtualenv-folder setup-cmd python-version requirement-file &optional version install-packages)
+;          "Create a python pip based virtualenv and install packages based on the supplied requirement file"
+;          (use-package pyvenv
+;            :commands pyvenv-activate
+;            :ensure t
+;            :init
+;            (defvar python-virtualenv-directory (concat backup-directory virtualenv-folder))
+;            (if (not (file-exists-p python-virtualenv-directory))
+;                (progn
+;                  (make-directory python-virtualenv-directory t)
+;                  (shell-command
+;                   (concat
+;                    "bash" " "
+;                    (expand-file-name (concat user-emacs-directory setup-cmd)) " "
+;                    (expand-file-name (concat python-virtualenv-directory)) " "
+;                    python-version " "
+;                    (expand-file-name (concat user-emacs-directory requirement-file))
+;                    (when version (concat " " version))
+;                    (when install-packages (concat " " install-packages))
+;                    ))
+;                  ))
+;            (pyvenv-activate python-virtualenv-directory)
+;            (pyvenv-tracking-mode t)
+;            ))
+;        )))
 #+END_SRC
 
 **** LSP
@@ -1251,158 +1249,154 @@ Helper function to create a Python virtualenv used for LSP servers
 Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
-(dolist
-    (mode-hook
-     '(enh-ruby-mode-hook
-       dockerfile-mode-hook
-       go-mode-hook
-;       java-mode-hook
-;       js2-mode-hook
-;       powershell-mode-hook
-       python-mode-hook
-       sh-mode-hook))
-  (add-hook mode-hook
-    #'(lambda ()
-        (use-package lsp-mode
-          :after which-key
-          :commands lsp
-          :ensure t
-          :general
-          (:states '(normal insert emacs)
-           :keymaps 'lsp-mode-map
-           :prefix ","
-           :non-normal-prefix "C-x ,"
-           "lsrn" 'lsp-rename
-           "lsfb" 'lsp-format-buffer
-           "lsoi" 'lsp-organize-imports
-           "lsgi" 'lsp-goto-implementation
-           "lsgd" 'lsp-goto-type-definition
-           "lssh" 'lsp-symbol-highlight
-           "lshi" 'helm-imenu
-           "lsfd" 'lsp-find-definition
-           "lsfr" 'lsp-find-references
-           )
-          :hook ((lsp-mode . lsp-enable-which-key-integration)
-                 (lsp-managed-mode . lsp-modeline-diagnostics-mode))
-          :custom
-          (lsp-prefer-flymake nil)
-          (lsp-response-timeout 5)
-          (gc-cons-threshold (* 1024 1024 128))     ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
-          (read-process-output-max (* 1024 1024 2))
-          )
-
-        (use-package lsp-modeline :after lsp-mode :ensure lsp-mode)
-
-        (use-package lsp-ui
-          :after lsp-mode yasnippet
-          :commands lsp-ui-mode
-          :ensure t
-          :bind (:map lsp-ui-mode-map
-                 ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
-                 ([remap xref-find-references]  . lsp-ui-peek-find-references))
-          :hook
-          ((lsp-mode . lsp-ui-mode))
-          :general
-          (:states '(normal insert emacs)
-           :keymaps 'lsp-ui-mode-map
-           :prefix ","
-           :non-normal-prefix "C-x ,"
-           "lspr" 'lsp-ui-peek-find-references
-           "lspd" 'lsp-ui-peek-find-definitions
-           "lspi" 'lsp-ui-peek-find-implementation
-           "lsui" 'lsp-ui-imenu
-           )
-          :custom
-          (lsp-ui-doc-delay 1.5)
-          (lsp-ui-doc-include-signature t)
-          (lsp-ui-doc-position 'bottom)
-          (lsp-ui-sideline-show-hover t)
-          (lsp-ui-sideline-ignore-duplicate t)
-          (lsp-ui-flycheck-list-position 'right)
-          :config
-          (yas-minor-mode)                      ; yasnippet
-          )
-
-        (use-package lsp-ui-flycheck :after lsp-ui :defer 2)
-        (use-package lsp-ui-imenu :after lsp-ui :defer 2)
-
-        (use-package helm-lsp
-          :bind (:map lsp-mode-map
-                 ([remap xref-find-apropos] . helm-lsp-workspace-symbol))
-          :commands helm-lsp-workspace-symbol
-          :ensure t
-          :config
-          (defun helm-lsp-workspace-symbol-at-point ()
-            (interactive)
-            (let ((current-prefix-arg t))
-              (call-interactively #'helm-lsp-workspace-symbol)))
-
-          (defun helm-lsp-global-workspace-symbol-at-point ()
-            (interactive)
-            (let ((current-prefix-arg t))
-              (call-interactively #'helm-lsp-global-workspace-symbol)))
-          )
-
-        (use-package lsp-treemacs
-          :commands lsp-treemacs-errors-list
-          :ensure t
-          :general
-          (:states '(normal insert emacs)
-           :keymaps 'lsp-mode-map
-           :prefix ","
-           :non-normal-prefix "C-x ,"
-           "lstr" 'lsp-treemacs-errors-list
-           )
-          )
-
-        (use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode :ensure t)
-        ))
+(use-package lsp-mode
+  :commands lsp lsp-deferred
+  :ensure t
+  :general
+  (:states '(normal insert emacs)
+   :keymaps 'lsp-mode-map
+   :prefix ","
+   :non-normal-prefix "C-x ,"
+   "lsrn" 'lsp-rename
+   "lsfb" 'lsp-format-buffer
+   "lsoi" 'lsp-organize-imports
+   "lsgi" 'lsp-goto-implementation
+   "lsgd" 'lsp-goto-type-definition
+   "lssh" 'lsp-symbol-highlight
+   "lshi" 'helm-imenu
+   "lsfd" 'lsp-find-definition
+   "lsfr" 'lsp-find-references
+   )
+  :hook ((lsp-mode . lsp-enable-which-key-integration)
+         (lsp-managed-mode . lsp-modeline-diagnostics-mode)
+         (dockerfile-mode)
+         (enh-ruby-mode)
+         (python-mode)
+         (sh-mode)
+         (typescript-mode))
+  :custom
+  (lsp-client-packages '(lsp-bash
+                         lsp-javascript))
+  (lsp-prefer-flymake nil)
+  (lsp-response-timeout 5)
+  :config
+  (setq gc-cons-threshold (* 1024 1024 128)     ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
+        read-process-output-max (* 1024 1024 2))
   )
+
+(use-package lsp-modeline :after lsp-mode :ensure lsp-mode)
+(use-package lsp-headerline :after lsp-mode :ensure lsp-mode)
+
+(use-package lsp-ui
+  :after lsp-mode yasnippet
+  :commands lsp-ui-mode
+  :ensure t
+  :bind (:map lsp-ui-mode-map
+              ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
+              ([remap xref-find-references]  . lsp-ui-peek-find-references))
+  :hook ((lsp-mode . lsp-ui-mode))
+  :general
+  (:states '(normal insert emacs)
+   :keymaps 'lsp-ui-mode-map
+   :prefix ","
+   :non-normal-prefix "C-x ,"
+   "lspr" 'lsp-ui-peek-find-references
+   "lspd" 'lsp-ui-peek-find-definitions
+   "lspi" 'lsp-ui-peek-find-implementation
+   "lsui" 'lsp-ui-imenu
+   )
+  :custom
+  (lsp-ui-doc-delay 1.5)
+  (lsp-ui-doc-include-signature t)
+  (lsp-ui-doc-position 'bottom)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-sideline-ignore-duplicate t)
+  (lsp-ui-flycheck-list-position 'right)
+  :config
+  (yas-minor-mode)                      ; yasnippet
+  )
+
+(use-package lsp-ui-flycheck :after lsp-ui :defer 2)
+(use-package lsp-ui-imenu :after lsp-ui :defer 2)
+
+(use-package helm-lsp
+  :bind (:map lsp-mode-map
+              ([remap xref-find-apropos] . helm-lsp-workspace-symbol))
+  :commands helm-lsp-workspace-symbol
+  :ensure t
+  :config
+  (defun helm-lsp-workspace-symbol-at-point ()
+    (interactive)
+    (let ((current-prefix-arg t))
+      (call-interactively #'helm-lsp-workspace-symbol)))
+
+  (defun helm-lsp-global-workspace-symbol-at-point ()
+    (interactive)
+    (let ((current-prefix-arg t))
+      (call-interactively #'helm-lsp-global-workspace-symbol)))
+  )
+
+(use-package lsp-treemacs
+  :commands lsp-treemacs-errors-list
+  :ensure t
+  :general
+  (:states '(normal insert emacs)
+   :keymaps 'lsp-mode-map
+   :prefix ","
+   :non-normal-prefix "C-x ,"
+   "lstr" 'lsp-treemacs-errors-list
+   )
+  )
+
+(use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode :ensure t)
 #+END_SRC
 
 **** Bash
 
 #+BEGIN_SRC emacs-lisp
 (use-package sh-script
+  :defer t
+  :ensure t
   :mode (("\\.*bashrc$"      . sh-mode)
          ("\\.*bash_profile" . sh-mode))
+  :custom
+  (sh-basic-offset 2)
+  (sh-indentation 2)
+  (sh-indent-comment t)
   :config
-  (add-hook 'sh-mode-hook
-    #'(lambda ()
-        (setq-default sh-basic-offset 2
-                      sh-indentation 2
-                      sh-indent-comment t)
+  ; Fixing OSX/node "Operation not permitted" - add 'node' under "Security & Privacy"
+  ;; -> http://osxdaily.com/2018/10/09/fix-operation-not-permitted-terminal-error-macos/
 
-        ; Fixing OSX/node "Operation not permitted" - add 'node' under "Security & Privacy"
-        ;; -> http://osxdaily.com/2018/10/09/fix-operation-not-permitted-terminal-error-macos/
-        (create-virtualenv "venv-lsp-bash/"     ; bash lsp
-                           "bin/venv-nodejs-npm.sh"
-                           "python3"
-                           "bin/nodejs-pip-requirements.txt"
-                           "14.17.0"
-                           "bash-language-server")
+  (when (not (executable-find (expand-file-name "~/.asdf/shims/bash-language-server")))
+    (when (executable-find (expand-file-name "~/.asdf/shims/npm"))
+      (shell-command "npm i -g bash-language-server")))
+  (with-eval-after-load `lsp-mode
+    (progn
+      (lsp-deferred)
+      ))
 
-        (require 'lsp-clients)
-        (lsp)
-
-        (when (eq 1 (point-max))                ; new file template
-          (insert
-           "#!/usr/bin/env bash\n"
-           "\n"
-           "set -Eeuxo pipefail\n"
-           "\n"
-           "err() {\n"
-           "    echo \"errexit with status [$?] at line $(caller)\" >&2\n"
-           "    awk 'NR>L-5 && NR<L+3 { printf \"%-5d%3s%s\\n\",NR,(NR==L?\">> \":\"\"),$0 }' L=$1 $0\n"
-           "}\n"
-           "trap 'err $LINENO' ERR\n"
-           "\n\n\n\n"
-           "main() {\n"
-           "    return\n"
-           "}\n"
-           "main \"$@\"\n"
-           ))
-        ) t)
+  (run-with-idle-timer
+   0.1 nil
+   #'(lambda ()
+       (when (derived-mode-p 'sh-mode)
+           (when (eq 1 (point-max))                ; new file template
+             (insert
+              "#!/usr/bin/env bash\n"
+              "\n"
+              "set -Eeuxo pipefail\n"
+              "\n"
+              "err() {\n"
+              "    echo \"errexit with status [$?] at line $(caller)\" >&2\n"
+              "    awk 'NR>L-5 && NR<L+3 { printf \"%-5d%3s%s\\n\",NR,(NR==L?\">> \":\"\"),$0 }' L=$1 $0\n"
+              "}\n"
+              "trap 'err $LINENO' ERR\n"
+              "\n\n\n\n"
+              "main() {\n"
+              "    return\n"
+              "}\n"
+              "main \"$@\"\n"
+              ))
+         )))
   )
 #+END_SRC
 
@@ -1412,25 +1406,24 @@ Language Server Protocol
 (use-package dockerfile-mode
   :defer t
   :ensure t
+  :mode
+  (("\\.dockerfile\\'" . dockerfile-mode)
+   ("/Dockerfile\\(?:\\.[^/\\]*\\)?\\'" . dockerfile-mode))
   :config
-  (add-hook 'dockerfile-mode-hook
-    #'(lambda ()
-        (create-virtualenv "venv-lsp-dockerfile/"   ; lsp venv folder
-                           "bin/venv-nodejs-npm.sh"
-                           "python3"
-                           "bin/nodejs-pip-requirements.txt"
-                           "12.7.0"
-                           "dockerfile-language-server-nodejs")
+  (when (not (executable-find (expand-file-name "~/.asdf/shims/docker-langserver")))
+    (when (executable-find (expand-file-name "~/.asdf/shims/npm"))
+      (shell-command "npm i -g dockerfile-language-server-nodejs")))
 
-        (require 'lsp-mode)                     ; LSP
-        (lsp-register-client
-         (make-lsp-client :new-connection (lsp-stdio-connection '("docker-langserver" "--stdio"))
-                          :major-modes '(dockerfile-mode)
-                          :priority -1
-                          :server-id 'dockerfile-ls))
-        (add-to-list 'lsp-language-id-configuration '(dockerfile-mode . "dockerfile-mode"))
-        (lsp)
-        ) t)
+  (with-eval-after-load `lsp-mode
+    (progn
+      (lsp-register-client
+       (make-lsp-client :new-connection (lsp-stdio-connection '("docker-langserver" "--stdio"))
+                        :major-modes '(dockerfile-mode)
+                        :priority -1
+                        :server-id 'dockerfile-ls))
+      (add-to-list 'lsp-language-id-configuration '(dockerfile-mode . "dockerfile-mode"))
+      (lsp-deferred)
+      ))
   )
 #+END_SRC
 
@@ -1609,86 +1602,86 @@ Language Server Protocol
   (python-indent-guess-indent-offset-verbose nil)
   (python-indent-offset 4)                      ; tab space
   :config
-  (add-hook 'python-mode-hook
-    #'(lambda ()
-        (create-virtualenv "venv-lsp-python3/"  ; create virtualenv
-                           "bin/venv-python3.sh"
-                           "python3"
-                           "bin/python3-pip-requirements.txt")
+  (setenv "PYTHONPATH" (shell-command-to-string "$SHELL --login -c 'echo -n $PYTHONPATH'"))
 
-        (require 'lsp-pyls)                     ; LSP
-        (setq lsp-clients-python-library-directories
-              (list
-               (expand-file-name (concat backup-directory "venv-lsp-python3/"))))
-        (setq flycheck-python-pylint-executable
-              (expand-file-name (concat backup-directory "venv-lsp-python3/bin/pylint")))
-        (unless (file-exists-p (concat backup-directory "venv-lsp-python3/etc/pylintrc"))
-          (shell-command
-           (concat
-            "pylint --generate-rcfile > "
-            (concat backup-directory "venv-lsp-python3/etc/pylintrc")
-            )))
-        (setq flycheck-pylintrc (concat backup-directory "venv-lsp-python3/etc/pylintrc"))
-        (lsp)
-        (use-package dap-python :after dap-mode :ensure dap-mode :defer 2)      ; lsp debugger
-        (setq dap-python-executable (expand-file-name (convert-standard-filename "venv-lsp-python3/bin/python") backup-directory))
+  (defvar pylsp-venv-directory (concat backup-directory "venv-lsp-python3/"))
+  (when (not (executable-find (expand-file-name "~/.asdf/shims/pylsp")))
+    (shell-command (concat "python3 -m pip install -U -r " (expand-file-name (concat user-emacs-directory "bin/python3-pip-requirements.txt")) " && asdf reshim"))
+    (unless (file-exists-p pylsp-venv-directory)
+      (make-directory pylsp-venv-directory t))
+    )
 
-        ; use dockerised jupyter via C-c C-p
-        (setq python-shell-interpreter "jupyter-console"
-              python-shell-interpreter-args "--simple-prompt"
-              python-shell-prompt-detect-failure-warning nil)
-        (add-to-list 'python-shell-completion-native-disabled-interpreters
-                     "jupyter")
+  (require 'lsp-pylsp)                 ; LSP
+  (setq lsp-clients-pylsp-library-directories
+        (list
+         (concat (expand-file-name "~/.asdf/installs/python/") (shell-command-to-string (concat "grep python " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'")) "/")
+         ))
+  (lsp-deferred)
+  (use-package dap-python :after dap-mode :ensure dap-mode :defer 2)    ; lsp debugger
 
-        (when (eq 1 (point-max))                ; new file template
-          (insert
-           "#!/usr/bin/env python3\n"
-           "\n\n"
-           "def main():\n"
-           "    pass\n"
-           "\n\n"
-           "if __name__ == \"__main__\":\n"
-           "    main()\n"
-           ))
+  (unless (file-exists-p (concat pylsp-venv-directory "pylintrc"))
+    (shell-command
+     (concat
+      "pylint --generate-rcfile > "
+      (concat pylsp-venv-directory "pylintrc")
+      )))
+  (setq flycheck-pylintrc (concat pylsp-venv-directory "pylintrc"))
 
-        ;; from https://github.com/syl20bnr/spacemacs/blob/master/layers/%2Blang/python/funcs.el
-        (defun python-remove-unused-imports ()
-          "Use Autoflake to remove unused function
+  ; use dockerised jupyter via C-c C-p
+  (setq python-shell-interpreter "jupyter-console"
+        python-shell-interpreter-args "--simple-prompt"
+        python-shell-prompt-detect-failure-warning nil)
+  (add-to-list 'python-shell-completion-native-disabled-interpreters
+               "jupyter")
+
+  (when (eq 1 (point-max))                ; new file template
+    (insert
+     "#!/usr/bin/env python3\n"
+     "\n\n"
+     "def main():\n"
+     "    pass\n"
+     "\n\n"
+     "if __name__ == \"__main__\":\n"
+     "    main()\n"
+     ))
+
+  ;; from https://github.com/syl20bnr/spacemacs/blob/master/layers/%2Blang/python/funcs.el
+  (defun python-remove-unused-imports ()
+    "Use Autoflake to remove unused function
 autoflake --remove-all-unused-imports -i unused_imports.py"
-          (interactive)
-          (if (executable-find "autoflake")
-              (progn
-                (shell-command (format "autoflake --remove-all-unused-imports -i %s"
-                                       (shell-quote-argument (buffer-file-name))))
-                (revert-buffer t t t))
-            (message "Error: Cannot find autoflake executable.")))
-        (local-set-key (kbd "A-M-f") #'(lambda ()
-                                         (interactive)
-                                         (lsp-format-buffer)                ; built-in lsp-mode formatting
-                                         (save-buffer)                      ; work on file only, and need to save the file first
-                                         (python-remove-unused-imports))    ; remove unused imports via external cmd
-                       )
+    (interactive)
+    (if (executable-find "autoflake")
+        (progn
+          (shell-command (format "autoflake --remove-all-unused-imports -i %s"
+                                 (shell-quote-argument (buffer-file-name))))
+          (revert-buffer t t t))
+      (message "Error: Cannot find autoflake executable.")))
+  (local-set-key (kbd "A-M-f") #'(lambda ()
+                                   (interactive)
+                                   (lsp-format-buffer)                  ; built-in lsp-mode formatting
+                                   (save-buffer)                        ; work on file only, and need to save the file first
+                                   (python-remove-unused-imports))      ; remove unused imports via external cmd
+                 )
 
-        ;; from https://github.com/syl20bnr/spacemacs/blob/master/layers/%2Blang/python/funcs.el
-        (defun python-toggle-breakpoint ()      ; toggle python breakpoint
-          "Add a break point, highlight it."
-          (interactive)
-          (let ((trace (cond ((executable-find "wdb") "import wdb; wdb.set_trace()")
-                             ((executable-find "ipdb") "import ipdb; ipdb.set_trace()")
-                             ((executable-find "pudb") "import pudb; pudb.set_trace()")
-                             ((executable-find "ipdb3") "import ipdb; ipdb.set_trace()")
-                             ((executable-find "pudb3") "import pudb; pudb.set_trace()")
-                             (t "import pdb; pdb.set_trace()")))
-                (line (thing-at-point 'line)))
-            (if (and line (string-match trace line))
-                (kill-whole-line)
-              (progn
-                (back-to-indentation)
-                (insert trace)
-                (insert "\n")
-                (python-indent-line)))))
-        (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
-        ) t)
+  ;; from https://github.com/syl20bnr/spacemacs/blob/master/layers/%2Blang/python/funcs.el
+  (defun python-toggle-breakpoint ()      ; toggle python breakpoint
+    "Add a break point, highlight it."
+    (interactive)
+    (let ((trace (cond ((executable-find "wdb") "import wdb; wdb.set_trace()")
+                       ((executable-find "ipdb") "import ipdb; ipdb.set_trace()")
+                       ((executable-find "pudb") "import pudb; pudb.set_trace()")
+                       ((executable-find "ipdb3") "import ipdb; ipdb.set_trace()")
+                       ((executable-find "pudb3") "import pudb; pudb.set_trace()")
+                       (t "import pdb; pdb.set_trace()")))
+          (line (thing-at-point 'line)))
+      (if (and line (string-match trace line))
+          (kill-whole-line)
+        (progn
+          (back-to-indentation)
+          (insert trace)
+          (insert "\n")
+          (python-indent-line)))))
+  (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
   )
 #+END_SRC
 
@@ -1706,61 +1699,58 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
    ("Gemfile\\'"     . enh-ruby-mode)
    ("Cheffile\\'"    . enh-ruby-mode)
    ("Vagrantfile\\'" . enh-ruby-mode))
+  :custom
+  (enh-ruby-add-encoding-comment-on-save nil)
+  (rspec-compilation-buffer-name "*rspec-compilation*")
+  (rspec-use-opts-file-when-available nil)
+  (rspec-use-rake-when-possible nil)
+  (ruby-insert-encoding-magic-comment nil)
   :config
-  (setq enh-ruby-add-encoding-comment-on-save nil
-        rspec-compilation-buffer-name "*rspec-compilation*"
-        rspec-use-opts-file-when-available nil
-        rspec-use-rake-when-possible nil
-        ruby-insert-encoding-magic-comment nil)
+  (defvar ruby-workspace-directory      ; ruby language server
+    (expand-file-name (concat backup-directory "venv-lsp-ruby/")))
+  (if (not (file-exists-p ruby-workspace-directory))
+      (progn
+        (make-directory
+         ruby-workspace-directory t)    ; create a directory for ruby lsp server
+        (when (executable-find (expand-file-name "~/.asdf/shims/bundle"))
+          (copy-file                    ; create Gemfile for ruby lsp
+           (expand-file-name (concat user-emacs-directory "bin/Gemfile.rubylsp.template"))
+           (expand-file-name (concat ruby-workspace-directory "Gemfile")) )
+          (shell-command                ; install ruby lsp
+           (concat "cd " (expand-file-name ruby-workspace-directory) " && bundle install && bundle exec solargraph download-core"))
+          )))
 
-  (add-hook 'enh-ruby-mode-hook                         ; LSP
-            #'(lambda ()
-                (defvar ruby-workspace-directory        ; ruby language server
-                  (expand-file-name (concat backup-directory "venv-lsp-ruby/")))
-                (if (not (file-exists-p ruby-workspace-directory))
-                    (progn
-                      (make-directory
-                       ruby-workspace-directory t)      ; create a directory for ruby lsp server
-                      (when (executable-find (expand-file-name "~/.asdf/shims/bundle"))
-                        (copy-file                      ; create Gemfile for ruby lsp
-                         (expand-file-name (concat user-emacs-directory "bin/Gemfile.rubylsp.template"))
-                         (expand-file-name (concat ruby-workspace-directory "Gemfile")) )
-                        (shell-command                  ; install ruby lsp
-                         (concat "cd " (expand-file-name ruby-workspace-directory) " && bundle install && bundle exec solargraph download-core"))
-                        )
-                      )
-                  )
+  (add-to-list 'exec-path
+               (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin"))
 
-                (add-to-list 'exec-path
-                             (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin"))
+  (setenv "path" (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin:"  (expand-file-name "~/.asdf/shims/s") ":" (getenv "PATH")))
+  (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
 
-                (setenv "path" (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin:"  (expand-file-name "~/.asdf/shims/s") ":" (getenv "PATH")))
-                (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
+  (write-region                         ; create a wrapper script for ruby lsp - solargraph
+   (concat
+    "#!/usr/bin/env bash\n"
+    "\n\n"
+    "export PATH=\"" (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" ))) "/bin:$PATH\"\n"
+    "export BUNDLE_GEMFILE=\"" (expand-file-name ruby-workspace-directory) "Gemfile\"\n"
+    "\n"
+    "bundle exec solargraph stdio\n"
+    ) nil (expand-file-name (concat user-emacs-directory "/files/rubylsp.sh")))
+  (set-file-modes (expand-file-name (concat user-emacs-directory "/files/rubylsp.sh")) #o755)
 
-                (write-region                           ; create a wrapper script for ruby lsp - solargraph
-                 (concat
-                  "#!/usr/bin/env bash\n"
-                  "\n\n"
-                  "export PATH=\"" (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" ))) "/bin:$PATH\"\n"
-                  "export BUNDLE_GEMFILE=\"" (expand-file-name ruby-workspace-directory) "Gemfile\"\n"
-                  "\n"
-                  "bundle exec solargraph stdio\n"
-                  ) nil (expand-file-name (concat user-emacs-directory "/files/rubylsp.sh")))
-                (set-file-modes (expand-file-name (concat user-emacs-directory "/files/rubylsp.sh")) #o755)
-
-                (require 'lsp-solargraph)               ; LSP
-                (lsp-register-client                    ; using rbenv/bundle instead to start ls
-                 (make-lsp-client :new-connection (lsp-stdio-connection '("bundle" "exec" "solargraph" "stdio"))
-                                  :major-modes '(ruby-mode enh-ruby-mode)
-                                  :priority 0
-                                  :multi-root t
-                                  :server-id 'ruby-ls
-                                  :initialized-fn (lambda (workspace)
-                                                    (with-lsp-workspace workspace
-                                                                        (lsp--set-configuration
-                                                                         (lsp-configuration-section "solargraph"))))))
-                (lsp)
-                ) t)
+  (with-eval-after-load `lsp-mode
+    (progn
+      (lsp-register-client              ; using asdf/bundle instead to start ls
+       (make-lsp-client :new-connection (lsp-stdio-connection '("bundle" "exec" "solargraph" "stdio"))
+                        :major-modes '(ruby-mode enh-ruby-mode)
+                        :priority 0
+                        :multi-root t
+                        :server-id 'ruby-ls
+                        :initialized-fn (lambda (workspace)
+                                          (with-lsp-workspace workspace
+                                                              (lsp--set-configuration
+                                                               (lsp-configuration-section "solargraph"))))))
+      (lsp-deferred)
+      ))
 
   (use-package inf-ruby
     :after enh-ruby-mode
@@ -1775,6 +1765,25 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
     :hook (enh-ruby-mode . rspec-mode)
     )
   )
+#+END_SRC
+
+**** TypeScript
+
+#+BEGIN_SRC emacs-lisp
+(use-package typescript-mode
+  :ensure t
+  :interpreter "node"
+  :mode
+  (("\\.ts\\'" . typescript-mode)
+   ("\\.tsx\\'" . typescript-mode))
+  :config
+  (when (not (executable-find (expand-file-name "~/.asdf/shims/typescript-language-server")))
+    (when (executable-find (expand-file-name "~/.asdf/shims/npm"))
+      (shell-command "npm i -g typescript-language-server && npm i -g typescript")))
+  (with-eval-after-load `lsp-mode
+    (progn
+      (lsp-deferred)
+      )))
 #+END_SRC
 
 ** Mode Setting
@@ -1911,11 +1920,15 @@ Visible bookmarks
         "num_server_instances = 2\n"
         "always_prefer = false\n"
         "[language.python]\n"
-        "command = \"pyls\"\n"
+        "command = \"pylsp\"\n"
         "synchronous_timeout_ms = 100\n"
         "num_server_instances = 2\n"
         "[language.ruby]\n"
         "command = \"" (expand-file-name user-emacs-directory) "/files/rubylsp.sh\"\n"
+        "num_server_instances = 2\n"
+        "[language.typescript]\n"
+        "command = \"typescript-language-server\"\n"
+        "args = [\"--tsserver-path\", \"tsserver\", \"--stdio\"]\n"
         "num_server_instances = 2\n"
         ) nil tabnine-toml-file)
     )
@@ -2371,20 +2384,18 @@ Display the key bindings in a popup.
 *** yasnippet
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'prog-mode-hook
-          #'(lambda ()
-              (use-package yasnippet
-                :commands yas-minor-mode
-                :diminish yas-minor-mode
-                :ensure t
-                :custom
-                (yas-keymap-disable-hook t)
-                :config
-                (use-package yasnippet-snippets :ensure t)
-                (use-package ivy-yasnippet :commands ivy-yasnippet :ensure t)
-                (yas-reload-all)
-                )
-              ))
+(use-package yasnippet
+  :defer t
+  :commands yas-minor-mode
+  :diminish yas-minor-mode
+  :ensure t
+  :custom
+  (yas-keymap-disable-hook t)
+  :config
+  (use-package yasnippet-snippets :ensure t)
+  (use-package ivy-yasnippet :commands ivy-yasnippet :ensure t)
+  (yas-reload-all)
+  )
 #+END_SRC
 
 *** ztree                                       :EDIT:
