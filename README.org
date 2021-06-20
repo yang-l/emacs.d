@@ -1258,6 +1258,7 @@ Language Server Protocol
    :prefix ","
    :non-normal-prefix "C-x ,"
    "lsrn" 'lsp-rename
+   "lsda" 'lsp-describe-thing-at-point
    "lsfb" 'lsp-format-buffer
    "lsoi" 'lsp-organize-imports
    "lsgi" 'lsp-goto-implementation
@@ -1275,6 +1276,7 @@ Language Server Protocol
          (sh-mode)
          (typescript-mode))
   :custom
+  (lsp-auto-guess-root t)
   (lsp-client-packages '(lsp-bash
                          lsp-javascript))
   (lsp-prefer-flymake nil)
@@ -1320,6 +1322,7 @@ Language Server Protocol
 (use-package lsp-ui-imenu :after lsp-ui :defer 2)
 
 (use-package helm-lsp
+  :after lsp-mode
   :bind (:map lsp-mode-map
               ([remap xref-find-apropos] . helm-lsp-workspace-symbol))
   :commands helm-lsp-workspace-symbol
