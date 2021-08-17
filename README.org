@@ -254,10 +254,15 @@ OSX-only key bindings
 *** Browse URL
 
 #+BEGIN_SRC emacs-lisp
-(setq browse-url-browser-function               ; default browser
-        'browse-url-generic
-    browse-url-generic-program
-        (executable-find "firefox"))
+(defvar browser-path
+  (cond
+   ((executable-find "firefox")
+    "firefox")
+   ((executable-find "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")))
+
+(setq browse-url-browser-function 'browse-url-generic       ; default browser
+      browse-url-generic-program  browser-path)
 #+END_SRC
 
 *** Emacs Setup
@@ -655,6 +660,12 @@ Markup language often for readme
 #+BEGIN_SRC emacs-lisp
 (use-package markdown-mode
   :defer 1
+  :ensure t
+  :commands (markdown-mode gfm-mode)
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init (setq markdown-command "multimarkdown")
   :config
   (setq markdown-fontify-code-blocks-natively t)
   )
@@ -705,9 +716,9 @@ Markup language often for readme
         multi-term-program-switches "-il"       ; FIXME - this switch does not work with any space characters in it. Set to interactive login shell, which will read "~/.bash_profile" and source the bashrc file
         multi-term-buffer-name "mterm"          ; buffer name
         term-buffer-maximum-size 0              ; keep all buffer
-        scroll-margin 0                         ; always make point visible at bottom of the window when auto-scrolling
         multi-term-dedicated-close-back-to-open-buffer-p t
         )
+  (setq-local scroll-margin 0)                  ; always make point visible at bottom of the window when auto-scrolling
   (add-to-list 'term-bind-key-alist '("M-[" . multi-term-prev))
   (add-to-list 'term-bind-key-alist '("M-]" . multi-term-next))
   (add-to-list 'term-bind-key-alist '("C-c t h" .
@@ -1033,6 +1044,8 @@ web-mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package web-mode
+  :after company
+  :defer t
   :ensure t
   :mode ("\\.html\\'" . web-mode)
   :init
@@ -1837,7 +1850,7 @@ Visible bookmarks
          ([remap indent-for-tab-command] . company-indent-or-complete-common))
   :diminish company-mode
   :ensure t
-  :hook ((prog-mode) . company-mode)
+  :hook ((prog-mode text-mode) . company-mode)
   :custom
   (company-begin-commands
    (quote
@@ -1888,6 +1901,7 @@ Visible bookmarks
 (use-package company-tabnine
   :after company
   :commands company-tabnine
+  :defer t
   :ensure t
   :init
   (make-local-variable 'company-backends)
@@ -2128,6 +2142,22 @@ vi layer for Emacs
         (if flycheck-current-errors 0.5 15.0)
         )
   (flymake-mode -1)                             ; disable flymake
+  )
+#+END_SRC
+
+*** flyspell
+
+#+BEGIN_SRC emacs-lisp
+(use-package flyspell
+  :diminish flyspell-mode
+  :ensure t
+  :hook ((text-mode . flyspell-mode)
+         (prog-mode . flyspell-prog-mode))
+  :config
+  (when (eq system-type 'darwin)                ; mac only settings
+    (define-key flyspell-mouse-map [down-mouse-3] #'flyspell-correct-word)
+    (define-key flyspell-mouse-map [mouse-3] #'undefined)
+    )
   )
 #+END_SRC
 
