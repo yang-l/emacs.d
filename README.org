@@ -353,7 +353,7 @@ OSX-only key bindings
 (setq default-directory
     (if (eq system-type 'windows-nt)
         my-win-default-directory                ; Win
-    my-lin-default-directory                    ; Linux
+    my-lin-default-directory                    ; Linux/Mac
     ))
 #+END_SRC
 
@@ -1164,16 +1164,6 @@ Explore and test HTTP REST webservices
   )
 #+END_SRC
 
-**** terraform
-
-#+BEGIN_SRC emacs-lisp
-(use-package terraform-mode
-  :defer t
-  :ensure t
-  :config (setq terraform-indent-level 2)
-  )
-#+END_SRC
-
 **** yaml
 
 #+BEGIN_SRC emacs-lisp
@@ -1287,6 +1277,7 @@ Language Server Protocol
          (enh-ruby-mode)
          (python-mode)
          (sh-mode)
+         (terraform-mode)
          (typescript-mode))
   :custom
   (lsp-auto-guess-root t)
@@ -1781,6 +1772,34 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
     :hook (enh-ruby-mode . rspec-mode)
     )
   )
+#+END_SRC
+
+**** terraform
+
+#+BEGIN_SRC emacs-lisp
+(use-package terraform-mode
+  :defer t
+  :ensure t
+  :hook (terraform-mode . company-mode)
+  :mode "\\.tf\\(vars\\)?\\'"
+  :config
+  (setq terraform-indent-level 2)
+
+  (when (executable-find (expand-file-name "~/.config/local/bin/terraform-ls"))
+    (with-eval-after-load `lsp-mode
+      (progn
+        (lsp-register-client
+         (make-lsp-client :new-connection (lsp-stdio-connection '("~/.config/local/bin/terraform-ls" "serve"))
+                          :major-modes '(terraform-mode)
+                          :priority -1
+                          :server-id 'terraform-ls))
+        (add-to-list 'lsp-language-id-configuration '(terraform-mode . "terraform-mode"))
+        (lsp-deferred)
+      )))
+  )
+
+  (use-package terraform-doc :after terraform-mode :ensure t)
+  (use-package company-terraform :after terraform-mode :ensure t)
 #+END_SRC
 
 **** TypeScript
