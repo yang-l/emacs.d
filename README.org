@@ -1273,12 +1273,12 @@ Language Server Protocol
    )
   :hook ((lsp-mode . lsp-enable-which-key-integration)
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
-         (dockerfile-mode)
+         (dockerfile-mode . lsp-deferred)
          (enh-ruby-mode)
          (python-mode)
-         (sh-mode)
-         (terraform-mode)
-         (typescript-mode))
+         (sh-mode . lsp-deferred)
+         (terraform-mode . lsp-deferred)
+         (typescript-mode . lsp-deferred))
   :custom
   (lsp-auto-guess-root t)
   (lsp-client-packages '(lsp-bash
@@ -1288,6 +1288,26 @@ Language Server Protocol
   :config
   (setq gc-cons-threshold (* 1024 1024 128)     ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
         read-process-output-max (* 1024 1024 2))
+
+  ;; Docker
+  (when (derived-mode-p 'dockerfile-mode)
+    (when (executable-find (expand-file-name "~/.asdf/shims/docker-langserver"))
+      (lsp-register-client
+       (make-lsp-client :new-connection (lsp-stdio-connection '("docker-langserver" "--stdio"))
+                        :major-modes '(dockerfile-mode)
+                        :priority -1
+                        :server-id 'dockerfile-ls))
+      (add-to-list 'lsp-language-id-configuration '(dockerfile-mode . "dockerfile-mode"))))
+
+  ;; Terraform
+  (when (derived-mode-p 'terraform-mode)
+    (when (executable-find (expand-file-name "~/.config/local/bin/terraform-ls"))
+      (lsp-register-client
+       (make-lsp-client :new-connection (lsp-stdio-connection '("~/.config/local/bin/terraform-ls" "serve"))
+                        :major-modes '(terraform-mode)
+                        :priority -1
+                        :server-id 'terraform-ls))
+      (add-to-list 'lsp-language-id-configuration '(terraform-mode . "terraform-mode"))))
   )
 
 (use-package lsp-modeline :after lsp-mode :ensure lsp-mode)
@@ -1358,7 +1378,7 @@ Language Server Protocol
 (use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode :ensure t)
 #+END_SRC
 
-**** Bash
+**** Bash                                       :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package sh-script
@@ -1373,14 +1393,6 @@ Language Server Protocol
   :config
   ; Fixing OSX/node "Operation not permitted" - add 'node' under "Security & Privacy"
   ;; -> http://osxdaily.com/2018/10/09/fix-operation-not-permitted-terminal-error-macos/
-
-  (when (not (executable-find (expand-file-name "~/.asdf/shims/bash-language-server")))
-    (when (executable-find (expand-file-name "~/.asdf/shims/npm"))
-      (shell-command "npm i -g bash-language-server")))
-  (with-eval-after-load `lsp-mode
-    (progn
-      (lsp-deferred)
-      ))
 
   (run-with-idle-timer
    0.1 nil
@@ -1407,30 +1419,14 @@ Language Server Protocol
   )
 #+END_SRC
 
-**** Dockerfile
+**** Dockerfile                                 :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package dockerfile-mode
   :defer t
   :ensure t
-  :mode
-  (("\\.dockerfile\\'" . dockerfile-mode)
-   ("/Dockerfile\\(?:\\.[^/\\]*\\)?\\'" . dockerfile-mode))
-  :config
-  (when (not (executable-find (expand-file-name "~/.asdf/shims/docker-langserver")))
-    (when (executable-find (expand-file-name "~/.asdf/shims/npm"))
-      (shell-command "npm i -g dockerfile-language-server-nodejs")))
-
-  (with-eval-after-load `lsp-mode
-    (progn
-      (lsp-register-client
-       (make-lsp-client :new-connection (lsp-stdio-connection '("docker-langserver" "--stdio"))
-                        :major-modes '(dockerfile-mode)
-                        :priority -1
-                        :server-id 'dockerfile-ls))
-      (add-to-list 'lsp-language-id-configuration '(dockerfile-mode . "dockerfile-mode"))
-      (lsp-deferred)
-      ))
+  :mode (("\\.dockerfile\\'" . dockerfile-mode)
+         ("/Dockerfile\\(?:\\.[^/\\]*\\)?\\'" . dockerfile-mode))
   )
 #+END_SRC
 
@@ -1774,7 +1770,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   )
 #+END_SRC
 
-**** terraform
+**** Terraform                                  :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package terraform-mode
@@ -1782,43 +1778,23 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   :ensure t
   :hook (terraform-mode . company-mode)
   :mode "\\.tf\\(vars\\)?\\'"
-  :config
-  (setq terraform-indent-level 2)
-
-  (when (executable-find (expand-file-name "~/.config/local/bin/terraform-ls"))
-    (with-eval-after-load `lsp-mode
-      (progn
-        (lsp-register-client
-         (make-lsp-client :new-connection (lsp-stdio-connection '("~/.config/local/bin/terraform-ls" "serve"))
-                          :major-modes '(terraform-mode)
-                          :priority -1
-                          :server-id 'terraform-ls))
-        (add-to-list 'lsp-language-id-configuration '(terraform-mode . "terraform-mode"))
-        (lsp-deferred)
-      )))
+  :custom
+  (terraform-indent-level 2)
   )
 
   (use-package terraform-doc :after terraform-mode :ensure t)
   (use-package company-terraform :after terraform-mode :ensure t)
 #+END_SRC
 
-**** TypeScript
+**** TypeScript                                 :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package typescript-mode
   :ensure t
   :interpreter "node"
-  :mode
-  (("\\.ts\\'" . typescript-mode)
-   ("\\.tsx\\'" . typescript-mode))
-  :config
-  (when (not (executable-find (expand-file-name "~/.asdf/shims/typescript-language-server")))
-    (when (executable-find (expand-file-name "~/.asdf/shims/npm"))
-      (shell-command "npm i -g typescript-language-server && npm i -g typescript")))
-  (with-eval-after-load `lsp-mode
-    (progn
-      (lsp-deferred)
-      )))
+  :mode (("\\.ts\\'" . typescript-mode)
+         ("\\.tsx\\'" . typescript-mode))
+  )
 #+END_SRC
 
 ** Mode Setting
