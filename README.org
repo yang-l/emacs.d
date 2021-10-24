@@ -1274,7 +1274,7 @@ Language Server Protocol
   :hook ((lsp-mode . lsp-enable-which-key-integration)
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
          (dockerfile-mode . lsp-deferred)
-         (enh-ruby-mode)
+         (enh-ruby-mode . lsp-deferred)
          (python-mode)
          (sh-mode . lsp-deferred)
          (terraform-mode . lsp-deferred)
@@ -1282,32 +1282,30 @@ Language Server Protocol
   :custom
   (lsp-auto-guess-root t)
   (lsp-client-packages '(lsp-bash
-                         lsp-javascript))
+                         lsp-dockerfile
+                         lsp-javascript
+                         lsp-solargraph))
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 5)
   :config
   (setq gc-cons-threshold (* 1024 1024 128)     ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
         read-process-output-max (* 1024 1024 2))
 
-  ;; Docker
-  (when (derived-mode-p 'dockerfile-mode)
-    (when (executable-find (expand-file-name "~/.asdf/shims/docker-langserver"))
-      (lsp-register-client
-       (make-lsp-client :new-connection (lsp-stdio-connection '("docker-langserver" "--stdio"))
-                        :major-modes '(dockerfile-mode)
-                        :priority -1
-                        :server-id 'dockerfile-ls))
-      (add-to-list 'lsp-language-id-configuration '(dockerfile-mode . "dockerfile-mode"))))
+  (when (derived-mode-p 'enh-ruby-mode)         ; load libraries
+    (with-eval-after-load `lsp-solargraph
+      (add-to-list 'lsp-solargraph-library-directories (expand-file-name "~/.asdf/installs/ruby/"))
+      (add-to-list 'lsp-solargraph-library-directories
+                   (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/vendor/bundle/"))
+      ))
 
-  ;; Terraform
+  ;; Terraform / HashiCorp - https://github.com/hashicorp/terraform-ls
   (when (derived-mode-p 'terraform-mode)
     (when (executable-find (expand-file-name "~/.config/local/bin/terraform-ls"))
       (lsp-register-client
        (make-lsp-client :new-connection (lsp-stdio-connection '("~/.config/local/bin/terraform-ls" "serve"))
                         :major-modes '(terraform-mode)
                         :priority -1
-                        :server-id 'terraform-ls))
-      (add-to-list 'lsp-language-id-configuration '(terraform-mode . "terraform-mode"))))
+                        :server-id 'terraform-ls))))
   )
 
 (use-package lsp-modeline :after lsp-mode :ensure lsp-mode)
@@ -1688,7 +1686,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   )
 #+END_SRC
 
-**** Ruby
+**** Ruby                                       :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package enh-ruby-mode
@@ -1708,65 +1706,25 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   (rspec-use-opts-file-when-available nil)
   (rspec-use-rake-when-possible nil)
   (ruby-insert-encoding-magic-comment nil)
+  :init
+  (setenv "RUBYOPT" "--jit")
   :config
-  (defvar ruby-workspace-directory      ; ruby language server
-    (expand-file-name (concat backup-directory "venv-lsp-ruby/")))
-  (if (not (file-exists-p ruby-workspace-directory))
-      (progn
-        (make-directory
-         ruby-workspace-directory t)    ; create a directory for ruby lsp server
-        (when (executable-find (expand-file-name "~/.asdf/shims/bundle"))
-          (copy-file                    ; create Gemfile for ruby lsp
-           (expand-file-name (concat user-emacs-directory "bin/Gemfile.rubylsp.template"))
-           (expand-file-name (concat ruby-workspace-directory "Gemfile")) )
-          (shell-command                ; install ruby lsp
-           (concat "cd " (expand-file-name ruby-workspace-directory) " && bundle install && bundle exec solargraph download-core"))
-          )))
-
   (add-to-list 'exec-path
                (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin"))
+  (setenv "PATH" (concat (getenv "PATH") ":" (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin"))
+  )
 
-  (setenv "path" (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin:"  (expand-file-name "~/.asdf/shims/s") ":" (getenv "PATH")))
-  (setenv "BUNDLE_GEMFILE" (concat (expand-file-name ruby-workspace-directory) "Gemfile"))
+(use-package inf-ruby
+  :after enh-ruby-mode
+  :ensure t
+  :hook (compilation-filter . inf-ruby-auto-enter)
+  )
 
-  (write-region                         ; create a wrapper script for ruby lsp - solargraph
-   (concat
-    "#!/usr/bin/env bash\n"
-    "\n\n"
-    "export PATH=\"" (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" ))) "/bin:$PATH\"\n"
-    "export BUNDLE_GEMFILE=\"" (expand-file-name ruby-workspace-directory) "Gemfile\"\n"
-    "\n"
-    "bundle exec solargraph stdio\n"
-    ) nil (expand-file-name (concat user-emacs-directory "/files/rubylsp.sh")))
-  (set-file-modes (expand-file-name (concat user-emacs-directory "/files/rubylsp.sh")) #o755)
-
-  (with-eval-after-load `lsp-mode
-    (progn
-      (lsp-register-client              ; using asdf/bundle instead to start ls
-       (make-lsp-client :new-connection (lsp-stdio-connection '("bundle" "exec" "solargraph" "stdio"))
-                        :major-modes '(ruby-mode enh-ruby-mode)
-                        :priority 0
-                        :multi-root t
-                        :server-id 'ruby-ls
-                        :initialized-fn (lambda (workspace)
-                                          (with-lsp-workspace workspace
-                                                              (lsp--set-configuration
-                                                               (lsp-configuration-section "solargraph"))))))
-      (lsp-deferred)
-      ))
-
-  (use-package inf-ruby
-    :after enh-ruby-mode
-    :ensure t
-    :hook (compilation-filter . inf-ruby-auto-enter)
-    )
-
-  (use-package rspec-mode
-    :after enh-ruby-mode
-    :diminish rspec-mode
-    :ensure t
-    :hook (enh-ruby-mode . rspec-mode)
-    )
+(use-package rspec-mode
+  :after enh-ruby-mode
+  :diminish rspec-mode
+  :ensure t
+  :hook (enh-ruby-mode . rspec-mode)
   )
 #+END_SRC
 
@@ -1936,7 +1894,8 @@ Visible bookmarks
         "synchronous_timeout_ms = 100\n"
         "num_server_instances = 2\n"
         "[language.ruby]\n"
-        "command = \"" (expand-file-name user-emacs-directory) "/files/rubylsp.sh\"\n"
+        "command = \"solargraph\"\n"
+        "args = [\"stdio\"]\n"
         "num_server_instances = 2\n"
         "[language.typescript]\n"
         "command = \"typescript-language-server\"\n"
