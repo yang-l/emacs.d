@@ -1275,7 +1275,7 @@ Language Server Protocol
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
          (dockerfile-mode . lsp-deferred)
          (enh-ruby-mode . lsp-deferred)
-         (python-mode)
+         (python-mode . lsp-deferred)
          (sh-mode . lsp-deferred)
          (terraform-mode . lsp-deferred)
          (typescript-mode . lsp-deferred))
@@ -1284,6 +1284,7 @@ Language Server Protocol
   (lsp-client-packages '(lsp-bash
                          lsp-dockerfile
                          lsp-javascript
+                         lsp-pylsp
                          lsp-solargraph))
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 5)
@@ -1291,11 +1292,22 @@ Language Server Protocol
   (setq gc-cons-threshold (* 1024 1024 128)     ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
         read-process-output-max (* 1024 1024 2))
 
-  (when (derived-mode-p 'enh-ruby-mode)         ; load libraries
+  (when (derived-mode-p 'enh-ruby-mode)
     (with-eval-after-load `lsp-solargraph
+      ; load libraries
       (add-to-list 'lsp-solargraph-library-directories (expand-file-name "~/.asdf/installs/ruby/"))
       (add-to-list 'lsp-solargraph-library-directories
                    (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/vendor/bundle/"))
+      ))
+
+  (when (derived-mode-p 'python-mode)
+    (with-eval-after-load `lsp-pylsp
+      ; config lsp-pylsp
+      (setq lsp-pylsp-plugins-yapf-enabled t)
+      ; load libraries
+      (add-to-list 'lsp-clients-pylsp-library-directories (expand-file-name "~/.asdf/installs/python/"))
+      (add-to-list 'lsp-clients-pylsp-library-directories
+                   (concat (expand-file-name "~/.asdf/installs/python/") (shell-command-to-string (concat "grep python " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'")) "/"))
       ))
 
   ;; Terraform / HashiCorp - https://github.com/hashicorp/terraform-ls
@@ -1590,7 +1602,7 @@ Language Server Protocol
 ;  )
 #+END_SRC
 
-**** Python
+**** Python                                     :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package python
@@ -1606,20 +1618,8 @@ Language Server Protocol
   (setenv "PYTHONPATH" (shell-command-to-string "$SHELL --login -c 'echo -n $PYTHONPATH'"))
 
   (defvar pylsp-venv-directory (concat backup-directory "venv-lsp-python3/"))
-  (when (not (executable-find (expand-file-name "~/.asdf/shims/pylsp")))
-    (shell-command (concat "python3 -m pip install -U -r " (expand-file-name (concat user-emacs-directory "bin/python3-pip-requirements.txt")) " && asdf reshim"))
-    (unless (file-exists-p pylsp-venv-directory)
-      (make-directory pylsp-venv-directory t))
-    )
-
-  (require 'lsp-pylsp)                 ; LSP
-  (setq lsp-clients-pylsp-library-directories
-        (list
-         (concat (expand-file-name "~/.asdf/installs/python/") (shell-command-to-string (concat "grep python " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'")) "/")
-         ))
-  (lsp-deferred)
-  (use-package dap-python :after dap-mode :ensure dap-mode :defer 2)    ; lsp debugger
-
+  (unless (file-exists-p pylsp-venv-directory)
+    (make-directory pylsp-venv-directory t))
   (unless (file-exists-p (concat pylsp-venv-directory "pylintrc"))
     (shell-command
      (concat
@@ -1684,6 +1684,8 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
           (python-indent-line)))))
   (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
   )
+
+(use-package dap-python :after python-mode dap-mode :ensure dap-mode :defer 2)  ; lsp debugger
 #+END_SRC
 
 **** Ruby                                       :LSP:
