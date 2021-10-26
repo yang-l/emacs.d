@@ -80,6 +80,7 @@ If =README.el= and =README.elc= are not presented, there is a need to recompile 
       (setq package-pinned-packages
             '((dap-mode     . "MELPA")
               (evil         . "MELPA")
+              (flycheck     . "MELPA")
               (lsp-mode     . "MELPA")
               (lsp-ui       . "MELPA")
               (no-littering . "MELPA")
@@ -1275,6 +1276,7 @@ Language Server Protocol
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
          (dockerfile-mode . lsp-deferred)
          (enh-ruby-mode . lsp-deferred)
+         (go-mode . lsp-deferred)
          (python-mode . lsp-deferred)
          (sh-mode . lsp-deferred)
          (terraform-mode . lsp-deferred)
@@ -1283,9 +1285,11 @@ Language Server Protocol
   (lsp-auto-guess-root t)
   (lsp-client-packages '(lsp-bash
                          lsp-dockerfile
+                         lsp-go
                          lsp-javascript
                          lsp-pylsp
                          lsp-solargraph))
+  (lsp-completion-provider :none)               ; handled by company already
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 5)
   :config
@@ -1440,81 +1444,47 @@ Language Server Protocol
   )
 #+END_SRC
 
-**** Go
+**** Go                                         :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package go-mode
   :defer t
   :ensure t
   :if (executable-find "go")
+  :mode (("\\.go\\'" . go-mode))
   :config
-  (defvar golang-lsp-directory (concat backup-directory "venv-lsp-go"))
-  (add-hook 'go-mode-hook
-    #'(lambda ()
-        (when (executable-find "goimports")                 ; use goimports instead of gofmt
-          (setq gofmt-command "goimports"))
-        (add-hook 'before-save-hook 'gofmt-before-save)
-        (setq indent-tabs-mode 1                            ; default to TAB as specified in Go spec
-              tab-width 4)                                  ; show tab as 4 space width
+  (when (executable-find "goimports")                       ; use goimports instead of gofmt
+    (setq gofmt-command "goimports"))
+  (add-hook 'before-save-hook 'gofmt-before-save)
+  (setq indent-tabs-mode 1                                  ; default to TAB as specified in Go spec
+        tab-width 4)                                        ; show tab as 4 space width
 
-        ;; Go LSP
-        (if (not (file-exists-p golang-lsp-directory))
-            (progn
-              (make-directory golang-lsp-directory t)       ; create go lsp directory
-              (when (executable-find "go")
-                (shell-command                              ; install gopls lsp
-                 (concat
-                  "GOPATH=" (expand-file-name golang-lsp-directory) " GO111MODULE=on go get golang.org/x/tools/gopls@latest"))
-                (shell-command                              ; install godoctor
-                 (concat
-                  "GOPATH=" (expand-file-name golang-lsp-directory) " go get github.com/godoctor/godoctor"))
-                (shell-command                              ; install goimports
-                 (concat
-                  "GOPATH=" (expand-file-name golang-lsp-directory) " go get golang.org/x/tools/cmd/goimports"))
-                )
-              ))
+  (unless (file-exists-p (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/go.mod"))
+    (setenv "GO111MODULE" "off"))                           ; turn off for one-off file
 
-        ; set go-langserver PATH
-        (setq exec-path (append (list (concat (expand-file-name golang-lsp-directory) "/bin/")) exec-path))
-        (setenv "PATH" (concat (expand-file-name golang-lsp-directory) "/bin/:" (getenv "PATH")))
-        (setenv "GOPATH" (expand-file-name golang-lsp-directory))
+  ;; for lsp
+  (when (not (executable-find (expand-file-name "~/.asdf/shims/ims/gopls")))
+    (shell-command "go install golang.org/x/tools/gopls@latest"))
+  (when (not (executable-find (expand-file-name "~/.asdf/shims/goimports")))
+    (shell-command "go install golang.org/x/tools/cmd/goimports@latest"))
+  )
 
-        (require 'lsp-go)
-        (lsp)
-        ) t)
-
-  (use-package godoctor :ensure t :defer t)                 ; godoctor - golang refactor
-
-  (use-package gotest
-    :bind (:map go-mode-map
-           ("C-x x f" . go-test-current-file)
-           ("C-x x t" . go-test-current-test)
-           ("C-x x x" . go-run))
-    :commands (go-test-current-file go-test-current-test go-run)
-    :ensure t
-    :general (
-      :states '(normal insert emacs)
-      :keymaps 'go-mode-map
-      :prefix ","
-      :non-normal-prefix "C-x ,"
-      "cgf" 'go-test-current-file
-      "cgt" 'go-test-current-test
-      "cgx" 'go-run)
-    )
-
-  (use-package go-playground                                ; local golang playground
-    :defer t
-    :diminish go-playground-mode
-    :ensure t
-    :custom
-    (go-playground-basedir (concat (expand-file-name golang-lsp-directory) "/src/playground"))
-    )
-
-  (use-package go-tag                                       ; edit field tags for golang
-    :defer t
-    :ensure t
-    :custom
-    (go-tag-args (list "-transform" "camelcase")))
+(use-package gotest
+  :after go-mode
+  :bind (:map go-mode-map
+         ("C-x x f" . go-test-current-file)
+         ("C-x x t" . go-test-current-test)
+         ("C-x x x" . go-run))
+  :commands (go-test-current-file go-test-current-test go-run)
+  :ensure t
+  :general (
+    :states '(normal insert emacs)
+    :keymaps 'go-mode-map
+    :prefix ","
+    :non-normal-prefix "C-x ,"
+    "cgf" 'go-test-current-file
+    "cgt" 'go-test-current-test
+    "cgx" 'go-run)
   )
 #+END_SRC
 
@@ -1907,13 +1877,13 @@ Visible bookmarks
     )
   :config
   (setq company-tabnine-max-num-results 3)
-  ;; https://emacs-china.org/t/tabnine/9988/50
-  (defadvice company-echo-show (around disable-tabnine-upgrade-message activate)
-    (let ((company-message-func (ad-get-arg 0)))
-      (when (and company-message-func
-                 (stringp (funcall company-message-func)))
-        (unless (string-match "The free version of TabNine only indexes up to" (funcall company-message-func))
-          ad-do-it))))
+;  ;; https://emacs-china.org/t/tabnine/9988/50
+;  (defadvice company-echo-show (around disable-tabnine-upgrade-message activate)
+;    (let ((company-message-func (ad-get-arg 0)))
+;      (when (and company-message-func
+;                 (stringp (funcall company-message-func)))
+;        (unless (string-match "The free version of TabNine only indexes up to" (funcall company-message-func))
+;          ad-do-it))))
   )
 #+END_SRC
 
