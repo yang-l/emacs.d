@@ -1256,22 +1256,21 @@ Language Server Protocol
 (use-package lsp-mode
   :commands lsp lsp-deferred
   :ensure t
-  :general
-  (:states '(normal insert emacs)
-   :keymaps 'lsp-mode-map
-   :prefix ","
-   :non-normal-prefix "C-x ,"
-   "lsrn" 'lsp-rename
-   "lsda" 'lsp-describe-thing-at-point
-   "lsfb" 'lsp-format-buffer
-   "lsoi" 'lsp-organize-imports
-   "lsgi" 'lsp-goto-implementation
-   "lsgd" 'lsp-goto-type-definition
-   "lssh" 'lsp-symbol-highlight
-   "lshi" 'helm-imenu
-   "lsfd" 'lsp-find-definition
-   "lsfr" 'lsp-find-references
-   )
+  :general (
+    :states '(normal insert emacs)
+    :keymaps 'lsp-mode-map
+    :prefix ","
+    :non-normal-prefix "C-x ,"
+    "lsrn" 'lsp-rename
+    "lsda" 'lsp-describe-thing-at-point
+    "lsfb" 'lsp-format-buffer
+    "lsoi" 'lsp-organize-imports
+    "lsgi" 'lsp-goto-implementation
+    "lsgd" 'lsp-goto-type-definition
+    "lssh" 'lsp-symbol-highlight
+    "lshi" 'helm-imenu
+    "lsfd" 'lsp-find-definition
+    "lsfr" 'lsp-find-references)
   :hook ((lsp-mode . lsp-enable-which-key-integration)
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
          (dockerfile-mode . lsp-deferred)
@@ -1335,16 +1334,15 @@ Language Server Protocol
               ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
               ([remap xref-find-references]  . lsp-ui-peek-find-references))
   :hook ((lsp-mode . lsp-ui-mode))
-  :general
-  (:states '(normal insert emacs)
-   :keymaps 'lsp-ui-mode-map
-   :prefix ","
-   :non-normal-prefix "C-x ,"
-   "lspr" 'lsp-ui-peek-find-references
-   "lspd" 'lsp-ui-peek-find-definitions
-   "lspi" 'lsp-ui-peek-find-implementation
-   "lsui" 'lsp-ui-imenu
-   )
+  :general (
+    :states '(normal insert emacs)
+    :keymaps 'lsp-ui-mode-map
+    :prefix ","
+    :non-normal-prefix "C-x ,"
+    "lspr" 'lsp-ui-peek-find-references
+    "lspd" 'lsp-ui-peek-find-definitions
+    "lspi" 'lsp-ui-peek-find-implementation
+    "lsui" 'lsp-ui-imenu)
   :custom
   (lsp-ui-doc-delay 1.5)
   (lsp-ui-doc-include-signature t)
@@ -1380,13 +1378,15 @@ Language Server Protocol
 (use-package lsp-treemacs
   :commands lsp-treemacs-errors-list
   :ensure t
-  :general
-  (:states '(normal insert emacs)
-   :keymaps 'lsp-mode-map
-   :prefix ","
-   :non-normal-prefix "C-x ,"
-   "lstr" 'lsp-treemacs-errors-list
-   )
+  :general (
+    :states '(normal insert emacs)
+    :keymaps 'lsp-mode-map
+    :prefix ","
+    :non-normal-prefix "C-x ,"
+    "lstr" 'lsp-treemacs-errors-list)
+  :config
+  (with-eval-after-load `treemacs
+    (lsp-treemacs-sync-mode 1))
   )
 
 (use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode :ensure t)
@@ -1455,7 +1455,7 @@ Language Server Protocol
   :config
   (when (executable-find "goimports")                       ; use goimports instead of gofmt
     (setq gofmt-command "goimports"))
-  (add-hook 'before-save-hook 'gofmt-before-save)
+  (add-hook 'before-save-hook #'gofmt-before-save)
   (setq indent-tabs-mode 1                                  ; default to TAB as specified in Go spec
         tab-width 4)                                        ; show tab as 4 space width
 
@@ -1990,35 +1990,37 @@ vi layer for Emacs
         evil-vsplit-window-right t)
   :config
   (evil-mode)
+  )
 
-  (use-package evil-nerd-commenter
-    :defer t
-    :ensure t
-    :general (
-      :states '(normal insert emacs)
-      :prefix ","
-      :non-normal-prefix "C-x ,"
-      "ncl" 'evilnc-comment-or-uncomment-lines
-      "nct" 'evilnc-quick-comment-or-uncomment-to-the-line
-      "ncy" 'evilnc-copy-and-comment-lines
-      "ncp" 'evilnc-comment-or-uncomment-paragraphs
-      "ncr" 'comment-or-uncomment-region
-      "nci" 'evilnc-toggle-invert-comment-line-by-line
-      "nco" 'evilnc-comment-operator
-      "ncc" 'evilnc-copy-and-comment-operator)
-    :config
-    (evilnc-default-hotkeys t)                  ; enable recommended key bindings under non-evil (Emacs) mode only
-    )
+(use-package evil-nerd-commenter
+  :after evil
+  :defer t
+  :ensure t
+  :general (
+    :states '(normal insert emacs)
+    :prefix ","
+    :non-normal-prefix "C-x ,"
+    "ncl" 'evilnc-comment-or-uncomment-lines
+    "nct" 'evilnc-quick-comment-or-uncomment-to-the-line
+    "ncy" 'evilnc-copy-and-comment-lines
+    "ncp" 'evilnc-comment-or-uncomment-paragraphs
+    "ncr" 'comment-or-uncomment-region
+    "nci" 'evilnc-toggle-invert-comment-line-by-line
+    "nco" 'evilnc-comment-operator
+    "ncc" 'evilnc-copy-and-comment-operator)
+  :config
+  (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
+  )
 
-  (use-package evil-surround
-    :ensure t
-    :commands
-    (evil-surround-edit
-     evil-Surround-edit
-     evil-surround-region
-     evil-Surround-region)
-    :config (global-evil-surround-mode 1)
-    )
+(use-package evil-surround
+  :after evil
+  :ensure t
+  :commands
+  (evil-surround-edit
+   evil-Surround-edit
+   evil-surround-region
+   evil-Surround-region)
+  :config (global-evil-surround-mode 1)
   )
 #+END_SRC
 
