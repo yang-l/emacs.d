@@ -809,8 +809,8 @@ Buffer readonly mode
 #+BEGIN_SRC emacs-lisp
 (use-package which-func
   :defer 2
+  :hook ((prog-mode) . which-function-mode)
   :config
-  (which-function-mode)
   (setq which-func-unknown "⊥")
   )
 #+END_SRC
@@ -1286,6 +1286,7 @@ Language Server Protocol
                          lsp-javascript
                          lsp-pylsp
                          lsp-solargraph))
+  (lsp-clients-typescript-server-args '("--stdio" "--tsserver-log-file" "/dev/stderr"))     ; no more .log/tsserver.log files on project
   (lsp-completion-provider :none)               ; handled by company already
   (lsp-idle-delay 0.2)
   (lsp-log-io nil)
@@ -1323,22 +1324,32 @@ Language Server Protocol
                         :server-id 'terraform-ls))))
   )
 
-(use-package lsp-modeline :after lsp-mode :ensure lsp-mode)
+(use-package lsp-diagnostics :after lsp-mode :ensure lsp-mode)
 (use-package lsp-headerline :after lsp-mode :ensure lsp-mode)
+(use-package lsp-lens
+  :after lsp-mode
+  :ensure lsp-mode
+  :custom
+  (lsp-lens-debounce-interval 0.5)
+  (lsp-lens-enable t))
+(use-package lsp-modeline
+  :after lsp-mode
+  :ensure lsp-mode
+  :custom
+  (lsp-modeline-code-actions-segments	'(count icon name)))
 
 (use-package lsp-ui
   :after lsp-mode yasnippet
   :commands lsp-ui-mode
   :ensure t
-  :bind (:map lsp-ui-mode-map
-              ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
-              ([remap xref-find-references]  . lsp-ui-peek-find-references))
   :hook ((lsp-mode . lsp-ui-mode))
   :general (
     :states '(normal insert emacs)
     :keymaps 'lsp-ui-mode-map
     :prefix ","
     :non-normal-prefix "C-x ,"
+    [remap xref-find-definitions] 'lsp-ui-peek-find-definitions
+    [remap xref-find-references]  'lsp-ui-peek-find-references
     "lspr" 'lsp-ui-peek-find-references
     "lspd" 'lsp-ui-peek-find-definitions
     "lspi" 'lsp-ui-peek-find-implementation
@@ -1359,10 +1370,16 @@ Language Server Protocol
 
 (use-package helm-lsp
   :after lsp-mode
-  :bind (:map lsp-mode-map
-              ([remap xref-find-apropos] . helm-lsp-workspace-symbol))
   :commands helm-lsp-workspace-symbol
   :ensure t
+  :general (
+    :states '(normal insert emacs)
+    :keymaps 'lsp-mode-map
+    :prefix ","
+    :non-normal-prefix "C-x ,"
+    [remap xref-find-apropos] 'helm-lsp-workspace-symbol
+    "lshc" 'helm-lsp-code-actions
+    "lshd" 'helm-lsp-diagnostics)
   :config
   (defun helm-lsp-workspace-symbol-at-point ()
     (interactive)
@@ -1383,7 +1400,11 @@ Language Server Protocol
     :keymaps 'lsp-mode-map
     :prefix ","
     :non-normal-prefix "C-x ,"
-    "lstr" 'lsp-treemacs-errors-list)
+    "lste"  'lsp-treemacs-errors-list
+    "lstr"  'lsp-treemacs-references
+    "lsti"  'lsp-treemacs-implementations
+    "lstch" 'lsp-treemacs-call-hierarchy
+    "lstth" 'lsp-treemacs-type-hierarchy)
   :config
   (with-eval-after-load `treemacs
     (lsp-treemacs-sync-mode 1))
@@ -1724,6 +1745,8 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   :interpreter "node"
   :mode (("\\.ts\\'" . typescript-mode)
          ("\\.tsx\\'" . typescript-mode))
+  :custom
+  (typescript-indent-level 2)
   )
 #+END_SRC
 
@@ -1975,19 +1998,19 @@ vi layer for Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package evil
+  :defer 2
   :ensure t
-  :general ("C-z" 'evil-exit-emacs-state)
-  :init
-  (setq evil-search-module 'evil-search
-        evil-split-window-below t
-        evil-vsplit-window-right t)
+  :custom
+  (evil-default-state 'emacs)
+  (evil-search-module 'evil-search)
+  (evil-split-window-below t)
+  (evil-vsplit-window-right t)
   :config
   (evil-mode)
   )
 
 (use-package evil-nerd-commenter
   :after evil
-  :defer t
   :ensure t
   :general (
     :states '(normal insert emacs)
@@ -2054,6 +2077,10 @@ vi layer for Emacs
   :diminish flycheck-mode
   :ensure t
   :hook (prog-mode . flycheck-mode)
+  :init
+  (custom-set-faces
+   '(flycheck-error ((nil (:background "red"))))
+   '(flycheck-warning ((nil (:background "yellow")))))
   :config
   (setq flycheck-check-syntax-automatically
         '(new-line

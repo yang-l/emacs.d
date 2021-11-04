@@ -42,7 +42,6 @@
 ; only install use-package when not found
 (unless (locate-library "use-package")
   (require 'package)                            ; use-package bootstrap
-  (setq package-enable-at-startup nil)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
   (package-initialize)
   (unless (package-installed-p 'use-package)
