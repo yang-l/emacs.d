@@ -658,7 +658,6 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package markdown-mode
-  :defer 1
   :ensure t
   :commands (markdown-mode gfm-mode)
   :mode (("README\\.md\\'" . gfm-mode)
@@ -808,7 +807,6 @@ Buffer readonly mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package which-func
-  :defer 2
   :hook ((prog-mode) . which-function-mode)
   :config
   (setq which-func-unknown "⊥")
@@ -1044,7 +1042,6 @@ web-mode
 #+BEGIN_SRC emacs-lisp
 (use-package web-mode
   :after company
-  :defer t
   :ensure t
   :mode ("\\.html\\'" . web-mode)
   :init
@@ -1393,6 +1390,7 @@ Language Server Protocol
   )
 
 (use-package lsp-treemacs
+  :after lsp-mode
   :commands lsp-treemacs-errors-list
   :ensure t
   :general (
@@ -1405,9 +1403,8 @@ Language Server Protocol
     "lsti"  'lsp-treemacs-implementations
     "lstch" 'lsp-treemacs-call-hierarchy
     "lstth" 'lsp-treemacs-type-hierarchy)
-  :config
-  (with-eval-after-load `treemacs
-    (lsp-treemacs-sync-mode 1))
+  :custom
+  (lsp-treemacs-sync-mode t)
   )
 
 (use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode :ensure t)
@@ -1417,7 +1414,6 @@ Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
 (use-package sh-script
-  :defer t
   :ensure t
   :mode (("\\.*bashrc$"      . sh-mode)
          ("\\.*bash_profile" . sh-mode))
@@ -1458,7 +1454,6 @@ Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
 (use-package dockerfile-mode
-  :defer t
   :ensure t
   :mode (("\\.dockerfile\\'" . dockerfile-mode)
          ("/Dockerfile\\(?:\\.[^/\\]*\\)?\\'" . dockerfile-mode))
@@ -1469,7 +1464,6 @@ Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
 (use-package go-mode
-  :defer t
   :ensure t
   :if (executable-find "go")
   :mode (("\\.go\\'" . go-mode))
@@ -1725,7 +1719,6 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
 
 #+BEGIN_SRC emacs-lisp
 (use-package terraform-mode
-  :defer t
   :ensure t
   :hook (terraform-mode . company-mode)
   :mode "\\.tf\\(vars\\)?\\'"
@@ -1849,7 +1842,6 @@ Visible bookmarks
 (use-package company-tabnine
   :after company
   :commands company-tabnine
-  :defer t
   :ensure t
   :init
   (make-local-variable 'company-backends)
@@ -2357,7 +2349,6 @@ Display the key bindings in a popup.
 #+BEGIN_SRC emacs-lisp
 (use-package which-key
   :commands which-key-add-major-mode-key-based-replacements
-  :defer 2
   :diminish which-key-mode
   :ensure t
   :config
@@ -2585,7 +2576,7 @@ Diff between directories
   )
 #+END_SRC
 
-**** org-page
+**** org-page                                   :DISABLED:
 
 Static site generator in org-mode
 
