@@ -29,38 +29,32 @@
       initial-major-mode 'fundamental-mode
       inhibit-default-init t)                   ; skip default.el
 
-;; setup use-package
-; add existing libraries to load-path
-(let ((default-directory
-        (concat user-emacs-directory
-                (convert-standard-filename "elpa/"))))
-  (if (not (file-exists-p default-directory))
-    (make-directory default-directory t))
-  (normal-top-level-add-subdirs-to-load-path))
+;; straight.el & use-package
+(setq straight-check-for-modifications 'live)
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
 
-; (package-initialize) from package.el is slow, and try to avoid it when possible
-; only install use-package when not found
-(unless (locate-library "use-package")
-  (require 'package)                            ; use-package bootstrap
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-  (package-initialize)
-  (unless (package-installed-p 'use-package)
-    (package-refresh-contents)
-    (message "[Emacs Init] Installing `use-package' ... ")
-    (package-install 'use-package))
-  )
+(straight-use-package 'use-package)
+(use-package straight :custom (straight-use-package-by-default t))
 
-(eval-when-compile
-  (require 'use-package))
-;; end of setup use-package
+(eval-when-compile (require 'bind-key))
+;; end of straight.el & use-package
 
 ;; load or compile elc file
 (if (file-exists-p (concat user-emacs-directory "README.elc"))
     (load-file
      (concat user-emacs-directory "README.elc")); load byte-compiled init elc file
   (require 'org)                                ; initialise via org-mode
-  (org-babel-load-file
-   (concat user-emacs-directory "README.org") t)
-  )
+  (org-babel-load-file (concat user-emacs-directory "README.org")))
 
 ;;; init.el ends here

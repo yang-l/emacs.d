@@ -42,71 +42,10 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 
 *** Package management
 
-straight.el
-
-If =README.el= and =README.elc= are not presented, there is a need to recompile =README.org= again (most likely only required when initialising on a new installation for the first time).
-
-#+BEGIN_SRC emacs-lisp
-;(defvar bootstrap-version)
-;(let ((bootstrap-file
-;       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-;      (bootstrap-version 5))
-;  (unless (file-exists-p bootstrap-file)
-;    (with-current-buffer
-;        (url-retrieve-synchronously
-;         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-;         'silent 'inhibit-cookies)
-;      (goto-char (point-max))
-;      (eval-print-last-sexp)))
-;  (load bootstrap-file nil 'nomessage))
-;(straight-use-package 'use-package)
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp
-(eval-when-compile
-  (unless (version< emacs-version "25.1")
-    (setq package-archives
-          '(("GNU ELPA"     . "https://elpa.gnu.org/packages/")
-            ("MELPA Stable" . "https://stable.melpa.org/packages/")
-            ("MELPA"        . "https://melpa.org/packages/")
-            ("Org"          . "https://orgmode.org/elpa/"))
-          package-archive-priorities
-          '(("Org"          . 15)
-            ("MELPA Stable" . 10)
-            ("GNU ELPA"     . 5)
-            ("MELPA"        . 0))
-          package-enable-at-startup nil)
-    (when (boundp 'package-pinned-packages)
-      (setq package-pinned-packages
-            '((dap-mode     . "MELPA")
-              (evil         . "MELPA")
-              (flycheck     . "MELPA")
-              (lsp-mode     . "MELPA")
-              (lsp-ui       . "MELPA")
-              (no-littering . "MELPA")
-              (org-page     . "MELPA")
-              (counsel-projectile . "MELPA")
-              (treemacs-magit     . "MELPA")))
-      )
-    (package-initialize)
-;    (package-refresh-contents)
-    )
-
-;  ;; Define packages and install them in case of missing (not in use atm and via use-package)
-;  (defvar my-packages '())
-;  (let ((refreshed nil))
-;    (dolist (p my-packages)                     ; install the missing packages
-;      (when (not (package-installed-p p))
-;        (unless refreshed
-;          (package-refresh-contents)
-;          (setq refreshed t))
-;        (message "[Emacs Init] Installing `%s' ... " p)
-;        (package-install p))))
-  )
+`straight.el' defined `init.el'
 
 ;; benchmarking emacs boot sequence
 (use-package benchmark-init
-  :ensure t
   :disabled                                     ; by default
   :config
   ;; To disable collection of benchmark data after init is done.
@@ -126,14 +65,13 @@ Configuration for `use-package'. The packages below should be loaded first befor
     (make-directory backup-directory t))
 
 (use-package no-littering                       ; keep `litter` files in one location
-  :ensure t
   :init
   (setq no-littering-var-directory (expand-file-name (convert-standard-filename "cache/var/") backup-directory)
         no-littering-etc-directory (expand-file-name (convert-standard-filename "cache/etc/") backup-directory))
   )
 
-(use-package diminish :ensure t)                ; shorten mode-line
-(use-package general :ensure t)                 ; redefin keymaps
+(use-package diminish)                          ; shorten mode-line
+(use-package general)                           ; redefin keymaps
 #+END_SRC
 
 *** UTF-8 on everything
@@ -184,7 +122,6 @@ Configuration for `use-package'. The packages below should be loaded first befor
 #+BEGIN_SRC emacs-lisp
 (use-package exec-path-from-shell
   :defer 0.1
-  :ensure t
   :config
   (when (eq system-type 'darwin)                    ; only apply to under OSX graphic and console UI
     (setq exec-path-from-shell-arguments nil
@@ -423,19 +360,21 @@ savehist - save the minibuffer histories
 (use-package abbrev
   :defer 2
   :diminish abbrev-mode
+  :straight (:type built-in)
   :config
   (if (file-exists-p abbrev-file-name)
       (quietly-read-abbrev-file))
   )
 #+END_SRC
 
-**** Auto-compression                           :EMACS:
+**** Auto-compression                                              :EMACS:
 
 Open compressed files on the fly
 
 #+BEGIN_SRC emacs-lisp
 (use-package jka-cmpr-hook
-  :hook (window-setup . auto-compression-mode))
+  :hook (window-setup . auto-compression-mode)
+  :straight (:type built-in))
 #+END_SRC
 
 **** Case
@@ -452,17 +391,17 @@ Open compressed files on the fly
 #+BEGIN_SRC emacs-lisp
 (use-package comint
   :defer 2
+  :straight (:type built-in)
   :config
   (add-hook 'comint-output-filter-functions
             'comint-watch-for-password-prompt)  ; hide password in shell
   (add-hook 'comint-mode-hook
             (function
              (lambda () (setq comint-scroll-show-maximum-output nil))
-             ))
-  )
+             )))
 #+END_SRC
 
-**** delsel.el                                  :EMACS:
+**** delsel.el                                                     :EMACS:
 
 delete marked text on typing
 
@@ -471,109 +410,100 @@ delete marked text on typing
   :hook (window-setup . delete-selection-mode))
 #+END_SRC
 
-**** Dired                                      :FILE:
+**** Dired                                                          :FILE:
 
 #+BEGIN_SRC emacs-lisp
 (use-package dired
-  :disabled
   :defer t
-  :init
-  (add-hook 'dired-load-hook
-            #'(lambda ()
-                "dired mode hook"
-                (load "dired-x")
-                ;; http://emacswiki.org/emacs/DiredOmitMode
-                (setq-default dired-omit-files-p t)
-                (setq dired-omit-files
-                      (concat dired-omit-files "\\|^\\..+$"))
+  :disabled
+  :straight (:type built-in)
+  :config
+  (load "dired-x")
+  ;; http://emacswiki.org/emacs/DiredOmitMode
+  (setq-default dired-omit-files-p t)
+  (setq dired-omit-files
+        (concat dired-omit-files "\\|^\\..+$"))
 
-                ;; http://ann77.emacser.com/Emacs/EmacsDiredExt.html
-                ;; 排序功能
-                (make-local-variable  'dired-sort-map)
-                (setq dired-sort-map (make-sparse-keymap))
-                (define-key dired-mode-map "s" dired-sort-map)
-                (define-key dired-sort-map "s"
-                  '(lambda () "sort by Size"
-                     (interactive) (dired-sort-other (concat dired-listing-switches "S"))))
-                (define-key dired-sort-map "x"
-                  '(lambda () "sort by eXtension"
-                     (interactive) (dired-sort-other (concat dired-listing-switches "X"))))
-                (define-key dired-sort-map "t"
-                  '(lambda () "sort by Time"
-                     (interactive) (dired-sort-other (concat dired-listing-switches "t"))))
-                (define-key dired-sort-map "n"
-                  '(lambda () "sort by Name"
-                     (interactive) (dired-sort-other (concat dired-listing-switches ""))))
+  (when (string= system-type "darwin")
+    (setq dired-use-ls-dired nil))
 
-                ;; http://www.emacswiki.org/emacs/DiredSortDirectoriesFirst
-                (defun mydired-sort ()
-                  "Sort dired listings with directories first."
-                  (save-excursion
-                    (let (buffer-read-only)
-                      (forward-line 2) ;; beyond dir. header
-                      (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max)))
-                    (set-buffer-modified-p nil)))
-                (defadvice dired-readin
-                    (after dired-after-updating-hook first () activate)
-                  "Sort dired listings with directories first before adding marks."
-                  (mydired-sort))
+  ;; http://ann77.emacser.com/Emacs/EmacsDiredExt.html
+  ;; 排序功能
+  (make-local-variable  'dired-sort-map)
+  (setq dired-sort-map (make-sparse-keymap))
+  (define-key dired-mode-map "s" dired-sort-map)
+  (define-key dired-sort-map "s"
+    '(lambda () "sort by Size"
+       (interactive) (dired-sort-other (concat dired-listing-switches "S"))))
+  (define-key dired-sort-map "x"
+    '(lambda () "sort by eXtension"
+       (interactive) (dired-sort-other (concat dired-listing-switches "X"))))
+  (define-key dired-sort-map "t"
+    '(lambda () "sort by Time"
+       (interactive) (dired-sort-other (concat dired-listing-switches "t"))))
+  (define-key dired-sort-map "n"
+    '(lambda () "sort by Name"
+       (interactive) (dired-sort-other (concat dired-listing-switches ""))))
 
-                ;; single buffer
-                (put 'dired-find-alternate-file 'disabled nil)
-                ;; http://www.emacswiki.org/emacs/DiredReuseDirectoryBuffer
-                (define-key dired-mode-map (kbd "^")
-                  (lambda () (interactive) (find-alternate-file "..")))
-                ;; http://ergoemacs.org/emacs/emacs_dired_tips.html
-                (define-key dired-mode-map (kbd "<return>")
-                  'dired-find-alternate-file)
+  ;; http://www.emacswiki.org/emacs/DiredSortDirectoriesFirst
+  (defun mydired-sort ()
+    "Sort dired listings with directories first."
+    (save-excursion
+      (let (buffer-read-only)
+        (forward-line 2) ;; beyond dir. header
+        (sort-regexp-fields t "^.*$" "[ ]*." (point) (point-max)))
+      (set-buffer-modified-p nil)))
+  (defadvice dired-readin
+      (after dired-after-updating-hook first () activate)
+    "Sort dired listings with directories first before adding marks."
+    (mydired-sort))
 
-                ;; copy split windows
-                ;; C-o / C-0 o to paste the original filename
-                ;; https://appsmth.appspot.com/smth/subject/Emacs/94609
-                (setq dired-dwim-target t)
+  ;; single buffer
+  (put 'dired-find-alternate-file 'disabled nil)
+  ;; http://www.emacswiki.org/emacs/DiredReuseDirectoryBuffer
+  (define-key dired-mode-map (kbd "^")
+    (lambda () (interactive) (find-alternate-file "..")))
+  ;; http://ergoemacs.org/emacs/emacs_dired_tips.html
+  (define-key dired-mode-map (kbd "<return>")
+    'dired-find-alternate-file)
 
-                (setq dired-recursive-deletes 'top          ; recursive delection
-                      dired-recursive-copies 'always)       ; recursive copy
+  ;; copy split windows
+  ;; C-o / C-0 o to paste the original filename
+  ;; https://appsmth.appspot.com/smth/subject/Emacs/94609
+  (setq dired-dwim-target t)
 
-                (defadvice shell-command                    ; allow running multiple async commands simultaneously
-                    (after shell-in-new-buffer
-                           (command &optional output-buffer error-buffer))
-                  (when (get-buffer "*Async Shell Command*")
-                    (with-current-buffer "*Async Shell Command*"
-                      (rename-uniquely))))
-                (ad-activate 'shell-command)
-                ))
+  (setq dired-recursive-deletes 'top            ; recursive delection
+        dired-recursive-copies 'always)         ; recursive copy
+
+  (defadvice shell-command                      ; allow running multiple async commands simultaneously
+      (after shell-in-new-buffer
+             (command &optional output-buffer error-buffer))
+    (when (get-buffer "*Async Shell Command*")
+      (with-current-buffer "*Async Shell Command*"
+        (rename-uniquely))))
+  (ad-activate 'shell-command)
   )
 #+END_SRC
 
-**** Ediff                                      :FILE:
+**** Ediff                                                          :FILE:
 
 Call =ediff= or =ediff3= in Emace for file comparisons
 
 #+BEGIN_SRC emacs-lisp
 (use-package ediff
   :defer t
+  :hook (ediff-before-setup . (lambda () (setq ediff-saved-window-configuration (current-window-configuration))))
+  :custom
+  ;; horizontal window split
+  (ediff-split-window-function 'split-window-horizontally)
+  (ediff-merge-split-window-function 'split-window-vertically)
+  (ediff-window-setup-function 'ediff-setup-windows-plain)
   :init
-  (add-hook 'ediff-load-hook
-            #'(lambda ()
-                "ediff-mode hook"
-                ;; http://emacswiki.org/emacs/EdiffMode
-                ;; save windows configurations
-                (add-hook 'ediff-before-setup-hook
-                          (lambda ()
-                            (setq ediff-saved-window-configuration (current-window-configuration))))
-
-                (let ((restore-window-configuration
-                       (lambda ()
-                         (set-window-configuration ediff-saved-window-configuration))))
-                  (add-hook 'ediff-quit-hook restore-window-configuration 'append)
-                  (add-hook 'ediff-suspend-hook restore-window-configuration 'append))
-
-                ;; horizontal window split
-                (setq ediff-split-window-function 'split-window-horizontally)
-                (setq ediff-merge-split-window-function 'split-window-vertically)
-                (setq ediff-window-setup-function 'ediff-setup-windows-plain)
-                ))
+  (let ((restore-window-configuration
+         (lambda ()
+           (set-window-configuration ediff-saved-window-configuration))))
+    (add-hook 'ediff-quit-hook restore-window-configuration 'append)
+    (add-hook 'ediff-suspend-hook restore-window-configuration 'append))
   )
 #+END_SRC
 
@@ -592,7 +522,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
   )
 #+END_SRC
 
-**** Hideshow                                   :CODEING:
+**** Hideshow                                                    :CODEING:
 
 Code folding
 
@@ -602,13 +532,16 @@ Code folding
   :hook ((prog-mode) . hs-minor-mode))
 #+END_SRC
 
-**** HL                                         :EMACS:
+**** HL                                                            :EMACS:
 
 Highlight the current line
 
 #+BEGIN_SRC emacs-lisp
 (use-package hl-line
-  :hook (window-setup . global-hl-line-mode))
+  :hook (window-setup . global-hl-line-mode)
+  :init
+  (custom-set-faces
+   '(hl-line ((nil (:background "gray22"))))))
 #+END_SRC
 
 **** Imenu
@@ -636,7 +569,7 @@ new line number mode since Emacs 26
   )
 #+END_SRC
 
-**** Makefile                                   :PROGRAMMING:
+**** Makefile                                                :PROGRAMMING:
 
 build automation
 
@@ -644,28 +577,22 @@ build automation
 (use-package make-mode
   ;; built-in BSDmakefile mode
   :defer 1
-  :config
-  (add-hook 'makefile-bsdmake-mode-hook
-            #'(lambda ()
-                (setq-local tab-width 4)        ; 4 space indent per tab
-                ))
-  )
+  :hook (makefile-bsdmake-mode . (lambda () (setq-local tab-width 4))))
 #+END_SRC
 
-**** Markdown                                   :MARKUP_LANGUAGE:
+**** Markdown                                            :MARKUP_LANGUAGE:
 
 Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package markdown-mode
-  :ensure t
   :commands (markdown-mode gfm-mode)
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
   :init (setq markdown-command "multimarkdown")
-  :config
-  (setq markdown-fontify-code-blocks-natively t)
+  :custom
+  (markdown-fontify-code-blocks-natively t)
   )
 #+END_SRC
 
@@ -684,6 +611,7 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package term
+  :disabled
   :defer t
   :init
   (add-hook 'term-mode-hook
@@ -708,7 +636,6 @@ Markup language often for readme
                        (multi-term)
                        (term-send-raw-string ". ~/.bash_profile\nclear\n")
                        ))
-  :ensure t
   :config
   (setq multi-term-program "/bin/bash"          ; bash
         multi-term-program-switches "-il"       ; FIXME - this switch does not work with any space characters in it. Set to interactive login shell, which will read "~/.bash_profile" and source the bashrc file
@@ -752,14 +679,14 @@ Markup language often for readme
   )
 #+END_SRC
 
-**** simple.el                                  :EMACS:
+**** simple.el                                                     :EMACS:
 
 #+BEGIN_SRC emacs-lisp
 (use-package simple
   :diminish visual-line-mode
   :hook ((window-setup . visual-line-mode)      ; soft line warpping
          (window-setup . size-indication-mode)) ; show total buffer size
-  )
+  :straight (:type built-in))
 #+END_SRC
 
 **** Tramp
@@ -769,6 +696,7 @@ Markup language often for readme
 #+BEGIN_SRC emacs-lisp
 (use-package tramp
   :defer t
+  :init (autoload #'tramp-register-crypt-file-name-handler "tramp-crypt")
   :config
   (setq tramp-default-method "ssh"              ; faster than the default scp
         tramp-use-ssh-controlmaster-options nil)
@@ -787,8 +715,9 @@ Markup language often for readme
 #+BEGIN_SRC emacs-lisp
 (use-package uniquify
   :defer 2
-  :config
-  (setq uniquify-buffer-name-style 'post-forward)
+  :straight (:type built-in)
+  :custom
+  (uniquify-buffer-name-style 'post-forward)
   )
 #+END_SRC
 
@@ -799,8 +728,7 @@ Buffer readonly mode
 #+BEGIN_SRC emacs-lisp
 (use-package view
   :bind(:map ctl-x-map
-        ("C-q" . view-mode))                    ; replace toggle-read-only with view-mode
-  )
+        ("C-q" . view-mode)))                   ; replace toggle-read-only with view-mode
 #+END_SRC
 
 **** which-func
@@ -813,7 +741,7 @@ Buffer readonly mode
   )
 #+END_SRC
 
-**** winner-mode                                :EMACS:
+**** winner-mode                                                   :EMACS:
 
 Undo Emacs window changes
 
@@ -828,9 +756,9 @@ Undo Emacs window changes
 
 #+BEGIN_SRC emacs-lisp
 (use-package misc
-  :bind ("M-z" . zap-up-to-char)
   :commands zap-up-to-char
-  )
+  :bind ("M-z" . zap-up-to-char)
+  :straight (:type built-in))
 #+END_SRC
 
 *** Style
@@ -896,7 +824,7 @@ Spacemacs dark theme
  'window-setup-hook
  #'(lambda ()
      (use-package spacemacs-common
-       :ensure spacemacs-theme
+       :straight spacemacs-theme
        :init
        (custom-set-variables
         '(spacemacs-theme-custom-colors
@@ -999,7 +927,6 @@ Spacemacs dark theme
 #+BEGIN_SRC emacs-lisp
 (use-package git-gutter
   :diminish git-gutter-mode
-  :ensure t
   :hook ((web-mode org-mode yaml-mode groovy-mode puppet-mode enh-ruby-mode python-mode) . git-gutter-mode)
   :config
   (custom-set-variables                         ; backend
@@ -1012,7 +939,6 @@ Spacemacs dark theme
 
 #+BEGIN_SRC emacs-lisp
 (use-package magit
-  :ensure t
   :bind (("C-x g" . magit-status))
   :config
   (setq magit-completing-read-function
@@ -1042,7 +968,6 @@ web-mode
 #+BEGIN_SRC emacs-lisp
 (use-package web-mode
   :after company
-  :ensure t
   :mode ("\\.html\\'" . web-mode)
   :init
   (setq web-mode-indent-style 4                 ; indentation
@@ -1081,19 +1006,15 @@ web-mode
 
 (use-package lisp-mode
   :defer 1
-  :config
-  (add-hook 'emacs-lisp-mode-hook #'eldoc-mode)
-  (add-hook 'lisp-interaction-mode-hook #'eldoc-mode)
-  )
+  :hook ((emacs-lisp-mode lisp-interaction-mode) . eldoc-mode)
+  :straight (:type built-in))
 #+END_SRC
 
 **** Groovy
 
 #+BEGIN_SRC emacs-lisp
 (use-package groovy-mode
-  :ensure t
-  :mode "\\.groovy\\'\\|\\.gradle\\'"
-  )
+  :mode "\\.groovy\\'\\|\\.gradle\\'")
 #+END_SRC
 
 *** Infrastructure
@@ -1103,9 +1024,7 @@ web-mode
 #+BEGIN_SRC emacs-lisp
 (use-package ansible
   :diminish ansible
-  :ensure t
-  :hook (yaml-mode . ansible)
-  )
+  :hook (yaml-mode . ansible))
 #+END_SRC
 
 **** es-mode
@@ -1113,7 +1032,6 @@ web-mode
 #+BEGIN_SRC emacs-lisp
 (use-package es-mode
   :defer t
-  :ensure t
   :config
   (setq es-always-pretty-print t)
   )
@@ -1122,23 +1040,21 @@ web-mode
 **** js2
 
 #+BEGIN_SRC emacs-lisp
-(use-package jinja2-mode :ensure t :mode ("\\.j2" . jinja2-mode))
+(use-package jinja2-mode :mode ("\\.j2" . jinja2-mode))
 #+END_SRC
 
 **** json
 
 #+BEGIN_SRC emacs-lisp
 (use-package json-mode
-  :ensure t
   :mode (("\\.json\\'"      . json-mode)
-         ("\\.json.erb\\'"  . json-mode))
-  )
+         ("\\.json.erb\\'"  . json-mode)))
 #+END_SRC
 
 **** puppet-mode
 
 #+BEGIN_SRC emacs-lisp
-(use-package puppet-mode :ensure t :mode ("\\.pp$" . puppet-mode))
+(use-package puppet-mode :mode ("\\.pp$" . puppet-mode))
 #+END_SRC
 
 **** restclient
@@ -1147,7 +1063,6 @@ Explore and test HTTP REST webservices
 
 #+BEGIN_SRC emacs-lisp
 (use-package restclient
-  :ensure t
   :mode ("\\.\\(http\\|https\\|rest\\)$" . restclient-mode)
   :config
   (defun restclient-ignore-ssl ()
@@ -1164,10 +1079,8 @@ Explore and test HTTP REST webservices
 
 #+BEGIN_SRC emacs-lisp
 (use-package yaml-mode
-  :ensure t
   :mode (("\\.ya?ml$"       . yaml-mode)
-         ("\\.ya?ml.erb\\'" . yaml-mode))
-  )
+         ("\\.ya?ml.erb\\'" . yaml-mode)))
 #+END_SRC
 
 *** DB
@@ -1220,7 +1133,6 @@ Helper function to create a Python virtualenv used for LSP servers
 ;          "Create a python pip based virtualenv and install packages based on the supplied requirement file"
 ;          (use-package pyvenv
 ;            :commands pyvenv-activate
-;            :ensure t
 ;            :init
 ;            (defvar python-virtualenv-directory (concat backup-directory virtualenv-folder))
 ;            (if (not (file-exists-p python-virtualenv-directory))
@@ -1250,7 +1162,6 @@ Language Server Protocol
 #+BEGIN_SRC emacs-lisp
 (use-package lsp-mode
   :commands lsp lsp-deferred
-  :ensure t
   :general (
     :states '(normal insert emacs)
     :keymaps 'lsp-mode-map
@@ -1321,24 +1232,23 @@ Language Server Protocol
                         :server-id 'terraform-ls))))
   )
 
-(use-package lsp-diagnostics :after lsp-mode :ensure lsp-mode)
-(use-package lsp-headerline :after lsp-mode :ensure lsp-mode)
+(use-package lsp-diagnostics :after lsp-mode :straight lsp-mode)
+(use-package lsp-headerline :after lsp-mode :straight lsp-mode)
 (use-package lsp-lens
   :after lsp-mode
-  :ensure lsp-mode
+  :straight lsp-mode
   :custom
   (lsp-lens-debounce-interval 0.5)
   (lsp-lens-enable t))
 (use-package lsp-modeline
   :after lsp-mode
-  :ensure lsp-mode
+  :straight lsp-mode
   :custom
   (lsp-modeline-code-actions-segments	'(count icon name)))
 
 (use-package lsp-ui
   :after lsp-mode yasnippet
   :commands lsp-ui-mode
-  :ensure t
   :hook ((lsp-mode . lsp-ui-mode))
   :general (
     :states '(normal insert emacs)
@@ -1362,13 +1272,12 @@ Language Server Protocol
   (yas-minor-mode)                      ; yasnippet
   )
 
-(use-package lsp-ui-flycheck :after lsp-ui :defer 2)
-(use-package lsp-ui-imenu :after lsp-ui :defer 2)
+(use-package lsp-ui-flycheck :after lsp-ui :defer 2 :straight lsp-ui)
+(use-package lsp-ui-imenu :after lsp-ui :defer 2 :straight lsp-ui)
 
 (use-package helm-lsp
   :after lsp-mode
   :commands helm-lsp-workspace-symbol
-  :ensure t
   :general (
     :states '(normal insert emacs)
     :keymaps 'lsp-mode-map
@@ -1392,7 +1301,6 @@ Language Server Protocol
 (use-package lsp-treemacs
   :after lsp-mode
   :commands lsp-treemacs-errors-list
-  :ensure t
   :general (
     :states '(normal insert emacs)
     :keymaps 'lsp-mode-map
@@ -1407,14 +1315,13 @@ Language Server Protocol
   (lsp-treemacs-sync-mode t)
   )
 
-(use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode :ensure t)
+(use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode)
 #+END_SRC
 
-**** Bash                                       :LSP:
+**** Bash                                                            :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package sh-script
-  :ensure t
   :mode (("\\.*bashrc$"      . sh-mode)
          ("\\.*bash_profile" . sh-mode))
   :custom
@@ -1450,21 +1357,19 @@ Language Server Protocol
   )
 #+END_SRC
 
-**** Dockerfile                                 :LSP:
+**** Dockerfile                                                      :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package dockerfile-mode
-  :ensure t
   :mode (("\\.dockerfile\\'" . dockerfile-mode)
          ("/Dockerfile\\(?:\\.[^/\\]*\\)?\\'" . dockerfile-mode))
   )
 #+END_SRC
 
-**** Go                                         :LSP:
+**** Go                                                              :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package go-mode
-  :ensure t
   :if (executable-find "go")
   :mode (("\\.go\\'" . go-mode))
   :config
@@ -1491,7 +1396,6 @@ Language Server Protocol
          ("C-x x t" . go-test-current-test)
          ("C-x x x" . go-run))
   :commands (go-test-current-file go-test-current-test go-run)
-  :ensure t
   :general (
     :states '(normal insert emacs)
     :keymaps 'go-mode-map
@@ -1512,7 +1416,7 @@ Language Server Protocol
 ;    (c-set-style "intellij" t)                  ; code style
 ;    (setq c-basic-offset 2)
 ;
-;    (use-package lsp-java :defer t :ensure t)   ; Java LSP
+;    (use-package lsp-java :defer t)             ; Java LSP
 ;                                                ; check on github on how to install the server
 ;    ; set workspace
 ;    (setq lsp-java-workspace-dir (expand-file-name (concat backup-directory "jdt-workspace/"))
@@ -1539,7 +1443,6 @@ Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
 ;(use-package js2-mode
-;  :ensure t
 ;  :interpreter ("node" . js2-mode)
 ;  :mode (("\\.js\\'" . js2-mode))
 ;  :config
@@ -1570,11 +1473,9 @@ Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
 ;(use-package powershell
-;  :ensure t
 ;  :config
 ;  (use-package lsp-pwsh
 ;    :after lsp-mode
-;    :ensure lsp-mode
 ;    :if (executable-find "pwsh")
 ;    :init
 ;    (setq
@@ -1587,7 +1488,7 @@ Language Server Protocol
 ;  )
 #+END_SRC
 
-**** Python                                     :LSP:
+**** Python                                                          :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package python
@@ -1670,14 +1571,13 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
   )
 
-(use-package dap-python :after python-mode dap-mode :ensure dap-mode :defer 2)  ; lsp debugger
+(use-package dap-python :after python-mode dap-mode :defer 2 :straight dap-mode)   ; lsp debugger
 #+END_SRC
 
-**** Ruby                                       :LSP:
+**** Ruby                                                            :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package enh-ruby-mode
-  :ensure t
   :mode
   (("\\.rb\\'"       . enh-ruby-mode)
    ("\\.rake\\'"     . enh-ruby-mode)
@@ -1703,38 +1603,34 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
 
 (use-package inf-ruby
   :after enh-ruby-mode
-  :ensure t
   :hook (compilation-filter . inf-ruby-auto-enter)
   )
 
 (use-package rspec-mode
   :after enh-ruby-mode
   :diminish rspec-mode
-  :ensure t
   :hook (enh-ruby-mode . rspec-mode)
   )
 #+END_SRC
 
-**** Terraform                                  :LSP:
+**** Terraform                                                       :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package terraform-mode
-  :ensure t
   :hook (terraform-mode . company-mode)
   :mode "\\.tf\\(vars\\)?\\'"
   :custom
   (terraform-indent-level 2)
   )
 
-  (use-package terraform-doc :after terraform-mode :ensure t)
-  (use-package company-terraform :after terraform-mode :ensure t)
+  (use-package terraform-doc :after terraform-mode)
+  (use-package company-terraform :after terraform-mode)
 #+END_SRC
 
-**** TypeScript                                 :LSP:
+**** TypeScript                                                      :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package typescript-mode
-  :ensure t
   :interpreter "node"
   :mode (("\\.ts\\'" . typescript-mode)
          ("\\.tsx\\'" . typescript-mode))
@@ -1752,19 +1648,17 @@ Char-based jumping
 #+BEGIN_SRC emacs-lisp
 (use-package avy
   :bind (([remap goto-char] . avy-goto-char-2))
-  :commands avy-goto-char-2
-  :ensure t
+    :commands avy-goto-char-2
   )
 #+END_SRC
 
-*** bm                                          :BOOKMARK:
+*** bm                                                           :BOOKMARK:
 
 Visible bookmarks
 
 #+BEGIN_SRC emacs-lisp
 (use-package bm
-  :defer 2
-  :ensure t
+  :defer t
   :init
   (setq bm-restore-repository-on-load t)        ; restore on load
   :config
@@ -1782,7 +1676,7 @@ Visible bookmarks
   )
 #+END_SRC
 
-*** company                                     :EDIT:
+*** company                                                          :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package company
@@ -1790,39 +1684,38 @@ Visible bookmarks
          :map company-mode-map
          ([remap indent-for-tab-command] . company-indent-or-complete-common))
   :diminish company-mode
-  :ensure t
   :hook ((prog-mode text-mode) . company-mode)
   :custom
   (company-begin-commands
    (quote
-    (self-insert-command)                    ; start autocompletion only after typing
+    (self-insert-command)                       ; start autocompletion only after typing
     ))
-  (company-dabbrev-downcase nil)             ; do not change case in dabbrev
+  (company-dabbrev-downcase nil)                ; do not change case in dabbrev
   (company-dabbrev-ignore-case t)
   (company-dabbrev-other-buffers t)
   (company-global-modes
    (quote
     (not eshell-mode)
     ))
-  (company-idle-delay 0.07)                  ; delay before autocompletion popup shows
+  (company-idle-delay 0.07)                     ; delay before autocompletion popup shows
   (company-minimum-prefix-length 2)
-  (company-selection-wrap-around t)          ; loop over candidates
-  (company-show-numbers t)                   ; show number
+  (company-selection-wrap-around t)             ; loop over candidates
+  (company-show-numbers t)                      ; show number
   (company-transformers
    (quote
     (company-sort-by-occurrence)
     ))
   (company-tooltip-align-annotations t)
-  (company-tooltip-flip-when-above   t)      ; flip the popup menu when near the bottom of windows
-  (company-tooltip-limit 10)                 ; popup window size
-  (company-backends                          ; default backends
+  (company-tooltip-flip-when-above   t)         ; flip the popup menu when near the bottom of windows
+  (company-tooltip-limit 10)                    ; popup window size
+  (company-backends                             ; default backends
    (quote
     ((company-capf
       company-yasnippet)
      (company-dabbrev-code
       company-ispell)
-     (company-files                          ; files & directory
-      company-keywords)                      ; keywords
+     (company-files                             ; files & directory
+      company-keywords)                         ; keywords
      (company-abbrev
       company-dabbrev)
      )))
@@ -1835,14 +1728,12 @@ Visible bookmarks
 
 (use-package company-tng
   :after company
-  :custom
-  (company-selection-default nil)
-  )
+  :custom (company-selection-default nil)
+  :straight company-mode)
 
 (use-package company-tabnine
   :after company
   :commands company-tabnine
-  :ensure t
   :init
   (make-local-variable 'company-backends)
   (setq company-backends (delete '(company-capf company-yasnippet) company-backends))
@@ -1895,14 +1786,13 @@ Visible bookmarks
   )
 #+END_SRC
 
-*** drag-stuff                                  :EDIT:
+*** drag-stuff                                                       :EDIT:
 
 moving word/line/region around
 
 #+BEGIN_SRC emacs-lisp
 (use-package drag-stuff
   :diminish drag-stuff-mode
-  :ensure t
   :hook ((prog-mode org-mode text-mode) . drag-stuff-mode)
   :config
   (setq drag-stuff-modifier 'alt)               ; alt-up/down/left/rigth key bindings
@@ -1910,19 +1800,17 @@ moving word/line/region around
   )
 #+END_SRC
 
-*** dumb-jump                                   :CODING:
+*** dumb-jump                                                      :CODING:
 
 simple implementation of jumping to definition/source
 
 #+BEGIN_SRC emacs-lisp
 (use-package dumb-jump
-  :ensure t
   :diminish dumb-jump-mode
-  :hook (prog-mode . (lambda () (add-hook 'xref-backend-functions #'dumb-jump-xref-activate) ))
-  )
+  :hook (prog-mode . (lambda () (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))))
 #+END_SRC
 
-*** erc                                         :IRC:
+*** erc                                                               :IRC:
 
 #+BEGIN_SRC emacs-lisp
 (autoload 'define-erc-response-handler "erc-backend" nil t)
@@ -1991,7 +1879,6 @@ vi layer for Emacs
 #+BEGIN_SRC emacs-lisp
 (use-package evil
   :defer 2
-  :ensure t
   :custom
   (evil-default-state 'emacs)
   (evil-search-module 'evil-search)
@@ -2003,7 +1890,6 @@ vi layer for Emacs
 
 (use-package evil-nerd-commenter
   :after evil
-  :ensure t
   :general (
     :states '(normal insert emacs)
     :prefix ","
@@ -2022,7 +1908,6 @@ vi layer for Emacs
 
 (use-package evil-surround
   :after evil
-  :ensure t
   :commands
   (evil-surround-edit
    evil-Surround-edit
@@ -2032,12 +1917,11 @@ vi layer for Emacs
   )
 #+END_SRC
 
-*** elfeed                                      :RSS_FEED:
+*** elfeed                                                       :RSS_FEED:
 
 #+BEGIN_SRC emacs-lisp
 (use-package elfeed
   :bind ("C-x w" . elfeed)
-  :ensure t
   :init (setf url-queue-timeout 30)
   :config
   (setq my-elfeed-timer                         ; 1hr update timer
@@ -2052,14 +1936,12 @@ vi layer for Emacs
   )
 #+END_SRC
 
-*** expand-region                               :EDIT:
+*** expand-region                                                    :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package expand-region
   :bind ("C-=" . er/expand-region)
-  :commands er/expand-region
-  :ensure t
-  )
+  :commands er/expand-region)
 #+END_SRC
 
 *** flycheck
@@ -2067,7 +1949,6 @@ vi layer for Emacs
 #+BEGIN_SRC emacs-lisp
 (use-package flycheck
   :diminish flycheck-mode
-  :ensure t
   :hook (prog-mode . flycheck-mode)
   :init
   (custom-set-faces
@@ -2090,7 +1971,6 @@ vi layer for Emacs
 #+BEGIN_SRC emacs-lisp
 (use-package flyspell
   :diminish flyspell-mode
-  :ensure t
   :hook ((text-mode . flyspell-mode)
          (prog-mode . flyspell-prog-mode))
   :custom
@@ -2106,12 +1986,11 @@ vi layer for Emacs
   )
 #+END_SRC
 
-*** highlight-indent-guides                     :EDIT:
+*** highlight-indent-guides                                          :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package highlight-indent-guides
   :diminish highlight-indent-guides-mode
-  :ensure t
   :hook ((prog-mode org-mode) . highlight-indent-guides-mode)
   :config
   (setq highlight-indent-guides-auto-enabled nil)
@@ -2122,7 +2001,22 @@ vi layer for Emacs
   )
 #+END_SRC
 
-*** multiple-cursors                            :EDIT:
+*** keycast                                                            :UI:
+
+#+BEGIN_SRC emacs-lisp
+(use-package keycast
+  :defer 2
+  :init
+  (custom-set-faces
+   '(keycast-key ((nil (:height 1 :background "gray30" :foreground "gray70")))))
+  :custom
+  (keycast-insert-after 'mode-line-misc-info)
+  :config
+  (keycast-mode)
+  )
+#+END_SRC
+
+*** multiple-cursors                                                 :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package multiple-cursors
@@ -2133,11 +2027,10 @@ vi layer for Emacs
          ("C-c m <" . mc/mark-previous-like-this)
          ("C-c m a" . mc/mark-all-like-this)
          ("C-c m r" . set-rectangular-region-anchor))
-  :ensure t
   )
 #+END_SRC
 
-*** mwim                                        :EDIT:
+*** mwim                                                             :EDIT:
 
 move where I mean
 
@@ -2145,23 +2038,19 @@ move where I mean
 (use-package mwim
   :bind (("C-a" . mwim-beginning-of-code-or-line)
          ("C-e" . mwim-end-of-code-or-line))
-  :commands (mwim-beginning-of-code-or-line mwim-end-of-code-or-line)
-  :ensure t
-  )
+  :commands (mwim-beginning-of-code-or-line mwim-end-of-code-or-line))
 #+END_SRC
 
-*** Treemacs                                    :EDIT:
+*** Treemacs                                                         :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package treemacs
-  :bind (:map global-map
-         ("M-0" . treemacs-select-window)
-         ("C-x t 1" . treemacs-delete-other-windows)
-         ("C-x t t" . treemacs)
-         ("C-x t B" . treemacs-bookmark)
-         ("C-x t C-t" . treemacs-find-file)
-         ("C-x t M-t" . treemacs-find-tag))
-  :ensure t
+  :bind (("M-0" . treemacs-select-window)
+         ("C-c i t 1" . treemacs-delete-other-windows)
+         ("C-c i t t" . treemacs)
+         ("C-c i t B" . treemacs-bookmark)
+         ("C-c i t C-t" . treemacs-find-file)
+         ("C-c i t M-t" . treemacs-find-tag))
   :custom
   (treemacs-deferred-git-apply-delay      0.5)
   (treemacs-display-in-side-window        t)
@@ -2208,52 +2097,47 @@ move where I mean
 
 (use-package treemacs-magit
   :after treemacs magit
-  :defer t
-  :ensure t)
+  :defer t)
 
 (use-package treemacs-projectile
   :after treemacs projectile
-  :bind (:map global-map
-         ("C-x t p" . treemacs-projectile))
-  :ensure t)
+  :bind (("C-c i t p" . treemacs-projectile)))
 #+END_SRC
 
-*** scratch-pop                                 :EDIT:
+*** scratch-pop                                                      :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package scratch-pop
-  :ensure t
+;  :straight (:type built-in)
   :init
   (setq scratch-pop-backup-directory (expand-file-name (convert-standard-filename "scratch-pop/") no-littering-var-directory))
   (add-hook 'kill-emacs-hook #'scratch-pop-backup-scratches)
   )
 #+END_SRC
 
-*** smartparens                                 :EDIT:
+*** smartparens                                                      :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package smartparens
   :diminish smartparens-mode
-  :ensure t
   :hook (((prog-mode org-mode) . smartparens-mode)
          ((prog-mode org-mode) . show-smartparens-mode))
   :config
-  (use-package smartparens-config :defer t)
   (setq sp-show-pair-from-inside t)             ; shown inside the matching paren delimiter
   (set-face-attribute 'sp-show-pair-match-face nil
                       :background "#767676" :foreground "#00cd00"
                       :weight 'bold)
   )
+(use-package smartparens-config :after smartparens :defer t :straight smartparens)
 #+END_SRC
 
-*** symon                                       :MONITOR:
+*** symon                                                         :MONITOR:
 
 Tiny system monitor
 
 #+BEGIN_SRC emacs-lisp
 (use-package symon
   :defer 3
-  :ensure t
   :config
   (setq symon-sparkline-type 'bounded)
   (define-symon-monitor symon-current-date-time-monitor
@@ -2287,7 +2171,7 @@ Tiny system monitor
   )
 #+END_SRC
 
-*** subword                                     :EDIT:
+*** subword                                                          :EDIT:
 
 navigate into CamelCaseWords
 
@@ -2298,7 +2182,7 @@ navigate into CamelCaseWords
   )
 #+END_SRC
 
-*** super-save                                  :EDIT:
+*** super-save                                                       :EDIT:
 
 auto-save buffers
 
@@ -2306,20 +2190,18 @@ auto-save buffers
 (use-package super-save
   :defer 1
   :diminish super-save-mode
-  :ensure t
   :config
   (super-save-mode +1)
   (setq super-save-auto-save-when-idle t)
   )
 #+END_SRC
 
-*** undo-tree                                   :EDIT:
+*** undo-tree                                                        :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (use-package undo-tree
   :defer 1
   :diminish undo-tree-mode
-  :ensure t
   :config
   (global-undo-tree-mode)
   (setq undo-tree-visualizer-diff t
@@ -2328,7 +2210,7 @@ auto-save buffers
   )
 #+END_SRC
 
-*** vimish-fold                                 :EDIT:
+*** vimish-fold                                                      :EDIT:
 
 vim-like text folding
 
@@ -2337,9 +2219,7 @@ vim-like text folding
   :bind (("C-c v r" . vimish-fold-delete-all)
          ("C-c v d" . vimish-fold-delete)
          ("C-c v t" . vimish-fold-toggle)
-         ("C-c v a" . vimish-fold-avy))
-  :ensure t
-  )
+         ("C-c v a" . vimish-fold-avy)))
 #+END_SRC
 
 *** which-key
@@ -2348,12 +2228,14 @@ Display the key bindings in a popup.
 
 #+BEGIN_SRC emacs-lisp
 (use-package which-key
-  :commands which-key-add-major-mode-key-based-replacements
+  :defer 1
   :diminish which-key-mode
-  :ensure t
+  :custom
+  (which-key-idle-delay 0.5)                    ; popup delay
+  (which-key-compute-remaps t)
+  (which-key-allow-multiple-replacements t)
   :config
   (which-key-mode)
-  (setq which-key-idle-delay 2.0)               ; popup delay
   (which-key-setup-side-window-right-bottom)
   )
 #+END_SRC
@@ -2365,30 +2247,25 @@ Display the key bindings in a popup.
   :defer t
   :commands yas-minor-mode
   :diminish yas-minor-mode
-  :ensure t
-  :custom
-  (yas-keymap-disable-hook t)
-  :config
-  (use-package yasnippet-snippets :ensure t)
-  (use-package ivy-yasnippet :commands ivy-yasnippet :ensure t)
-  (yas-reload-all)
-  )
+  :custom (yas-keymap-disable-hook t)
+  :config (yas-reload-all))
+(use-package yasnippet-snippets :after yasnippet)
+(use-package ivy-yasnippet :after yasnippet :commands ivy-yasnippet)
 #+END_SRC
 
-*** ztree                                       :EDIT:
+*** ztree                                                            :EDIT:
 
 Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package ztree
   :defer t
-  :ensure t
   :config
   (setq ztree-draw-unicode-lines t)
   )
 #+END_SRC
 
-*** Helm                                        :EDIT:
+*** Helm                                                             :EDIT:
 
 **** helm
 
@@ -2404,7 +2281,6 @@ Diff between directories
          ([remap yank-pop] . helm-show-kill-ring)       ; M-y
          )
   :diminish helm-mode
-  :ensure t
   :preface (require 'helm-config)
   :config
   (helm-mode 1)
@@ -2440,14 +2316,10 @@ Diff between directories
 #+BEGIN_SRC emacs-lisp
 (use-package swiper-helm
   :bind (([remap isearch-forward]  . swiper-helm)   ; C-s
-         ([remap isearch-backward] . swiper-helm))  ; C-r
-  :ensure t
-  :config
-  (eval-when-compile (require 'helm))
-  )
+         ([remap isearch-backward] . swiper-helm))) ; C-r
 #+END_SRC
 
-*** Ivy                                         :EDIT:
+*** Ivy                                                              :EDIT:
 
 **** ivy
 
@@ -2456,7 +2328,6 @@ Diff between directories
   :bind (:map ivy-minibuffer-map
          ("C-m" . ivy-alt-done))                ; use 'Enter' on a directory to navigate into the directory, not open it with dired
   :diminish ivy-mode
-  :ensure t
   :config
   (ivy-mode 1)
   (setq ivy-use-virtual-buffers t
@@ -2478,9 +2349,7 @@ Diff between directories
          ("C-c i a" . counsel-ag)
          ([remap describe-bindings] . counsel-descbinds)
          ([remap describe-function] . counsel-describe-function)
-         ([remap describe-variable] . counsel-describe-variable))
-  :ensure t
-  )
+         ([remap describe-variable] . counsel-describe-variable)))
 #+END_SRC
 
 **** projectile
@@ -2491,22 +2360,20 @@ Diff between directories
     #'(lambda ()
       (use-package projectile
         :defer t
-        :ensure t
+        :custom
+        (projectile-completion-system 'ivy)                 ; via ivy backend
+        (projectile-enable-caching t)                       ; enable caching unconditionally
+        (projectile-file-exists-remote-cache-expire nil)    ; disable remote file exists cache
+        (projectile-remember-window-configs t)
+        (projectile-switch-project-action 'counsel-projectile-find-file-or-buffer)
+        (projectile-sort-order 'modification-time)
         :config
+        (setq projectile-globally-ignored-directories (append
+                                                       '(".metadata") projectile-globally-ignored-directories)
+              projectile-globally-ignored-files (append
+                                                 '(".DS_Store") projectile-globally-ignored-files))
         (define-key projectile-mode-map (kbd "C-c i C-p")   ; prefix
           #'projectile-command-map)
-        (setq
-            projectile-completion-system 'ivy               ; via ivy backend
-            projectile-enable-caching t                     ; enable caching unconditionally
-            projectile-file-exists-remote-cache-expire nil  ; disable remote file exists cache
-            projectile-remember-window-configs t
-            projectile-switch-project-action 'counsel-projectile-find-file-or-buffer
-            projectile-sort-order 'modification-time
-            projectile-globally-ignored-directories (append
-                                                     '(".metadata") projectile-globally-ignored-directories)
-            projectile-globally-ignored-files (append
-                                               '(".DS_Store") projectile-globally-ignored-files)
-            )
         (setq-default
          projectile-mode-line
          '(:eval
@@ -2526,20 +2393,18 @@ Diff between directories
 
       (use-package counsel-projectile
         :bind ("C-c i p" . counsel-projectile)
-        :ensure t
-        :config
-        (counsel-projectile-mode)
-        )
+        :config (counsel-projectile-mode))
       )))
 #+END_SRC
 
-*** Org                                         :ORG:
+*** Org                                                               :ORG:
 
 **** org-mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package org
   :bind ("C-c o b" . org-switchb)
+  :straight (:type built-in)
   :config
   (setq truncate-lines nil                      ; line wrap
         org-edit-src-content-indentation 0      ; no indentation in SRC block
@@ -2576,7 +2441,7 @@ Diff between directories
   )
 #+END_SRC
 
-**** org-page                                   :DISABLED:
+**** org-page                                                   :DISABLED:
 
 Static site generator in org-mode
 
@@ -2596,7 +2461,6 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
 (use-package org-page
   :disabled
   :commands (op/new-repository op/new-post op/do-publication)
-  :ensure t
   :config
   (setq op/repository-directory my-op/repository-directory
         op/site-domain my-op/site-domain
@@ -2608,7 +2472,7 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
 
 ** Research
 
-*** AUCTex                                      :DISABLED:
+*** AUCTex                                                       :DISABLED:
 #+BEGIN_SRC emacs-lisp
 ;; (when (locate-library "auctex") (progn
 ;;     (defun modes/auctex-mode ()
@@ -2782,7 +2646,7 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
 ;;     ))))
 #+END_SRC
 
-*** Maxima                                      :DISABLED:
+*** Maxima                                                       :DISABLED:
 
 #+BEGIN_SRC emacs-lisp
 ;; (when (locate-library "maxima")
@@ -2791,7 +2655,7 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
 ;;     )
 #+END_SRC
 
-*** Octave                                      :DISABLED:
+*** Octave                                                       :DISABLED:
 
 #+BEGIN_SRC emacs-lisp
 ;; (autoload 'octave-mode "octave-mod" nil t)
@@ -2877,7 +2741,7 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
   (set-buffer-file-coding-system 'dos))
 #+END_SRC
 
-*** Copy N Paste                                :EDIT:
+*** Copy N Paste                                                     :EDIT:
 
 Selective copy and paste
 
@@ -2910,7 +2774,7 @@ Selective copy and paste
   )
 #+END_SRC
 
-*** Dired                                       :FILE:
+*** Dired                                                            :FILE:
 
 File manager
 
@@ -2921,7 +2785,7 @@ File manager
   )
 #+END_SRC
 
-*** Json Formatter                              :EDIT:
+*** Json Formatter                                                   :EDIT:
 
 #+BEGIN_SRC emacs-lisp
 (defun json-format ()
