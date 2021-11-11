@@ -30,22 +30,24 @@
       inhibit-default-init t)                   ; skip default.el
 
 ;; straight.el & use-package
-(setq straight-check-for-modifications 'live)
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
+(with-no-warnings                               ; straight.el
+  (setq straight-cache-autoloads t
+        straight-check-for-modifications '(find-when-checking check-on-save)
+        straight-use-package-by-default t))
+(eval-and-compile
+  (defvar bootstrap-version 5)
+  (defvar bootstrap-file
+    (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory)))
+(unless (file-exists-p bootstrap-file)
+  (with-current-buffer
+      (url-retrieve-synchronously
+       "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+       'silent 'inhibit-cookies)
+    (goto-char (point-max))
+    (eval-print-last-sexp)))
+(load bootstrap-file nil 'nomessage)
 
-(straight-use-package 'use-package)
-(use-package straight :custom (straight-use-package-by-default t))
+(straight-use-package 'use-package)             ; use-package
 
 (eval-when-compile (require 'bind-key))
 ;; end of straight.el & use-package

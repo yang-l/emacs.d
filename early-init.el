@@ -7,7 +7,7 @@
 ;; optimise startup speed
 (setq gc-cons-threshold most-positive-fixnum)   ; set GC at beginning to speed up Emacs loading
 
-(setq load-prefer-newer noninteractive)
+(setq load-prefer-newer t)
 (setq package-enable-at-startup nil)            ; disable package.el
 
 ; disable at the earliest stage
