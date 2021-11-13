@@ -727,8 +727,7 @@ Buffer readonly mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package view
-  :bind(:map ctl-x-map
-        ("C-q" . view-mode)))                   ; replace toggle-read-only with view-mode
+  :bind([remap read-only-mode] . view-mode))    ; C-x C-q
 #+END_SRC
 
 **** which-func
@@ -757,7 +756,7 @@ Undo Emacs window changes
 #+BEGIN_SRC emacs-lisp
 (use-package misc
   :commands zap-up-to-char
-  :bind ("M-z" . zap-up-to-char)
+  :bind ([remap zap-to-char] . zap-up-to-char)  ; M-z
   :straight (:type built-in))
 #+END_SRC
 
@@ -1647,9 +1646,8 @@ Char-based jumping
 
 #+BEGIN_SRC emacs-lisp
 (use-package avy
-  :bind (([remap goto-char] . avy-goto-char-2))
-    :commands avy-goto-char-2
-  )
+  :bind ([remap goto-char] . avy-goto-char-2)   ; M-g c
+  :commands avy-goto-char-2)
 #+END_SRC
 
 *** bm                                                           :BOOKMARK:
@@ -2003,6 +2001,8 @@ vi layer for Emacs
 
 *** keycast                                                            :UI:
 
+Show the key pressed on the modeline
+
 #+BEGIN_SRC emacs-lisp
 (use-package keycast
   :defer 2
@@ -2011,6 +2011,9 @@ vi layer for Emacs
    '(keycast-key ((nil (:height 1 :background "gray30" :foreground "gray70")))))
   :custom
   (keycast-insert-after 'mode-line-misc-info)
+  (keycast-remove-tail-elements nil)
+  (keycast-separator-width 2)
+  (mode-line-keycast-format "%s%k%c%r%s")
   :config
   (keycast-mode)
   )
@@ -2036,9 +2039,9 @@ move where I mean
 
 #+BEGIN_SRC emacs-lisp
 (use-package mwim
-  :bind (("C-a" . mwim-beginning-of-code-or-line)
-         ("C-e" . mwim-end-of-code-or-line))
-  :commands (mwim-beginning-of-code-or-line mwim-end-of-code-or-line))
+  :bind (([remap beginning-of-visual-line] . mwim-beginning-of-code-or-line-or-comment) ; C-a
+         ([remap end-of-visual-line] . mwim-end-of-code-or-line))                       ; C-e
+  :commands (mwim-beginning-of-code-or-line-or-comment mwim-end-of-code-or-line))
 #+END_SRC
 
 *** Treemacs                                                         :EDIT:
@@ -2296,9 +2299,9 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package helm
-  :bind (("C-x b"   . helm-mini)                        ; remap switch-to-buffer
-         ("C-x C-b" . helm-mini)                        ; remap list-buffer
-         ("C-x C-f" . helm-find-files)                  ; remap find-file
+  :bind (([remap switch-to-buffer]. helm-mini)          ; C-x b
+         ([remap list-buffers]    . helm-mini)          ; C-x C-b
+         ([remap find-file]       . helm-find-files)    ; C-x C-f
          ([remap apropos-command] . helm-apropos)       ; C-h a
          ([remap dabbrev-expand]  . helm-dabbrev)       ; M-/
          ([remap occur]           . helm-occur)         ; M-s o
