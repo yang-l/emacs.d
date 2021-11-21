@@ -630,6 +630,7 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package multi-term
+  :disabled
   :bind ("C-c t m" . (lambda ()
                        "Start a new multi-term"
                        (interactive)
@@ -917,6 +918,8 @@ Spacemacs dark theme
 (add-hook 'prog-mode-hook 'modes/prog-mode)
 (add-hook 'before-save-hook                     ; remove trailing whitespace
     'delete-trailing-whitespace)
+
+(use-package quickrun :commands (quickrun quickrun-region quickrun-shell))
 #+END_SRC
 
 *** Git
@@ -1176,7 +1179,11 @@ Language Server Protocol
     "lshi" 'helm-imenu
     "lsfd" 'lsp-find-definition
     "lsfr" 'lsp-find-references)
-  :hook ((lsp-mode . lsp-enable-which-key-integration)
+  :hook ((lsp-mode . (lambda ()
+                       (let ((lsp-keymap-prefix "C-c l"))
+                         #'lsp-enable-which-key-integration)))
+         (lsp-mode . (lambda ()                      ; for general.el keymaps without the need to swith between emacs and vi states
+                       (with-eval-after-load `evil (evil-emacs-state))))
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
          (dockerfile-mode . lsp-deferred)
          (enh-ruby-mode . lsp-deferred)
@@ -1200,6 +1207,8 @@ Language Server Protocol
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 3)
   :config
+  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
+
   (setq gc-cons-threshold (* 1024 1024 256)     ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
         read-process-output-max (* 1024 1024 4))
 
@@ -1247,15 +1256,19 @@ Language Server Protocol
 
 (use-package lsp-ui
   :after lsp-mode yasnippet
+  :bind (:map lsp-ui-mode-map
+              ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
+              ([remap xref-find-references]  . lsp-ui-peek-find-references))
   :commands lsp-ui-mode
-  :hook ((lsp-mode . lsp-ui-mode))
+  :hook ((lsp-mode . lsp-ui-mode)
+         (lsp-ui-mode . yas-minor-mode)
+         (lsp-ui-mode . (lambda ()                   ; for general.el keymaps without the need to swith between emacs and vi states
+                          (with-eval-after-load `evil (evil-emacs-state)))))
   :general (
     :states '(normal insert emacs)
     :keymaps 'lsp-ui-mode-map
     :prefix ","
     :non-normal-prefix "C-x ,"
-    [remap xref-find-definitions] 'lsp-ui-peek-find-definitions
-    [remap xref-find-references]  'lsp-ui-peek-find-references
     "lspr" 'lsp-ui-peek-find-references
     "lspd" 'lsp-ui-peek-find-definitions
     "lspi" 'lsp-ui-peek-find-implementation
@@ -1267,8 +1280,6 @@ Language Server Protocol
   (lsp-ui-sideline-show-hover t)
   (lsp-ui-sideline-ignore-duplicate t)
   (lsp-ui-flycheck-list-position 'right)
-  :config
-  (yas-minor-mode)                      ; yasnippet
   )
 
 (use-package lsp-ui-flycheck :after lsp-ui :defer 2 :straight lsp-ui)
@@ -1276,13 +1287,14 @@ Language Server Protocol
 
 (use-package helm-lsp
   :after lsp-mode
+  :bind (:map lsp-mode-map
+              ([remap xref-find-apropos] . helm-lsp-workspace-symbol))
   :commands helm-lsp-workspace-symbol
   :general (
     :states '(normal insert emacs)
     :keymaps 'lsp-mode-map
     :prefix ","
     :non-normal-prefix "C-x ,"
-    [remap xref-find-apropos] 'helm-lsp-workspace-symbol
     "lshc" 'helm-lsp-code-actions
     "lshd" 'helm-lsp-diagnostics)
   :config
@@ -1372,14 +1384,14 @@ Language Server Protocol
   :if (executable-find "go")
   :mode (("\\.go\\'" . go-mode))
   :config
-  (when (executable-find "goimports")                       ; use goimports instead of gofmt
+  (when (executable-find "goimports")           ; use goimports instead of gofmt
     (setq gofmt-command "goimports"))
   (add-hook 'before-save-hook #'gofmt-before-save)
-  (setq indent-tabs-mode 1                                  ; default to TAB as specified in Go spec
-        tab-width 4)                                        ; show tab as 4 space width
+  (setq indent-tabs-mode 1                      ; default to TAB as specified in Go spec
+        tab-width 4)                            ; show tab as 4 space width
 
   (unless (file-exists-p (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/go.mod"))
-    (setenv "GO111MODULE" "off"))                           ; turn off for one-off file
+    (setenv "GO111MODULE" "off"))               ; turn off for one-off file
 
   ;; for lsp
   (when (not (executable-find (expand-file-name "~/.asdf/shims/ims/gopls")))
@@ -1394,16 +1406,7 @@ Language Server Protocol
          ("C-x x f" . go-test-current-file)
          ("C-x x t" . go-test-current-test)
          ("C-x x x" . go-run))
-  :commands (go-test-current-file go-test-current-test go-run)
-  :general (
-    :states '(normal insert emacs)
-    :keymaps 'go-mode-map
-    :prefix ","
-    :non-normal-prefix "C-x ,"
-    "cgf" 'go-test-current-file
-    "cgt" 'go-test-current-test
-    "cgx" 'go-run)
-  )
+  :commands (go-test-current-file go-test-current-test go-run))
 #+END_SRC
 
 **** Java
@@ -1883,8 +1886,7 @@ vi layer for Emacs
   (evil-split-window-below t)
   (evil-vsplit-window-right t)
   :config
-  (evil-mode)
-  )
+  (evil-mode))
 
 (use-package evil-nerd-commenter
   :after evil
@@ -2039,8 +2041,8 @@ move where I mean
 
 #+BEGIN_SRC emacs-lisp
 (use-package mwim
-  :bind (([remap beginning-of-visual-line] . mwim-beginning-of-code-or-line-or-comment) ; C-a
-         ([remap end-of-visual-line] . mwim-end-of-code-or-line))                       ; C-e
+  :bind (("C-a" . mwim-beginning-of-code-or-line-or-comment)
+         ("C-e" . mwim-end-of-code-or-line))
   :commands (mwim-beginning-of-code-or-line-or-comment mwim-end-of-code-or-line))
 #+END_SRC
 
@@ -2053,50 +2055,7 @@ move where I mean
          ("C-c i t t" . treemacs)
          ("C-c i t B" . treemacs-bookmark)
          ("C-c i t C-t" . treemacs-find-file)
-         ("C-c i t M-t" . treemacs-find-tag))
-  :custom
-  (treemacs-deferred-git-apply-delay      0.5)
-  (treemacs-display-in-side-window        t)
-  (treemacs-eldoc-display                 t)
-  (treemacs-file-event-delay              5000)
-  (treemacs-file-follow-delay             0.2)
-  (treemacs-follow-after-init             t)
-  (treemacs-git-command-pipe              "")
-  (treemacs-goto-tag-strategy             'refetch-index)
-  (treemacs-indentation                   2)
-  (treemacs-indentation-string            " ")
-  (treemacs-is-never-other-window         nil)
-  (treemacs-max-git-entries               5000)
-  (treemacs-missing-project-action        'ask)
-  (treemacs-no-png-images                 nil)
-  (treemacs-no-delete-other-windows       t)
-  (treemacs-project-follow-cleanup        nil)
-  (treemacs-position                      'left)
-  (treemacs-recenter-distance             0.1)
-  (treemacs-recenter-after-file-follow    nil)
-  (treemacs-recenter-after-tag-follow     nil)
-  (treemacs-recenter-after-project-jump   'always)
-  (treemacs-recenter-after-project-expand 'on-distance)
-  (treemacs-show-cursor                   nil)
-  (treemacs-show-hidden-files             t)
-  (treemacs-silent-filewatch              nil)
-  (treemacs-silent-refresh                nil)
-  (treemacs-sorting                       'alphabetic-desc)
-  (treemacs-space-between-root-nodes      t)
-  (treemacs-tag-follow-cleanup            t)
-  (treemacs-tag-follow-delay              1.5)
-  (treemacs-width                         35)
-  :config
-  (setq treemacs-collapse-dirs            (if (treemacs--find-python3) 3 0))
-  (treemacs-follow-mode t)
-  (treemacs-filewatch-mode t)
-  (pcase (cons (not (null (executable-find "git")))
-               (not (null (treemacs--find-python3))))
-    (`(t . t)
-     (treemacs-git-mode 'deferred))
-    (`(t . _)
-     (treemacs-git-mode 'simple)))
-  )
+         ("C-c i t M-t" . treemacs-find-tag)))
 
 (use-package treemacs-magit
   :after treemacs magit
@@ -2354,7 +2313,7 @@ Diff between directories
 #+BEGIN_SRC emacs-lisp
 (use-package ivy
   :bind (:map ivy-minibuffer-map
-         ("C-m" . ivy-alt-done))                ; use 'Enter' on a directory to navigate into the directory, not open it with dired
+              ("C-m" . ivy-alt-done))           ; use 'Enter' on a directory to navigate into the directory, not open it with dired
   :diminish ivy-mode
   :config
   (ivy-mode 1)
@@ -2372,9 +2331,9 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package counsel
-  :bind (("C-c i g" . counsel-git)
+  :bind (("C-c i f" . counsel-fzf)
+         ("C-c i g" . counsel-git)
          ("C-c i j" . counsel-git-grep)
-         ("C-c i a" . counsel-ag)
          ([remap describe-bindings] . counsel-descbinds)
          ([remap describe-function] . counsel-describe-function)
          ([remap describe-variable] . counsel-describe-variable)))
@@ -2387,6 +2346,8 @@ Diff between directories
   (add-hook mode-hook
     #'(lambda ()
       (use-package projectile
+        :bind(:map projectile-mode-map
+                   ("C-c i C-p" . projectile-command-map))
         :defer t
         :custom
         (projectile-completion-system 'ivy)                 ; via ivy backend
@@ -2397,17 +2358,14 @@ Diff between directories
         (projectile-sort-order 'modification-time)
         :config
         (setq projectile-globally-ignored-directories (append
-                                                       '(".metadata") projectile-globally-ignored-directories)
+                                                       '(".metadata" "node_modules" "vendor") projectile-globally-ignored-directories)
               projectile-globally-ignored-files (append
                                                  '(".DS_Store") projectile-globally-ignored-files))
-        (define-key projectile-mode-map (kbd "C-c i C-p")   ; prefix
-          #'projectile-command-map)
-        (setq-default
-         projectile-mode-line
-         '(:eval
-           (if (file-remote-p default-directory)
-	             " Pr"
-             (format " Proj[%s]" (projectile-project-name)))))
+        (setq-default projectile-mode-line
+                      '(:eval
+                        (if (file-remote-p default-directory)
+	                          " Pr"
+                          (format " Proj[%s]" (projectile-project-name)))))
         (cond
          ((executable-find "ag")
           (setq projectile-generic-command
