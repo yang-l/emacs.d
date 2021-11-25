@@ -1045,12 +1045,13 @@ web-mode
 (use-package jinja2-mode :mode ("\\.j2" . jinja2-mode))
 #+END_SRC
 
-**** json
+**** json                                                             :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package json-mode
   :mode (("\\.json\\'"      . json-mode)
-         ("\\.json.erb\\'"  . json-mode)))
+         ("\\.json.erb\\'"  . json-mode))
+  :custom (js-indent-level 2))                  ; 2 space
 #+END_SRC
 
 **** puppet-mode
@@ -1188,6 +1189,7 @@ Language Server Protocol
          (dockerfile-mode . lsp-deferred)
          (enh-ruby-mode . lsp-deferred)
          (go-mode . lsp-deferred)
+         (json-mode . lsp-deferred)
          (python-mode . lsp-deferred)
          (sh-mode . lsp-deferred)
          (terraform-mode . lsp-deferred)
@@ -1198,6 +1200,7 @@ Language Server Protocol
                          lsp-dockerfile
                          lsp-go
                          lsp-javascript
+                         lsp-json
                          lsp-pylsp
                          lsp-solargraph))
   (lsp-clients-typescript-server-args '("--stdio" "--tsserver-log-file" "/dev/stderr"))     ; no more .log/tsserver.log files on project
@@ -1730,7 +1733,8 @@ Visible bookmarks
 (use-package company-tng
   :after company
   :custom (company-selection-default nil)
-  :straight company-mode)
+  :straight company-mode
+  :config (company-tng-mode))
 
 (use-package company-tabnine
   :after company
@@ -1738,7 +1742,7 @@ Visible bookmarks
   :init
   (make-local-variable 'company-backends)
   (setq company-backends (delete '(company-capf company-yasnippet) company-backends))
-  (add-to-list 'company-backends '(company-capf company-yasnippet company-tabnine :separate))
+  (add-to-list 'company-backends '(:separate company-tabnine company-capf :with company-yasnippet))
   ;; dynamicly create TabNine.toml file
   ;; to enable sem for each language by typing "TabNine::sem" once opened the mode
   (when (eq system-type 'darwin)
@@ -1975,6 +1979,7 @@ vi layer for Emacs
          (prog-mode . flyspell-prog-mode))
   :custom
   (flyspell-issue-message-flag nil)
+  (flyspell-issue-welcome-flag nil)
   (ispell-list-command "--list")
   (ispell-program-name "aspell")
   (ispell-extra-args '("--sug-mode=ultra"))
@@ -2055,7 +2060,8 @@ move where I mean
          ("C-c i t t" . treemacs)
          ("C-c i t B" . treemacs-bookmark)
          ("C-c i t C-t" . treemacs-find-file)
-         ("C-c i t M-t" . treemacs-find-tag)))
+         ("C-c i t M-t" . treemacs-find-tag))
+  :init (defvar treemacs-no-load-time-warnings t))
 
 (use-package treemacs-magit
   :after treemacs magit
