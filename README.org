@@ -44,6 +44,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 
 `straight.el' defined `init.el'
 
+#+BEGIN_SRC emacs-lisp
 ;; benchmarking emacs boot sequence
 (use-package benchmark-init
   :disabled                                     ; by default
@@ -1703,6 +1704,7 @@ Visible bookmarks
     ))
   (company-idle-delay 0.07)                     ; delay before autocompletion popup shows
   (company-minimum-prefix-length 2)
+  (company-require-match 'never)
   (company-selection-wrap-around t)             ; loop over candidates
   (company-show-numbers t)                      ; show number
   (company-transformers
@@ -1728,6 +1730,9 @@ Visible bookmarks
     (company-pseudo-tooltip-frontend
      company-echo-metadata-frontend)
     ))
+  (company-dabbrev-other-buffers nil)
+  (company-dabbrev-ignore-case nil)
+  (company-dabbrev-downcase nil)
   )
 
 (use-package company-tng
@@ -1906,9 +1911,7 @@ vi layer for Emacs
     "nci" 'evilnc-toggle-invert-comment-line-by-line
     "nco" 'evilnc-comment-operator
     "ncc" 'evilnc-copy-and-comment-operator)
-  :config
-  (evilnc-default-hotkeys t)                    ; enable recommended key bindings under non-evil (Emacs) mode only
-  )
+  :config (evilnc-default-hotkeys t t))         ; disable default key bindings, and configured by general
 
 (use-package evil-surround
   :after evil
@@ -1959,13 +1962,9 @@ vi layer for Emacs
    '(flycheck-error ((nil (:background "red"))))
    '(flycheck-warning ((nil (:background "yellow")))))
   :config
-  (setq flycheck-check-syntax-automatically
-        '(new-line
-          idle-change
-          save)
-        flycheck-idle-change-delay
-        (if flycheck-current-errors 0.5 15.0)
-        )
+  (setq flycheck-check-syntax-automatically '(new-line idle-change save)
+        flycheck-idle-change-delay (if flycheck-current-errors 0.5 15.0)
+        flycheck-buffer-switch-check-intermediate-buffers t)
   (flymake-mode -1)                             ; disable flymake
   )
 #+END_SRC
@@ -1989,6 +1988,17 @@ vi layer for Emacs
     (define-key flyspell-mouse-map [mouse-3] #'undefined)
     )
   )
+
+(use-package flyspell-lazy
+  :after flyspell
+  :config (flyspell-lazy-mode))
+
+(use-package flyspell-correct
+  :after flyspell
+  :defer t)                                     ; C-u/C-u C-u/C-u C-u C-u M-x flyspell-correct-wrapper
+
+(use-package flyspell-correct-helm
+  :after flyspell-correct)
 #+END_SRC
 
 *** highlight-indent-guides                                          :EDIT:
@@ -2056,11 +2066,11 @@ move where I mean
 #+BEGIN_SRC emacs-lisp
 (use-package treemacs
   :bind (("M-0" . treemacs-select-window)
-         ("C-c i t 1" . treemacs-delete-other-windows)
-         ("C-c i t t" . treemacs)
-         ("C-c i t B" . treemacs-bookmark)
-         ("C-c i t C-t" . treemacs-find-file)
-         ("C-c i t M-t" . treemacs-find-tag))
+         ("C-c p t 1" . treemacs-delete-other-windows)
+         ("C-c p t t" . treemacs)
+         ("C-c p t B" . treemacs-bookmark)
+         ("C-c p t C-t" . treemacs-find-file)
+         ("C-c p t M-t" . treemacs-find-tag))
   :init (defvar treemacs-no-load-time-warnings t))
 
 (use-package treemacs-magit
@@ -2069,7 +2079,9 @@ move where I mean
 
 (use-package treemacs-projectile
   :after treemacs projectile
-  :bind (("C-c i t p" . treemacs-projectile)))
+  :bind ((:map projectile-mode-map
+             ("C-c p p" . projectile-command-map))
+         ("C-c p t p" . treemacs-projectile)))
 #+END_SRC
 
 *** scratch-pop                                                      :EDIT:
@@ -2267,6 +2279,7 @@ Diff between directories
   :bind (([remap switch-to-buffer]. helm-mini)          ; C-x b
          ([remap list-buffers]    . helm-mini)          ; C-x C-b
          ([remap find-file]       . helm-find-files)    ; C-x C-f
+         ([remap find-library]    . helm-locate-library)
          ([remap apropos-command] . helm-apropos)       ; C-h a
          ([remap dabbrev-expand]  . helm-dabbrev)       ; M-/
          ([remap occur]           . helm-occur)         ; M-s o
@@ -2301,7 +2314,7 @@ Diff between directories
                 (define-key eshell-mode-map
                   [remap eshell-pcomplete]
                   'helm-esh-pcomplete)))
-  )
+  (add-to-list 'helm-completing-read-handlers-alist (cons #'find-file-at-point nil)))
 #+END_SRC
 
 **** swiper
@@ -2337,9 +2350,9 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package counsel
-  :bind (("C-c i f" . counsel-fzf)
-         ("C-c i g" . counsel-git)
-         ("C-c i j" . counsel-git-grep)
+  :bind (("C-c p f" . counsel-fzf)
+         ("C-c p g" . counsel-git)
+         ("C-c p j" . counsel-git-grep)
          ([remap describe-bindings] . counsel-descbinds)
          ([remap describe-function] . counsel-describe-function)
          ([remap describe-variable] . counsel-describe-variable)))
@@ -2348,45 +2361,48 @@ Diff between directories
 **** projectile
 
 #+BEGIN_SRC emacs-lisp
-(dolist (mode-hook '(prog-mode-hook))
-  (add-hook mode-hook
-    #'(lambda ()
-      (use-package projectile
-        :bind(:map projectile-mode-map
-                   ("C-c i C-p" . projectile-command-map))
-        :defer t
-        :custom
-        (projectile-completion-system 'ivy)                 ; via ivy backend
-        (projectile-enable-caching t)                       ; enable caching unconditionally
-        (projectile-file-exists-remote-cache-expire nil)    ; disable remote file exists cache
-        (projectile-remember-window-configs t)
-        (projectile-switch-project-action 'counsel-projectile-find-file-or-buffer)
-        (projectile-sort-order 'modification-time)
-        :config
-        (setq projectile-globally-ignored-directories (append
-                                                       '(".metadata" "node_modules" "vendor") projectile-globally-ignored-directories)
-              projectile-globally-ignored-files (append
-                                                 '(".DS_Store") projectile-globally-ignored-files))
-        (setq-default projectile-mode-line
-                      '(:eval
-                        (if (file-remote-p default-directory)
-	                          " Pr"
-                          (format " Proj[%s]" (projectile-project-name)))))
-        (cond
-         ((executable-find "ag")
-          (setq projectile-generic-command
-                (concat "ag -0 -l --nocolor"
-                        ; https://github.com/ggreer/the_silver_searcher/issues/1060
-                        (mapconcat #'identity (cons "" projectile-globally-ignored-directories) " --ignore /")
-                        (mapconcat #'identity (cons "" projectile-globally-ignored-directories) " --ignore /**/")))))
-        (if (eq system-type 'windows-nt)                    ; external indexing under windows
-            (setq projectile-indexing-method 'alien))
-        )
+(use-package projectile
+  :bind(:map projectile-mode-map
+             ("C-c p p" . projectile-command-map))
+  :defer t
+  :custom
+  (projectile-completion-system 'ivy)                       ; via ivy backend
+  (projectile-enable-caching t)                             ; enable caching unconditionally
+  (projectile-file-exists-remote-cache-expire nil)          ; disable remote file exists cache
+  (projectile-remember-window-configs t)
+  (projectile-switch-project-action 'counsel-projectile-find-file-or-buffer)
+  (projectile-sort-order 'modification-time)
+  :config
+  (setq projectile-globally-ignored-directories (append
+                                                 '(".metadata" "node_modules" "vendor") projectile-globally-ignored-directories)
+        projectile-globally-ignored-files (append
+                                           '(".DS_Store") projectile-globally-ignored-files))
+  (setq-default projectile-mode-line
+                '(:eval
+                  (if (file-remote-p default-directory)
+	                    " Pr"
+                    (format " Proj[%s]" (projectile-project-name)))))
+  (cond
+   ((executable-find "ag")
+    (setq projectile-generic-command
+          (concat "ag -0 -l --nocolor"
+                  ; https://github.com/ggreer/the_silver_searcher/issues/1060
+                  (mapconcat #'identity (cons "" projectile-globally-ignored-directories) " --ignore /")
+                  (mapconcat #'identity (cons "" projectile-globally-ignored-directories) " --ignore /**/"))))
+   ((executable-find "rg")
+    (setq projectile-generic-command
+          (let ((rg-cmd ""))
+            (dolist (dir projectile-globally-ignored-directories)
+              (setq rg-cmd (format "%s --glob '!%s'" rg-cmd dir)))
+            (concat "rg -0 --files --color=never --hidden" rg-cmd)))))
+  (if (eq system-type 'windows-nt)                    ; external indexing under windows
+      (setq projectile-indexing-method 'alien))
+  )
 
-      (use-package counsel-projectile
-        :bind ("C-c i p" . counsel-projectile)
-        :config (counsel-projectile-mode))
-      )))
+(use-package counsel-projectile
+  :bind (:map prog-mode-map
+              ("C-c p SPC" . counsel-projectile))
+  :config (counsel-projectile-mode))
 #+END_SRC
 
 *** Org                                                               :ORG:
