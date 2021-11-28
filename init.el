@@ -48,8 +48,11 @@
 (load bootstrap-file nil 'nomessage)
 
 (straight-use-package 'use-package)             ; use-package
+(defvar use-package-compute-statistics t)       ; bootstrap statistics
 
-(eval-when-compile (require 'bind-key))
+(eval-when-compile
+  (require 'bind-key)
+  (require 'use-package))
 ;; end of straight.el & use-package
 
 ;; load or compile elc file

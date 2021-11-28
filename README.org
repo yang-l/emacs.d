@@ -336,8 +336,7 @@ savehist - save the minibuffer histories
   :config
   (setq-default savehist-additional-variables '(kill-ring search-ring regexp-search-ring extended-command-history)
                 savehist-autosave-interval 60
-                history-length 10000
-                )
+                history-length 10000)
   (savehist-mode 1)
   )
 #+END_SRC
@@ -359,9 +358,10 @@ savehist - save the minibuffer histories
 
 #+BEGIN_SRC emacs-lisp
 (use-package abbrev
-  :defer 2
+  :defer 5
   :diminish abbrev-mode
   :straight (:type built-in)
+  :custom (save-abbrevs 'silently)
   :config
   (if (file-exists-p abbrev-file-name)
       (quietly-read-abbrev-file))
@@ -577,8 +577,10 @@ build automation
 #+BEGIN_SRC emacs-lisp
 (use-package make-mode
   ;; built-in BSDmakefile mode
-  :defer 1
-  :hook (makefile-bsdmake-mode . (lambda () (setq-local tab-width 4))))
+  :defer t
+  :hook (makefile-bsdmake-mode . (lambda () (setq-local tab-width 4)))
+  :mode (("\\Makefile\\'" . makefile-mode)
+         ("\\.mk\\'"      . makefile-mode)))
 #+END_SRC
 
 **** Markdown                                            :MARKUP_LANGUAGE:
@@ -1007,9 +1009,8 @@ web-mode
   (setq eldoc-idle-delay 0.2)
   )
 
-(use-package lisp-mode
-  :defer 1
-  :hook ((emacs-lisp-mode lisp-interaction-mode) . eldoc-mode)
+(use-package elisp-mode
+  :commands eval-buffer
   :straight (:type built-in))
 #+END_SRC
 
@@ -1166,6 +1167,7 @@ Language Server Protocol
 #+BEGIN_SRC emacs-lisp
 (use-package lsp-mode
   :commands lsp lsp-deferred
+  :defer t
   :general (
     :states '(normal insert emacs)
     :keymaps 'lsp-mode-map
@@ -1816,8 +1818,11 @@ simple implementation of jumping to definition/source
 
 #+BEGIN_SRC emacs-lisp
 (use-package dumb-jump
+  :defer t
   :diminish dumb-jump-mode
-  :hook (prog-mode . (lambda () (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))))
+  :hook (prog-mode . (lambda () (add-hook 'xref-backend-functions #'dumb-jump-xref-activate t)))
+  :custom
+  (dumb-jump-prefer-searcher 'rg))
 #+END_SRC
 
 *** erc                                                               :IRC:
