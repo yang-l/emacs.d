@@ -42,9 +42,9 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 
 *** Package management
 
-`straight.el' defined `init.el'
+`straight.el' defined 'init.el'
 
-`use-package` related 'delay-hook' stuffs
+`use-package' related 'delay-hook' stuffs
 
 #+BEGIN_SRC emacs-lisp
 ;; https://github.com/jwiegley/use-package/issues/889
@@ -227,8 +227,7 @@ OSX-only key bindings
 #+BEGIN_SRC emacs-lisp
 (when (eq system-type 'darwin)                  ; mac only settings
   (setq mac-option-modifier 'meta
-        mac-command-modifier 'alt)
-  )
+       mac-right-option-modifier 'alt))         ; only work under gui
 #+END_SRC
 
 *** Browse URL
@@ -319,6 +318,8 @@ OSX-only key bindings
                             (newline))
                         (insert (format-time-string "[%F %T.%3N %:z] ")))))
                 ))
+
+(unless (display-graphic-p) (mouse-wheel-mode 0))   ; disable 'mouse-wheel-mode' under character-based terminal
 #+END_SRC
 
 *** Folder
@@ -648,6 +649,10 @@ Markup language often for readme
 #+END_SRC
 
 **** Shell & Term
+
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load `shell (setq-default shell-dirtrackp nil)); disable global 'shell-dirtrack-mode'
+#+END_SRC
 
 ***** term
 
