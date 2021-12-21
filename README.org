@@ -337,18 +337,17 @@ OSX-only key bindings
 **** Emacs backup folder
 
 #+BEGIN_SRC emacs-lisp
-(setq backup-directory-alist `((".*" . ,backup-directory)))
-(setq auto-save-list-file-prefix backup-directory)
-(setq auto-save-file-name-transforms `((".*" ,backup-directory t)))
+(setq backup-directory-alist `((".*" . ,backup-directory))
+      auto-save-list-file-prefix backup-directory
+      auto-save-file-name-transforms `((".*" ,backup-directory t)))
 (setq make-backup-files t                       ; backup of a file the first time it is saved.
       backup-by-copying t                       ; don't clobber symlinks
       version-control t                         ; version numbers for backup files
       delete-old-versions t                     ; delete excess backup files silently
-      delete-by-moving-to-trash t
       kept-old-versions 5                       ; oldest versions to keep when a new numbered backup is made (default: 2)
       kept-new-versions 15                      ; newest versions to keep when a new numbered backup is made (default: 2)
       auto-save-default t                       ; auto-save every buffer that visits a file
-      auto-save-timeout 20                      ; number of seconds idle time before auto-save (default: 30)
+      auto-save-timeout 10                      ; number of seconds idle time before auto-save (default: 30)
       auto-save-interval 200                    ; number of keystrokes between auto-saves (default: 300)
       vc-make-backup-files t                    ; backup versioned files
       )
@@ -365,6 +364,8 @@ OSX-only key bindings
       backup)))
 (setq backup-enable-predicate 'my-backup-enable-p)
 #+END_SRC
+
+Note - the =.#foo= files are file locks, and =#foo#= files are cached for auto-save [[https://www.reddit.com/r/emacs/comments/65o3ik/comment/dgbxzdx/?utm_source=share&utm_medium=web2x&context=3][(info]])
 
 **** Minibuffer backup
 
@@ -2048,6 +2049,7 @@ vi layer for Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package highlight-indent-guides
+  :disabled
   :diminish highlight-indent-guides-mode
   :hook ((prog-mode org-mode) . highlight-indent-guides-mode)
   :custom
@@ -2057,6 +2059,18 @@ vi layer for Emacs
   (highlight-indent-guides-method 'character)
   (highlight-indent-guides-suppress-auto-error t)
   :config (set-face-foreground 'highlight-indent-guides-character-face "lightslategrey"))
+#+END_SRC
+
+*** indent-guide                                                     :EDIT:
+
+#+BEGIN_SRC emacs-lisp
+(use-package indent-guide
+  :diminish indent-guide-mode
+  :hook ((prog-mode org-mode) . indent-guide-mode)
+  :custom
+  (indent-guide-char "┊")
+  (indent-guide-delay 0.3)
+  :config (set-face-foreground 'indent-guide-face "lightslategrey"))
 #+END_SRC
 
 *** keycast                                                            :UI:
@@ -2393,9 +2407,9 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package counsel
-  :bind (("C-c p f" . counsel-fzf)
-         ("C-c p g" . counsel-git)
-         ("C-c p j" . counsel-git-grep)
+  :bind (("C-c p c f" . counsel-fzf)
+         ("C-c p c g" . counsel-git)
+         ("C-c p c j" . counsel-git-grep)
          ([remap describe-bindings] . counsel-descbinds)
          ([remap describe-function] . counsel-describe-function)
          ([remap describe-variable] . counsel-describe-variable)))
@@ -2446,6 +2460,9 @@ Diff between directories
   :bind (:map prog-mode-map
               ("C-c p SPC" . counsel-projectile))
   :config (counsel-projectile-mode))
+
+(use-package rg
+  :bind ("C-c p r" . rg-menu))
 #+END_SRC
 
 *** Org                                                               :ORG:
