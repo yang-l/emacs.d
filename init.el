@@ -33,7 +33,8 @@
 (with-no-warnings                               ; straight.el
   (setq straight-cache-autoloads t
         straight-check-for-modifications '(find-when-checking check-on-save)
-        straight-use-package-by-default t))
+        straight-use-package-by-default t
+        straight-vc-git-default-clone-depth 1))
 (eval-and-compile
   (defvar bootstrap-version 5)
   (defvar bootstrap-file

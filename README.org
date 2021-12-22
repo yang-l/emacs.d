@@ -115,7 +115,6 @@ Configuration for `use-package'. The packages below should be loaded first befor
   )
 
 (use-package diminish)                          ; shorten mode-line
-(use-package general)                           ; redefin keymaps
 #+END_SRC
 
 *** UTF-8 on everything
@@ -204,6 +203,7 @@ Use the stock key bindings when possible.
 #+BEGIN_SRC emacs-lisp
 (global-unset-key (kbd "C-SPC"))                ; set-mark-command
 (global-unset-key (kbd "C-x f"))                ; set-fill-column
+(global-unset-key (kbd "C-z"))                  ; suspend-frame
 #+END_SRC
 
 passing tmux keystrokes within emacs terminal
@@ -227,7 +227,7 @@ OSX-only key bindings
 #+BEGIN_SRC emacs-lisp
 (when (eq system-type 'darwin)                  ; mac only settings
   (setq mac-option-modifier 'meta
-       mac-right-option-modifier 'alt))         ; only work under gui
+        mac-right-option-modifier 'alt))        ; only work under gui
 #+END_SRC
 
 *** Browse URL
@@ -669,7 +669,6 @@ Markup language often for readme
                 (setq bidi-paragraph-direction 'left-to-right
                       term-scroll-to-bottom-on-output t)
                 (setq-local scroll-margin 0)
-                (eval-after-load 'evil-vars '(evil-set-initial-state 'term-mode 'emacs))
                 ))
   )
 #+END_SRC
@@ -1001,8 +1000,6 @@ Spacemacs dark theme
     (window-configuration-to-register :magit-fullscreen)
     ad-do-it
     (delete-other-windows))
-
-  (with-eval-after-load 'evil-vars '(evil-set-initial-state 'magit-mode 'emacs))
   )
 
 (use-package autorevert
@@ -1208,26 +1205,9 @@ Language Server Protocol
 (use-package lsp-mode
   :commands lsp lsp-deferred
   :defer t
-  :general (
-    :states '(normal insert emacs)
-    :keymaps 'lsp-mode-map
-    :prefix ","
-    :non-normal-prefix "C-x ,"
-    "lsrn" 'lsp-rename
-    "lsda" 'lsp-describe-thing-at-point
-    "lsfb" 'lsp-format-buffer
-    "lsoi" 'lsp-organize-imports
-    "lsgi" 'lsp-goto-implementation
-    "lsgd" 'lsp-goto-type-definition
-    "lssh" 'lsp-symbol-highlight
-    "lshi" 'helm-imenu
-    "lsfd" 'lsp-find-definition
-    "lsfr" 'lsp-find-references)
   :hook ((lsp-mode . (lambda ()
                        (let ((lsp-keymap-prefix "C-c l"))
                          #'lsp-enable-which-key-integration)))
-         (lsp-mode . (lambda ()                      ; for general.el keymaps without the need to swith between emacs and vi states
-                       (with-eval-after-load `evil (evil-emacs-state))))
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
          (dockerfile-mode . lsp-deferred)
          (enh-ruby-mode . lsp-deferred)
@@ -1310,18 +1290,7 @@ Language Server Protocol
               ([remap xref-find-references]  . lsp-ui-peek-find-references))
   :commands lsp-ui-mode
   :hook ((lsp-mode . lsp-ui-mode)
-         (lsp-ui-mode . yas-minor-mode)
-         (lsp-ui-mode . (lambda ()                   ; for general.el keymaps without the need to swith between emacs and vi states
-                          (with-eval-after-load `evil (evil-emacs-state)))))
-  :general (
-    :states '(normal insert emacs)
-    :keymaps 'lsp-ui-mode-map
-    :prefix ","
-    :non-normal-prefix "C-x ,"
-    "lspr" 'lsp-ui-peek-find-references
-    "lspd" 'lsp-ui-peek-find-definitions
-    "lspi" 'lsp-ui-peek-find-implementation
-    "lsui" 'lsp-ui-imenu)
+         (lsp-ui-mode . yas-minor-mode))
   :custom
   (lsp-ui-doc-delay 1.5)
   (lsp-ui-doc-include-signature t)
@@ -1339,13 +1308,6 @@ Language Server Protocol
   :bind (:map lsp-mode-map
               ([remap xref-find-apropos] . helm-lsp-workspace-symbol))
   :commands helm-lsp-workspace-symbol
-  :general (
-    :states '(normal insert emacs)
-    :keymaps 'lsp-mode-map
-    :prefix ","
-    :non-normal-prefix "C-x ,"
-    "lshc" 'helm-lsp-code-actions
-    "lshd" 'helm-lsp-diagnostics)
   :config
   (defun helm-lsp-workspace-symbol-at-point ()
     (interactive)
@@ -1361,16 +1323,6 @@ Language Server Protocol
 (use-package lsp-treemacs
   :after lsp-mode
   :commands lsp-treemacs-errors-list
-  :general (
-    :states '(normal insert emacs)
-    :keymaps 'lsp-mode-map
-    :prefix ","
-    :non-normal-prefix "C-x ,"
-    "lste"  'lsp-treemacs-errors-list
-    "lstr"  'lsp-treemacs-references
-    "lsti"  'lsp-treemacs-implementations
-    "lstch" 'lsp-treemacs-call-hierarchy
-    "lstth" 'lsp-treemacs-type-hierarchy)
   :custom
   (lsp-treemacs-sync-mode t)
   )
@@ -1926,46 +1878,14 @@ simple implementation of jumping to definition/source
     ))
 #+END_SRC
 
-*** evil
+*** evil-nerd-commenter                                              :EDIT:
 
-vi layer for Emacs
+Comment code block
 
 #+BEGIN_SRC emacs-lisp
-(use-package evil
-  :defer 2
-  :custom
-  (evil-default-state 'emacs)
-  (evil-search-module 'evil-search)
-  (evil-split-window-below t)
-  (evil-vsplit-window-right t)
-  :config
-  (evil-mode))
-
 (use-package evil-nerd-commenter
-  :after evil
-  :general (
-    :states '(normal insert emacs)
-    :prefix ","
-    :non-normal-prefix "C-x ,"
-    "ncl" 'evilnc-comment-or-uncomment-lines
-    "nct" 'evilnc-quick-comment-or-uncomment-to-the-line
-    "ncy" 'evilnc-copy-and-comment-lines
-    "ncp" 'evilnc-comment-or-uncomment-paragraphs
-    "ncr" 'comment-or-uncomment-region
-    "nci" 'evilnc-toggle-invert-comment-line-by-line
-    "nco" 'evilnc-comment-operator
-    "ncc" 'evilnc-copy-and-comment-operator)
-  :config (evilnc-default-hotkeys t t))         ; disable default key bindings, and configured by general
-
-(use-package evil-surround
-  :after evil
-  :commands
-  (evil-surround-edit
-   evil-Surround-edit
-   evil-surround-region
-   evil-Surround-region)
-  :config (global-evil-surround-mode 1)
-  )
+  :bind ([remap comment-dwim] . evilnc-comment-or-uncomment-lines)  ; M-;
+  :config (evilnc-default-hotkeys t t))         ; disable default key bindings
 #+END_SRC
 
 *** elfeed                                                       :RSS_FEED:
@@ -2025,7 +1945,7 @@ vi layer for Emacs
   (flyspell-issue-welcome-flag nil)
   (ispell-list-command "--list")
   (ispell-program-name "aspell")
-  (ispell-extra-args '("--sug-mode=ultra"))
+  (ispell-extra-args '("--sug-mode=ultra" "--run-together" "--run-together-limit=8"))
   :config
   (when (eq system-type 'darwin)                ; mac only settings
     (define-key flyspell-mouse-map [down-mouse-3] #'flyspell-correct-word)
@@ -2093,18 +2013,103 @@ Show the key pressed on the modeline
   )
 #+END_SRC
 
-*** multiple-cursors                                                 :EDIT:
+*** meow                                                             :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(use-package multiple-cursors
-  :bind (("C-c m l" . mc/edit-lines)
-         ("C-c m b" . mc/edit-beginnings-of-lines)
-         ("C-c m e" . mc/edit-ends-of-lines)
-         ("C-c m >" . mc/mark-next-like-this)
-         ("C-c m <" . mc/mark-previous-like-this)
-         ("C-c m a" . mc/mark-all-like-this)
-         ("C-c m r" . set-rectangular-region-anchor))
-  )
+(use-package meow
+  :config
+  (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+  (meow-motion-overwrite-define-key
+   '("j" . meow-next)
+   '("k" . meow-prev)
+   '("<escape>" . ignore))
+  (meow-leader-define-key
+   ;; SPC j/k will run the original command in MOTION state.
+   '("j" . "H-j")
+   '("k" . "H-k")
+   ;; Use SPC (0-9) for digit arguments.
+   '("1" . meow-digit-argument)
+   '("2" . meow-digit-argument)
+   '("3" . meow-digit-argument)
+   '("4" . meow-digit-argument)
+   '("5" . meow-digit-argument)
+   '("6" . meow-digit-argument)
+   '("7" . meow-digit-argument)
+   '("8" . meow-digit-argument)
+   '("9" . meow-digit-argument)
+   '("0" . meow-digit-argument)
+   '("/" . meow-keypad-describe-key)
+   '("?" . meow-cheatsheet))
+  (meow-normal-define-key
+   '("0" . meow-expand-0)
+   '("9" . meow-expand-9)
+   '("8" . meow-expand-8)
+   '("7" . meow-expand-7)
+   '("6" . meow-expand-6)
+   '("5" . meow-expand-5)
+   '("4" . meow-expand-4)
+   '("3" . meow-expand-3)
+   '("2" . meow-expand-2)
+   '("1" . meow-expand-1)
+   '("-" . negative-argument)
+   '(";" . meow-reverse)
+   '("," . meow-inner-of-thing)
+   '("." . meow-bounds-of-thing)
+   '("[" . meow-beginning-of-thing)
+   '("]" . meow-end-of-thing)
+   '("a" . meow-append)
+   '("A" . meow-open-below)
+   '("b" . meow-back-word)
+   '("B" . meow-back-symbol)
+   '("c" . meow-change)
+   '("d" . meow-delete)
+   '("D" . meow-backward-delete)
+   '("e" . meow-next-word)
+   '("E" . meow-next-symbol)
+   '("f" . meow-find)
+   '("g" . meow-cancel-selection)
+   '("G" . meow-grab)
+   '("h" . meow-left)
+   '("H" . meow-left-expand)
+   '("i" . meow-insert)
+   '("I" . meow-open-above)
+   '("j" . meow-next)
+   '("J" . meow-next-expand)
+   '("k" . meow-prev)
+   '("K" . meow-prev-expand)
+   '("l" . meow-right)
+   '("L" . meow-right-expand)
+   '("m" . meow-join)
+   '("n" . meow-search)
+   '("o" . meow-block)
+   '("O" . meow-to-block)
+   '("p" . meow-yank)
+   '("q" . meow-quit)
+   '("Q" . meow-goto-line)
+   '("r" . meow-replace)
+   '("R" . meow-swap-grab)
+   '("s" . meow-kill)
+   '("t" . meow-till)
+   '("u" . meow-undo)
+   '("U" . meow-undo-in-selection)
+   '("v" . meow-visit)
+   '("w" . meow-mark-word)
+   '("W" . meow-mark-symbol)
+   '("x" . meow-line)
+   '("X" . meow-goto-line)
+   '("y" . meow-save)
+   '("Y" . meow-sync-grab)
+   '("z" . meow-pop-selection)
+   '("'" . repeat)
+   '("<escape>" . ignore))
+
+  (setq meow-expand-hint-remove-delay 5
+        meow-keypad-describe-delay 3
+        meow-use-cursor-position-hack t
+        meow-use-enhanced-selection-effect t)
+
+  (meow-setup-line-number)
+  (meow-global-mode 1))
 #+END_SRC
 
 *** mwim                                                             :EDIT:
@@ -2238,17 +2243,17 @@ auto-save buffers
 #+BEGIN_SRC emacs-lisp
 (use-package switch-window
   :bind (([remap other-window] . switch-window)
-         ([delete-other-windows] . switch-window-then-maximize)
-         ([split-window-below] . switch-window-then-split-below)
-         ([split-window-right] . switch-window-then-split-right)
-         ([delete-window] . switch-window-then-delete)
-         ([dired-other-window] . switch-window-then-dired)
-         ([find-file-other-window] . switch-window-then-find-file)
-         ([compose-mail-other-window] . switch-window-then-compose-mail)
-         ([find-file-read-only-other-window] . switch-window-then-find-file-read-only)
-         ([find-file-other-window] . switch-window-then-find-file)
-         ([display-buffer] . switch-window-then-display-buffer)
-         ([kill-buffer-and-window] . switch-window-then-kill-buffer))
+         ([remap delete-other-windows] . switch-window-then-maximize)
+         ([remap split-window-below] . switch-window-then-split-below)
+         ([remap split-window-right] . switch-window-then-split-right)
+         ([remap delete-window] . switch-window-then-delete)
+         ([remap dired-other-window] . switch-window-then-dired)
+         ([remap find-file-other-window] . switch-window-then-find-file)
+         ([remap compose-mail-other-window] . switch-window-then-compose-mail)
+         ([remap find-file-read-only-other-window] . switch-window-then-find-file-read-only)
+         ([remap find-file-other-window] . switch-window-then-find-file)
+         ([remap display-buffer] . switch-window-then-display-buffer)
+         ([remap kill-buffer-and-window] . switch-window-then-kill-buffer))
   :custom
   (switch-window-auto-resize-window t)
   (switch-window-default-window-size '(0.618 . 0.618))
@@ -2278,10 +2283,7 @@ vim-like text folding
 
 #+BEGIN_SRC emacs-lisp
 (use-package vimish-fold
-  :bind (("C-c v r" . vimish-fold-delete-all)
-         ("C-c v d" . vimish-fold-delete)
-         ("C-c v t" . vimish-fold-toggle)
-         ("C-c v a" . vimish-fold-avy)))
+  :commands (vimish-fold vimish-fold-delete vimish-fold-toggle))
 #+END_SRC
 
 *** which-key
