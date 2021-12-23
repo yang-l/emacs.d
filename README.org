@@ -158,6 +158,7 @@ Configuration for `use-package'. The packages below should be loaded first befor
     confirm-kill-emacs 'y-or-n-p                ; prompts before kill
     )
 (defalias 'dabbrev-expand 'hippie-expand)
+(fset 'yes-or-no-p 'y-or-n-p)                   ; fast confirmation
 #+END_SRC
 
 *** PATH
@@ -727,6 +728,14 @@ Markup language often for readme
   )
 #+END_SRC
 
+**** saveplace                                                     :EMACS:
+
+#+BEGIN_SRC emacs-lisp
+(use-package saveplace
+  :init (setq save-place-file (expand-file-name "saveplace" no-littering-var-directory))
+  :hook (after-init . save-place-mode))
+#+END_SRC
+
 **** simple.el                                                     :EMACS:
 
 #+BEGIN_SRC emacs-lisp
@@ -795,8 +804,7 @@ Undo Emacs window changes
 #+BEGIN_SRC emacs-lisp
 (use-package winner
   :defer 2
-  :config
-  (winner-mode))
+  :config (winner-mode))
 #+END_SRC
 
 **** ZapUpToChar
@@ -2150,7 +2158,6 @@ move where I mean
 
 #+BEGIN_SRC emacs-lisp
 (use-package scratch-pop
-;  :straight (:type built-in)
   :init
   (setq scratch-pop-backup-directory (expand-file-name (convert-standard-filename "scratch-pop/") no-littering-var-directory))
   (add-hook 'kill-emacs-hook #'scratch-pop-backup-scratches)
