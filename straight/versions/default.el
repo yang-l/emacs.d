@@ -13,6 +13,7 @@
  ("dockerfile-mode" . "5db94549ce8b000ae35adf511c820ad228178052")
  ("drag-stuff.el" . "6d06d846cd37c052d79acd0f372c13006aa7e7c8")
  ("dumb-jump" . "dbb915441a2b66f2fbb954ff5de2723c5a4771d4")
+ ("editorconfig-emacs" . "2ab86dc9a8ed7a669ca348252d4af46522b5c411")
  ("el-get" . "960f3fb962c35d3196bab20b2a3f6d6228119277")
  ("eldoc" . "2be22ded9e74a034d2fefc347d00c9419fb1de3d")
  ("elfeed" . "162d7d545ed41c27967d108c04aa31f5a61c8e16")

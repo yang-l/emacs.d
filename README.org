@@ -1953,22 +1953,6 @@ Comment code block
   :after flyspell-correct)
 #+END_SRC
 
-*** highlight-indent-guides                                          :EDIT:
-
-#+BEGIN_SRC emacs-lisp
-(use-package highlight-indent-guides
-  :disabled
-  :diminish highlight-indent-guides-mode
-  :hook ((prog-mode org-mode) . highlight-indent-guides-mode)
-  :custom
-  (highlight-indent-guides-auto-enabled nil)
-  (highlight-indent-guides-character ?\┊)
-  (highlight-indent-guides-delay 0.3)
-  (highlight-indent-guides-method 'character)
-  (highlight-indent-guides-suppress-auto-error t)
-  :config (set-face-foreground 'highlight-indent-guides-character-face "lightslategrey"))
-#+END_SRC
-
 *** indent-guide                                                     :EDIT:
 
 #+BEGIN_SRC emacs-lisp
