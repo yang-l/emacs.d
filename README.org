@@ -42,9 +42,9 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 
 *** Package management
 
-`straight.el' defined 'init.el'
+=straight.el= defined =init.el=
 
-`use-package' related 'delay-hook' stuffs
+=use-package= related =delay-hook= stuffs
 
 #+BEGIN_SRC emacs-lisp
 ;; https://github.com/jwiegley/use-package/issues/889
@@ -96,7 +96,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
   (add-hook 'after-init-hook 'benchmark-init/deactivate))
 #+END_SRC
 
-Configuration for `use-package'. The packages below should be loaded first before any `use-package' has been invoked
+Configuration for =use-package=. The packages below should be loaded first before any =use-package= has been invoked
 
 #+BEGIN_SRC emacs-lisp
 (defvar backup-directory                        ; backup and autosave directory
@@ -819,7 +819,7 @@ Undo Emacs window changes
 
 **** Font
 
-Emacs GUI font settings
+Emacs GUI font settings - https://emacs-china.org/t/emacs/15676
 
 #+BEGIN_SRC emacs-lisp
 (when (display-graphic-p)
