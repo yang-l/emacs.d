@@ -1895,14 +1895,6 @@ Comment code block
   )
 #+END_SRC
 
-*** expand-region                                                    :EDIT:
-
-#+BEGIN_SRC emacs-lisp
-(use-package expand-region
-  :bind ("C-=" . er/expand-region)
-  :commands er/expand-region)
-#+END_SRC
-
 *** flycheck
 
 #+BEGIN_SRC emacs-lisp
