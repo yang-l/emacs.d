@@ -975,8 +975,23 @@ Spacemacs dark theme
 (use-package quickrun :commands (quickrun quickrun-region quickrun-shell))
 #+END_SRC
 
+Respect to the =.editorconfig= file in a project
+
 #+BEGIN_SRC emacs-lisp
 (use-package editorconfig :diminish editorconfig-mode :hook (prog-mode . editorconfig-mode-apply))
+#+END_SRC
+
+Code highlighting (for now)
+
+#+BEGIN_SRC emacs-lisp
+(use-package tree-sitter
+  :defer t
+  :diminish tree-sitter-mode
+  :hook (((enh-ruby-mode go-mode json-mode sh-mode typescript-mode) . tree-sitter-mode)
+         (tree-sitter-after-on . tree-sitter-hl-mode))
+  :config (add-to-list 'tree-sitter-major-mode-language-alist '(enh-ruby-mode . ruby)))
+
+(use-package tree-sitter-langs :after tree-sitter)
 #+END_SRC
 
 *** Git
@@ -986,7 +1001,7 @@ Spacemacs dark theme
 #+BEGIN_SRC emacs-lisp
 (use-package git-gutter
   :diminish git-gutter-mode
-  :hook ((web-mode org-mode yaml-mode groovy-mode puppet-mode enh-ruby-mode python-mode) . git-gutter-mode)
+  :hook ((prog-mode org-mode) . git-gutter-mode)
   :config
   (custom-set-variables                         ; backend
    '(git-gutter:handled-backends
