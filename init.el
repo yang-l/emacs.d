@@ -5,7 +5,7 @@
 ;;; Code:
 
 ;; version check
-(let ((minver "27.1"))
+(let ((minver "27.2"))
   (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
 
@@ -30,30 +30,39 @@
       inhibit-default-init t)                   ; skip default.el
 
 ;; straight.el & use-package
-(with-no-warnings                               ; straight.el
-  (setq straight-cache-autoloads t
-        straight-check-for-modifications '(find-when-checking check-on-save)
-        straight-use-package-by-default t
-        straight-vc-git-default-clone-depth 1))
-(eval-and-compile
+(eval-and-compile                               ; straight.el
   (defvar bootstrap-version 5)
   (defvar bootstrap-file
     (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory)))
-(unless (file-exists-p bootstrap-file)
+
+(unless (file-exists-p bootstrap-file)          ;; bootstrap
   (with-current-buffer
       (url-retrieve-synchronously
        "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
        'silent 'inhibit-cookies)
     (goto-char (point-max))
     (eval-print-last-sexp)))
-(load bootstrap-file nil 'nomessage)
+
+(with-no-warnings
+  (setq straight-check-for-modifications '(find-when-checking check-on-save)))
+
+(load bootstrap-file nil 'nomessage)            ;; init
 
 (straight-use-package 'use-package)             ; use-package
-(defvar use-package-compute-statistics t)       ; bootstrap statistics
+
+(use-package straight
+  :custom
+  (straight-cache-autoloads t)
+  (straight-use-package-by-default t)
+  (straight-vc-git-default-clone-depth 1))
+
+(use-package use-package
+  :custom
+  (use-package-always-defer t)
+  (use-package-compute-statistics t))           ; bootstrap statistics
 
 (eval-when-compile
-  (require 'bind-key)
-  (require 'use-package))
+  (require 'bind-key))
 ;; end of straight.el & use-package
 
 ;; load or compile elc file

@@ -187,6 +187,7 @@ Run Emacs as a daemon, and edit via =emacsclient=. =emacsclient -t= for terminal
 
 #+BEGIN_SRC emacs-lisp
 (use-package server
+  :disabled
   :defer 1
   :config
   (unless (and (fboundp 'server-running-p)
@@ -399,6 +400,7 @@ savehist - save the minibuffer histories
 
 #+BEGIN_SRC emacs-lisp
 (use-package abbrev
+  :after company
   :defer 5
   :diminish abbrev-mode
   :straight (:type built-in)
@@ -430,17 +432,13 @@ Open compressed files on the fly
 
 **** Comint
 
+Command interpreter
+
 #+BEGIN_SRC emacs-lisp
 (use-package comint
-  :defer 2
-  :straight (:type built-in)
-  :config
-  (add-hook 'comint-output-filter-functions
-            'comint-watch-for-password-prompt)  ; hide password in shell
-  (add-hook 'comint-mode-hook
-            (function
-             (lambda () (setq comint-scroll-show-maximum-output nil))
-             )))
+  :disabled
+  :hook (comint-mode . (lambda () (setq comint-scroll-show-maximum-output nil)))
+  :straight (:type built-in))
 #+END_SRC
 
 **** delsel.el                                                     :EMACS:
@@ -449,6 +447,7 @@ delete marked text on typing
 
 #+BEGIN_SRC emacs-lisp
 (use-package delsel
+  :defer 3
   :hook (window-setup . delete-selection-mode))
 #+END_SRC
 
@@ -456,7 +455,6 @@ delete marked text on typing
 
 #+BEGIN_SRC emacs-lisp
 (use-package dired
-  :defer t
   :disabled
   :straight (:type built-in)
   :config
@@ -533,7 +531,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 
 #+BEGIN_SRC emacs-lisp
 (use-package ediff
-  :defer t
+  :commands (ediff ediff3)
   :hook (ediff-before-setup . (lambda () (setq ediff-saved-window-configuration (current-window-configuration))))
   :custom
   ;; horizontal window split
@@ -553,7 +551,6 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 
 #+BEGIN_SRC emacs-lisp
 (use-package gnutls
-  :defer t
   :config
   (setq-default gnutls-verify-error t)          ; check tls/ssl
   (cond
@@ -570,6 +567,7 @@ Code folding
 
 #+BEGIN_SRC emacs-lisp
 (use-package hideshow
+  :disabled
   :diminish hs-minor-mode
   :hook ((prog-mode) . hs-minor-mode))
 #+END_SRC
@@ -590,7 +588,6 @@ Highlight the current line
 
 #+BEGIN_SRC emacs-lisp
 (use-package imenu
-  :defer 2
   :config
   (set-default 'imenu-auto-rescan t)            ; automatic buffer rescan
   )
@@ -603,12 +600,13 @@ new line number mode since Emacs 26
 #+BEGIN_SRC emacs-lisp
 (use-package display-line-numbers
   :hook ((prog-mode org-mode text-mode) . display-line-numbers-mode)
+  :custom
+  (display-line-numbers-type 'relative)
+  (display-line-numbers-width-start t)
   :config
-  (setq display-line-numbers-width-start t)
   (set-face-foreground 'line-number "#5c5c5c")
   (set-face-background 'line-number-current-line "#000000")
-  (set-face-foreground 'line-number-current-line "#ababab")
-  )
+  (set-face-foreground 'line-number-current-line "#ababab"))
 #+END_SRC
 
 **** Makefile                                                :PROGRAMMING:
@@ -618,7 +616,6 @@ build automation
 #+BEGIN_SRC emacs-lisp
 (use-package make-mode
   ;; built-in BSDmakefile mode
-  :defer t
   :hook (makefile-bsdmake-mode . (lambda () (setq-local tab-width 4)))
   :mode (("\\Makefile\\'" . makefile-mode)
          ("\\.mk\\'"      . makefile-mode)))
@@ -660,7 +657,6 @@ Markup language often for readme
 #+BEGIN_SRC emacs-lisp
 (use-package term
   :disabled
-  :defer t
   :init
   (add-hook 'term-mode-hook
             #'(lambda ()
@@ -731,6 +727,7 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package saveplace
+  :defer 0.5
   :init (setq save-place-file (expand-file-name "saveplace" no-littering-var-directory))
   :hook (after-init . save-place-mode))
 #+END_SRC
@@ -739,6 +736,7 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package simple
+  :defer 1
   :diminish visual-line-mode
   :hook ((window-setup . visual-line-mode)      ; soft line warpping
          (window-setup . size-indication-mode)) ; show total buffer size
@@ -751,7 +749,8 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package tramp
-  :defer t
+  :after helm
+  :defer 5
   :init (autoload #'tramp-register-crypt-file-name-handler "tramp-crypt")
   :config
   (setq tramp-default-method "ssh"              ; faster than the default scp
@@ -878,6 +877,7 @@ Spacemacs dark theme
  'window-setup-hook
  #'(lambda ()
      (use-package spacemacs-common
+       :demand t
        :straight spacemacs-theme
        :init
        (custom-set-variables
@@ -985,7 +985,6 @@ Code highlighting (for now)
 
 #+BEGIN_SRC emacs-lisp
 (use-package tree-sitter
-  :defer t
   :diminish tree-sitter-mode
   :hook (((enh-ruby-mode go-mode json-mode sh-mode typescript-mode) . tree-sitter-mode)
          (tree-sitter-after-on . tree-sitter-hl-mode))
@@ -1027,10 +1026,7 @@ Code highlighting (for now)
     (delete-other-windows))
   )
 
-(use-package autorevert
-  :defer t
-  :diminish auto-revert-mode
-  )
+(use-package autorevert :diminish auto-revert-mode)
 #+END_SRC
 
 *** Web
@@ -1088,10 +1084,7 @@ web-mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package es-mode
-  :defer t
-  :config
-  (setq es-always-pretty-print t)
-  )
+  :config (setq es-always-pretty-print t))
 #+END_SRC
 
 **** js2
@@ -1217,8 +1210,7 @@ Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
 (use-package lsp-mode
-  :commands lsp lsp-deferred
-  :defer t
+  :commands (lsp lsp-deferred)
   :hook ((lsp-mode . (lambda ()
                        (let ((lsp-keymap-prefix "C-c l"))
                          #'lsp-enable-which-key-integration)))
@@ -1428,7 +1420,7 @@ Language Server Protocol
 ;    (c-set-style "intellij" t)                  ; code style
 ;    (setq c-basic-offset 2)
 ;
-;    (use-package lsp-java :defer t)             ; Java LSP
+;    (use-package lsp-java)                      ; Java LSP
 ;                                                ; check on github on how to install the server
 ;    ; set workspace
 ;    (setq lsp-java-workspace-dir (expand-file-name (concat backup-directory "jdt-workspace/"))
@@ -1663,7 +1655,6 @@ Visible bookmarks
 
 #+BEGIN_SRC emacs-lisp
 (use-package bm
-  :defer t
   :init
   (setq bm-restore-repository-on-load t)        ; restore on load
   :config
@@ -1812,7 +1803,6 @@ simple implementation of jumping to definition/source
 
 #+BEGIN_SRC emacs-lisp
 (use-package dumb-jump
-  :defer t
   :diminish dumb-jump-mode
   :hook (prog-mode . (lambda () (add-hook 'xref-backend-functions #'dumb-jump-xref-activate t)))
   :custom
@@ -1895,6 +1885,7 @@ Comment code block
 
 #+BEGIN_SRC emacs-lisp
 (use-package elfeed
+  :disabled
   :bind ("C-x w" . elfeed)
   :init (setf url-queue-timeout 30)
   :config
@@ -1952,9 +1943,7 @@ Comment code block
   :after flyspell
   :hook (flyspell-mode . flyspell-lazy-mode))
 
-(use-package flyspell-correct
-  :after flyspell
-  :defer t)                                     ; C-u/C-u C-u/C-u C-u C-u M-x flyspell-correct-wrapper
+(use-package flyspell-correct :after flyspell)  ; C-u/C-u C-u/C-u C-u C-u M-x flyspell-correct-wrapper
 
 (use-package flyspell-correct-helm
   :after flyspell-correct)
@@ -1996,6 +1985,7 @@ Show the key pressed on the modeline
 
 #+BEGIN_SRC emacs-lisp
 (use-package meow
+  :defer 0.2
   :config
   (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
   (meow-motion-overwrite-define-key
@@ -2115,8 +2105,7 @@ move where I mean
   :init (defvar treemacs-no-load-time-warnings t))
 
 (use-package treemacs-magit
-  :after treemacs magit
-  :defer t)
+  :after treemacs magit)
 
 (use-package treemacs-projectile
   :after treemacs projectile
@@ -2129,6 +2118,7 @@ move where I mean
 
 #+BEGIN_SRC emacs-lisp
 (use-package scratch-pop
+  :defer 0.1
   :init
   (setq scratch-pop-backup-directory (expand-file-name (convert-standard-filename "scratch-pop/") no-littering-var-directory))
   (add-hook 'kill-emacs-hook #'scratch-pop-backup-scratches)
@@ -2148,7 +2138,7 @@ move where I mean
                       :background "#767676" :foreground "#00cd00"
                       :weight 'bold)
   )
-(use-package smartparens-config :after smartparens :defer t :straight smartparens)
+(use-package smartparens-config :after smartparens :straight smartparens)
 #+END_SRC
 
 *** symon                                                         :MONITOR:
@@ -2198,8 +2188,7 @@ navigate into CamelCaseWords
 #+BEGIN_SRC emacs-lisp
 (use-package subword
   :diminish subword-mode
-  :hook ((prog-mode org-mode) . subword-mode)
-  )
+  :hook ((prog-mode org-mode) . subword-mode))
 #+END_SRC
 
 *** super-save                                                       :EDIT:
@@ -2208,12 +2197,11 @@ auto-save buffers
 
 #+BEGIN_SRC emacs-lisp
 (use-package super-save
-  :defer 1
+  :defer 3
   :diminish super-save-mode
   :config
   (super-save-mode +1)
-  (setq super-save-auto-save-when-idle t)
-  )
+  (setq super-save-auto-save-when-idle t))
 #+END_SRC
 
 *** switch-window                                                      :UI:
@@ -2245,7 +2233,7 @@ auto-save buffers
 
 #+BEGIN_SRC emacs-lisp
 (use-package undo-tree
-  :defer 1
+  :defer 2
   :diminish undo-tree-mode
   :config
   (global-undo-tree-mode)
@@ -2270,7 +2258,7 @@ Display the key bindings in a popup.
 
 #+BEGIN_SRC emacs-lisp
 (use-package which-key
-  :defer 1
+  :defer 2
   :diminish which-key-mode
   :custom
   (which-key-idle-delay 0.5)                    ; popup delay
@@ -2286,7 +2274,6 @@ Display the key bindings in a popup.
 
 #+BEGIN_SRC emacs-lisp
 (use-package yasnippet
-  :defer t
   :commands yas-minor-mode
   :diminish yas-minor-mode
   :custom (yas-keymap-disable-hook t)
@@ -2301,10 +2288,8 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package ztree
-  :defer t
   :config
-  (setq ztree-draw-unicode-lines t)
-  )
+  (setq ztree-draw-unicode-lines t))
 #+END_SRC
 
 *** Helm                                                             :EDIT:
@@ -2401,7 +2386,6 @@ Diff between directories
 (use-package projectile
   :bind(:map projectile-mode-map
              ("C-c p p" . projectile-command-map))
-  :defer t
   :custom
   (projectile-completion-system 'ivy)                       ; via ivy backend
   (projectile-enable-caching t)                             ; enable caching unconditionally

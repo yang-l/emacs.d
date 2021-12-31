@@ -16,7 +16,6 @@
  ("editorconfig-emacs" . "2ab86dc9a8ed7a669ca348252d4af46522b5c411")
  ("el-get" . "960f3fb962c35d3196bab20b2a3f6d6228119277")
  ("eldoc" . "2be22ded9e74a034d2fefc347d00c9419fb1de3d")
- ("elfeed" . "162d7d545ed41c27967d108c04aa31f5a61c8e16")
  ("elisp-tree-sitter" . "48b06796a3b2e76ce004972d929de38146eafaa0")
  ("emacs-ansible" . "40af0d2bbb6c5bbcf7aa9269ac9a07e22622d263")
  ("emacs-async" . "5d365ffc6a2c2041657eaa5d762c395ea748c8d7")
