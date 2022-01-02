@@ -1100,6 +1100,12 @@ web-mode
   :mode ("\\.json.erb\\'" . json-mode))
 #+END_SRC
 
+**** nix-mode
+
+#+BEGIN_SRC emacs-lisp
+(use-package nix-mode)
+#+END_SRC
+
 **** puppet-mode
 
 #+BEGIN_SRC emacs-lisp
