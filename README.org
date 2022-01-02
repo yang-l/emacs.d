@@ -749,7 +749,6 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package tramp
-  :after helm
   :defer 5
   :init (autoload #'tramp-register-crypt-file-name-handler "tramp-crypt")
   :config
