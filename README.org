@@ -44,6 +44,8 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 
 =straight.el= defined =init.el=
 
+Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package=
+
 =use-package= related =delay-hook= stuffs
 
 #+BEGIN_SRC emacs-lisp
@@ -749,7 +751,6 @@ Markup language often for readme
 
 #+BEGIN_SRC emacs-lisp
 (use-package tramp
-  :defer 5
   :init (autoload #'tramp-register-crypt-file-name-handler "tramp-crypt")
   :config
   (setq tramp-default-method "ssh"              ; faster than the default scp
