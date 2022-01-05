@@ -1731,6 +1731,7 @@ Visible bookmarks
 (use-package company-tng
   :after company
   :custom (company-selection-default nil)
+  :demand t
   :straight company-mode
   :config (company-tng-mode))
 
