@@ -981,6 +981,8 @@ Respect to the =.editorconfig= file in a project
 (use-package editorconfig :diminish editorconfig-mode :hook (prog-mode . editorconfig-mode-apply))
 #+END_SRC
 
+*** tree-sitter                                             :PARSING::CODE:
+
 Code highlighting (for now)
 
 #+BEGIN_SRC emacs-lisp
@@ -991,6 +993,19 @@ Code highlighting (for now)
   :config (add-to-list 'tree-sitter-major-mode-language-alist '(enh-ruby-mode . ruby)))
 
 (use-package tree-sitter-langs :after tree-sitter)
+#+END_SRC
+
+**** turbo-log                                                    :LOGGING:
+
+#+BEGIN_SRC emacs-lisp
+(use-package turbo-log
+  :hook (go-mode typescript-mode)
+  :straight '(turbo-log :host github
+                        :branch "master"
+                        :repo "artawower/turbo-log.el")
+  :custom
+  (turbo-log-allow-insert-without-tree-sitter-p t)
+  (turbo-log-msg-format-template "\"%s\""))
 #+END_SRC
 
 *** Git
