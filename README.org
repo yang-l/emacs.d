@@ -377,12 +377,11 @@ savehist - save the minibuffer histories
 #+BEGIN_SRC emacs-lisp
 (use-package savehist
   :defer 0.5
+  :hook (window-setup . (lambda () (savehist-mode 1)))
   :config
   (setq-default savehist-additional-variables '(kill-ring search-ring regexp-search-ring extended-command-history)
                 savehist-autosave-interval 60
-                history-length 10000)
-  (savehist-mode 1)
-  )
+                history-length 10000))
 #+END_SRC
 
 **** Create missing parent directories
@@ -553,6 +552,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 
 #+BEGIN_SRC emacs-lisp
 (use-package gnutls
+  :disabled
   :config
   (setq-default gnutls-verify-error t)          ; check tls/ssl
   (cond
@@ -590,9 +590,9 @@ Highlight the current line
 
 #+BEGIN_SRC emacs-lisp
 (use-package imenu
+  :disabled
   :config
-  (set-default 'imenu-auto-rescan t)            ; automatic buffer rescan
-  )
+  (set-default 'imenu-auto-rescan t))           ; automatic buffer rescan
 #+END_SRC
 
 **** Line Numbering
@@ -1066,8 +1066,7 @@ web-mode
 **** Groovy
 
 #+BEGIN_SRC emacs-lisp
-(use-package groovy-mode
-  :mode "\\.groovy\\'\\|\\.gradle\\'")
+(use-package groovy-mode :mode "\\.groovy\\'\\|\\.gradle\\'")
 #+END_SRC
 
 *** Infrastructure
@@ -1075,29 +1074,25 @@ web-mode
 **** ansiable
 
 #+BEGIN_SRC emacs-lisp
-(use-package ansible
-  :diminish ansible
-  :hook (yaml-mode . ansible))
+(use-package ansible :diminish ansible :hook (yaml-mode . ansible))
 #+END_SRC
 
 **** es-mode
 
 #+BEGIN_SRC emacs-lisp
-(use-package es-mode
-  :config (setq es-always-pretty-print t))
+(use-package es-mode :config (setq es-always-pretty-print t))
 #+END_SRC
 
 **** js2
 
 #+BEGIN_SRC emacs-lisp
-(use-package jinja2-mode :mode ("\\.j2" . jinja2-mode))
+(use-package jinja2-mode)
 #+END_SRC
 
 **** json                                                             :LSP:
 
 #+BEGIN_SRC emacs-lisp
-(use-package json-mode
-  :mode ("\\.json.erb\\'" . json-mode))
+(use-package json-mode :mode ("\\.json.erb\\'" . json-mode))
 #+END_SRC
 
 **** nix-mode
@@ -1109,7 +1104,7 @@ web-mode
 **** puppet-mode
 
 #+BEGIN_SRC emacs-lisp
-(use-package puppet-mode :mode ("\\.pp$" . puppet-mode))
+(use-package puppet-mode)
 #+END_SRC
 
 **** restclient
@@ -1384,8 +1379,7 @@ Language Server Protocol
 #+BEGIN_SRC emacs-lisp
 (use-package dockerfile-mode
   :mode (("\\.dockerfile\\'" . dockerfile-mode)
-         ("/Dockerfile\\(?:\\.[^/\\]*\\)?\\'" . dockerfile-mode))
-  )
+         ("/Dockerfile\\(?:\\.[^/\\]*\\)?\\'" . dockerfile-mode)))
 #+END_SRC
 
 **** Go                                                              :LSP:
@@ -1628,8 +1622,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   :hook (terraform-mode . company-mode)
   :mode "\\.tf\\(vars\\)?\\'"
   :custom
-  (terraform-indent-level 2)
-  )
+  (terraform-indent-level 2))
 
   (use-package terraform-doc :after terraform-mode)
   (use-package company-terraform :after terraform-mode)
@@ -1952,8 +1945,7 @@ Comment code block
 
 (use-package flyspell-correct :after flyspell)  ; C-u/C-u C-u/C-u C-u C-u M-x flyspell-correct-wrapper
 
-(use-package flyspell-correct-helm
-  :after flyspell-correct)
+(use-package flyspell-correct-helm :after flyspell-correct)
 #+END_SRC
 
 *** indent-guide                                                     :EDIT:
@@ -1966,6 +1958,19 @@ Comment code block
   (indent-guide-char "┊")
   (indent-guide-delay 0.3)
   :config (set-face-foreground 'indent-guide-face "lightslategrey"))
+#+END_SRC
+
+*** indent-yank                                                      :EDIT:
+
+Indent at yank/paste
+
+#+BEGIN_SRC emacs-lisp
+(use-package indent-yank
+  :defer 5
+  :hook (window-setup . indent-yank-mode)
+  :straight '(indent-yank :host github
+                          :branch "master"
+                          :repo "HuangBoHong/indent-yank"))
 #+END_SRC
 
 *** keycast                                                            :UI:
@@ -2085,7 +2090,15 @@ Show the key pressed on the modeline
         meow-use-enhanced-selection-effect t)
 
   (meow-setup-line-number)
-  (meow-global-mode 1))
+  (meow-global-mode 1)
+
+  (defun exit-meow-insert-mode ()
+      (unless (display-graphic-p)
+        (when (bound-and-true-p meow-insert-mode)
+          (meow-insert-exit))))                 ; reset back to box cursor on terminal
+
+  (add-hook 'kill-emacs-hook #'exit-meow-insert-mode)
+  (add-hook 'after-save-hook #'exit-meow-insert-mode))
 #+END_SRC
 
 *** mwim                                                             :EDIT:
@@ -2111,8 +2124,7 @@ move where I mean
          ("C-c p t M-t" . treemacs-find-tag))
   :init (defvar treemacs-no-load-time-warnings t))
 
-(use-package treemacs-magit
-  :after treemacs magit)
+(use-package treemacs-magit :after treemacs magit)
 
 (use-package treemacs-projectile
   :after treemacs projectile
@@ -2255,8 +2267,7 @@ auto-save buffers
 vim-like text folding
 
 #+BEGIN_SRC emacs-lisp
-(use-package vimish-fold
-  :commands (vimish-fold vimish-fold-delete vimish-fold-toggle))
+(use-package vimish-fold :commands (vimish-fold vimish-fold-delete vimish-fold-toggle))
 #+END_SRC
 
 *** which-key
@@ -2294,9 +2305,7 @@ Display the key bindings in a popup.
 Diff between directories
 
 #+BEGIN_SRC emacs-lisp
-(use-package ztree
-  :config
-  (setq ztree-draw-unicode-lines t))
+(use-package ztree :config (setq ztree-draw-unicode-lines t))
 #+END_SRC
 
 *** Helm                                                             :EDIT:
@@ -2314,6 +2323,7 @@ Diff between directories
          ([remap occur]           . helm-occur)         ; M-s o
          ([remap execute-extended-command] . helm-M-x)  ; M-x
          ([remap yank-pop] . helm-show-kill-ring)       ; M-y
+         ([remap imenu]           . helm-imenu)
          )
   :diminish helm-mode
   :preface (require 'helm-config)
@@ -2432,8 +2442,7 @@ Diff between directories
               ("C-c p SPC" . counsel-projectile))
   :config (counsel-projectile-mode))
 
-(use-package rg
-  :bind ("C-c p r" . rg-menu))
+(use-package rg :bind ("C-c p r" . rg-menu))
 #+END_SRC
 
 *** Org                                                               :ORG:
