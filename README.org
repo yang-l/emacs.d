@@ -1786,8 +1786,8 @@ Visible bookmarks
         "args = [\"--tsserver-path\", \"tsserver\", \"--stdio\"]\n"
         ) nil tabnine-toml-file)
     )
-  :config
-  (setq company-tabnine-max-num-results 3)
+;  :config
+;  (setq company-tabnine-max-num-results 3)
 ;  ;; https://emacs-china.org/t/tabnine/9988/50
 ;  (defadvice company-echo-show (around disable-tabnine-upgrade-message activate)
 ;    (let ((company-message-func (ad-get-arg 0)))
@@ -1952,6 +1952,13 @@ Comment code block
     (define-key flyspell-mouse-map [down-mouse-3] #'flyspell-correct-word)
     (define-key flyspell-mouse-map [mouse-3] #'undefined)
     )
+
+  (advice-add 'message :around
+              #'(lambda (old-fun format &rest args)
+                  "Supress \"Starting \"look\" process\" message from 'ispell-lookup-words'"
+                  (if (string= format "Starting \"%s\" process...")
+                      (ignore)
+                    (apply old-fun format args))))
   )
 
 (use-package flyspell-lazy
