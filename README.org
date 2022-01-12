@@ -1307,20 +1307,25 @@ Language Server Protocol
 
 (use-package lsp-ui
   :after lsp-mode yasnippet
-  :bind (:map lsp-ui-mode-map
-              ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
-              ([remap xref-find-references]  . lsp-ui-peek-find-references))
+  :bind-keymap ("C-c l" . lsp-command-map)
+  :bind ((:map lsp-ui-mode-map
+               ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
+               ([remap xref-find-references]  . lsp-ui-peek-find-references))
+         (:map lsp-command-map
+               ("d f" . lsp-ui-doc-focus-frame) ; keyboard scrolling in the lsp-ui-doc popup frame, and graphic display only
+               ("d u" . lsp-ui-doc-unfocus-frame)))
   :commands lsp-ui-mode
   :hook ((lsp-mode . lsp-ui-mode)
          (lsp-ui-mode . yas-minor-mode))
   :custom
   (lsp-ui-doc-delay 1.5)
+  (lsp-ui-doc-header t)
   (lsp-ui-doc-include-signature t)
+  (lsp-ui-doc-show-with-cursor t)
   (lsp-ui-doc-position 'bottom)
   (lsp-ui-sideline-show-hover t)
   (lsp-ui-sideline-ignore-duplicate t)
-  (lsp-ui-flycheck-list-position 'right)
-  )
+  (lsp-ui-flycheck-list-position 'right))
 
 (use-package lsp-ui-flycheck :after lsp-ui :defer 2 :straight lsp-ui)
 (use-package lsp-ui-imenu :after lsp-ui :defer 2 :straight lsp-ui)
@@ -2151,7 +2156,7 @@ move where I mean
 (use-package treemacs-projectile
   :after treemacs projectile
   :bind ((:map projectile-mode-map
-             ("C-c p p" . projectile-command-map))
+               ("C-c p p" . projectile-command-map))
          ("C-c p t p" . treemacs-projectile)))
 #+END_SRC
 
