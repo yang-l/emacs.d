@@ -2120,12 +2120,14 @@ Show the key pressed on the modeline
   (meow-global-mode 1)
 
   (defun exit-meow-insert-mode ()
-      (unless (display-graphic-p)
-        (when (bound-and-true-p meow-insert-mode)
-          (meow-insert-exit))))                 ; reset back to box cursor on terminal
-
-  (add-hook 'kill-emacs-hook #'exit-meow-insert-mode)
-  (add-hook 'after-save-hook #'exit-meow-insert-mode))
+    "Reset back to box cursor on terminal"
+    (unless (display-graphic-p)
+      (when (bound-and-true-p meow-insert-mode)
+        (meow-insert-exit))))
+  (advice-add #'save-buffers-kill-terminal
+              :before
+              (lambda (func &rest args)
+                (exit-meow-insert-mode))))
 #+END_SRC
 
 *** mwim                                                             :EDIT:
