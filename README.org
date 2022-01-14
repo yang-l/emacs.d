@@ -999,7 +999,7 @@ Code highlighting (for now)
 
 #+BEGIN_SRC emacs-lisp
 (use-package turbo-log
-  :hook (go-mode typescript-mode)
+  :after (:any go-mode typescript-mode)
   :straight '(turbo-log :host github
                         :branch "master"
                         :repo "artawower/turbo-log.el")
@@ -1234,6 +1234,7 @@ Language Server Protocol
          (dockerfile-mode . lsp-deferred)
          (enh-ruby-mode . lsp-deferred)
          (go-mode . lsp-deferred)
+         (js2-mode . lsp-deferred)
          (json-mode . lsp-deferred)
          (python-mode . lsp-deferred)
          (sh-mode . lsp-deferred)
@@ -1463,34 +1464,20 @@ Language Server Protocol
 ;(add-hook 'java-mode-hook #'modes/java-mode t)
 #+END_SRC
 
-**** JavaScript
+**** JavaScript                                                      :LSP:
 
 #+BEGIN_SRC emacs-lisp
-;(use-package js2-mode
-;  :interpreter ("node" . js2-mode)
-;  :mode (("\\.js\\'" . js2-mode))
-;  :config
-;  (add-hook 'js2-mode-hook
-;    #'(lambda ()
-;        (setq js2-basic-offset 2
-;              js2-bounce-indent-p t
-;              js2-strict-missing-semi-warning nil
-;              js2-concat-multiline-strings nil
-;              js2-include-node-externs t
-;              js2-skip-preprocessor-directives t
-;              js2-strict-inconsistent-return-warning nil)
-;
-;        (create-virtualenv "venv-lsp-js/"       ; js lsp venv folder
-;                           "bin/venv-nodejs-npm.sh"
-;                           "python3"
-;                           "bin/nodejs-pip-requirements.txt"
-;                           "12.7.0"
-;                           "typescript-language-server,typescript")
-;
-;        (require 'lsp-clients)
-;        (lsp)
-;        ) t)
-;  )
+(use-package js2-mode
+  :interpreter "node"
+  :mode (("\\.js\\'" . js2-mode))
+  :custom
+  (js2-basic-offset 2)
+  (js2-bounce-indent-p t)
+  (js2-strict-missing-semi-warning nil)
+  (js2-concat-multiline-strings nil)
+  (js2-include-node-externs t)
+  (js2-skip-preprocessor-directives t)
+  (js2-strict-inconsistent-return-warning nil))
 #+END_SRC
 
 **** Powershell
@@ -1653,6 +1640,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
 #+BEGIN_SRC emacs-lisp
 (use-package typescript-mode
   :interpreter "node"
+  :hook (typescript-mode . js2-minor-mode)
   :mode ("\\.tsx\\'" . typescript-mode))
 #+END_SRC
 
@@ -1712,7 +1700,7 @@ Visible bookmarks
    (quote
     (not eshell-mode)
     ))
-  (company-idle-delay 0.07)                     ; delay before autocompletion popup shows
+  (company-idle-delay 0.02)                     ; delay before autocompletion popup shows
   (company-minimum-prefix-length 2)
   (company-require-match 'never)
   (company-selection-wrap-around t)             ; loop over candidates

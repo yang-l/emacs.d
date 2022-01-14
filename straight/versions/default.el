@@ -47,6 +47,7 @@
  ("inf-ruby" . "2fae1a8ba9e7f4fa87b468f90bea3d11d3a7c387")
  ("ivy-yasnippet" . "83402d91b4eba5307f71884a72df8e11cc6a994e")
  ("jinja2-mode" . "ecd19a40b7832bb00f0a2244e3b0713d0bf3850d")
+ ("js2-mode" . "997cac4c80a03062145b541b006c51cc91ee0c24")
  ("json-mode" . "eedb4560034f795a7950fa07016bd4347c368873")
  ("json-snatcher" . "b28d1c0670636da6db508d03872d96ffddbc10f2")
  ("keycast" . "bafde6f35c725d93bebe7bf45895e284602e5d2d")
