@@ -52,18 +52,11 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
 ;; https://github.com/jwiegley/use-package/issues/889
 ;; https://github.com/Ergus/EmacsConfig/blob/master/early-init.el
 (defvar lo/gc-cons-default (* 1024 1024 32))
-(defvar lo/gc-cons-lsp (* 1024 1024 256))
+(defvar lo/gc-cons-lsp (* 1024 1024 128))
 
 (defsubst lo/unset-gc ()
   "Defer garbage collection"
   (setq gc-cons-threshold most-positive-fixnum))
-
-(defsubst lo/set-gc (&optional gc-value)
-  "Set garbage collection"
-  (unless gc-value (setq gc-value lo/gc-cons-default))
-  (unless (= gc-cons-threshold lo/gc-cons-lsp)
-    (setq gc-cons-threshold gc-value)           ; reset GC to a reasonable value
-    (message "Set `gc-cons-threshold' value to %S" gc-cons-threshold)))
 
 (defmacro lo/gen-delay-hook (mode-name)
   "Generate delayed hook For MODE-NAME."
@@ -80,13 +73,20 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
                       (with-current-buffer buf
                         (message "Running delay hook for [%s]: %s" `,mode-name ,delayhook)
                         (lo/unset-gc)
-                        (run-hooks ',delayhook)
-                        (lo/set-gc))))
+                        (run-hooks ',delayhook))))
           (current-buffer)))
        (add-hook ',modehook (function ,funame)))))
 
 (lo/gen-delay-hook prog-mode)
 (lo/gen-delay-hook text-mode)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(use-package gcmh
+  :defer 3
+  :diminish gcmh-mode
+  :demand t
+  :config (gcmh-mode 1))
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -306,7 +306,7 @@ OSX-only key bindings
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
-(run-with-idle-timer 2 nil #'(lambda () (lo/set-gc))); https://www.reddit.com/r/emacs/comments/3kqt6e/2_easy_little_known_steps_to_speed_up_emacs_start/
+(run-with-idle-timer 2 nil #'(lambda () (with-eval-after-load `gcmh (setq gcmh-high-cons-threshold lo/gc-cons-default))))    ; https://www.reddit.com/r/emacs/comments/3kqt6e/2_easy_little_known_steps_to_speed_up_emacs_start/
 
 ; https://emacs.stackexchange.com/questions/32150/how-to-add-a-timestamp-to-each-entry-in-emacs-messages-buffer
 (advice-add 'message :before                    ; add timestamp in *Messages* buffer
@@ -1261,7 +1261,8 @@ Language Server Protocol
   (with-eval-after-load `lsp-mode
     (run-with-idle-timer
      5 nil #'(lambda ()
-               (lo/set-gc lo/gc-cons-lsp)       ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
+               (with-eval-after-load `gcmh
+                 (setq gcmh-high-cons-threshold lo/gc-cons-lsp))    ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
                (setq read-process-output-max (* 1024 1024 4)))))
 
   (when (derived-mode-p 'enh-ruby-mode)
