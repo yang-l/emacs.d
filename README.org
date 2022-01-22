@@ -260,8 +260,14 @@ OSX-only key bindings
         (if (fboundp 'tooltip-mode)
             (tooltip-mode -1))
         (when (fboundp                          ; windmove
-            'windmove-default-keybindings)
-            (windmove-default-keybindings))
+               'windmove-default-keybindings)
+          (windmove-default-keybindings)
+          (with-eval-after-load `switch-window
+            (advice-add #'windmove-do-window-select
+                        :after
+                        #'(lambda (&rest args)
+                            "Auto-reszie the window size"
+                            (switch-window--auto-resize-window)))))
         (setq eval-expression-print-length nil  ; do not truncate output in the echo area
               message-log-max 10000             ; increase number of lines in *Messages*
               use-dialog-box nil)               ; disable usage of dialog box, and in echo area instead
@@ -1251,7 +1257,7 @@ Language Server Protocol
                          lsp-solargraph))
   (lsp-clients-typescript-server-args '("--stdio" "--tsserver-log-file" "/dev/stderr"))     ; no more .log/tsserver.log files on project
   (lsp-completion-provider :none)               ; handled by company already
-  (lsp-idle-delay 0.2)
+  (lsp-idle-delay 0.3)
   (lsp-log-io nil)
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 3)
