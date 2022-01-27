@@ -623,8 +623,6 @@ build automation
 
 #+BEGIN_SRC emacs-lisp
 (use-package make-mode
-  ;; built-in BSDmakefile mode
-  :hook (makefile-bsdmake-mode . (lambda () (setq-local tab-width 4)))
   :mode (("\\Makefile\\'" . makefile-mode)
          ("\\.mk\\'"      . makefile-mode)))
 #+END_SRC
