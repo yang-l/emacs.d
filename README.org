@@ -1587,7 +1587,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
   )
 
-(use-package dap-python :after python-mode dap-mode :defer 2 :straight dap-mode)   ; lsp debugger
+(use-package dap-python :disabled :after python-mode dap-mode :defer 2 :straight dap-mode)    ; lsp debugger
 #+END_SRC
 
 **** Ruby                                                            :LSP:
@@ -1744,48 +1744,50 @@ Visible bookmarks
   :config (company-tng-mode))
 
 (use-package company-tabnine
+  :disabled
   :after company
   :commands company-tabnine
+  :hook (kill-emacs . company-tabnine-kill-process)
   :init
   (make-local-variable 'company-backends)
   (setq company-backends (delete '(company-capf company-yasnippet) company-backends))
   (add-to-list 'company-backends '(:separate company-tabnine company-capf :with company-yasnippet))
-  ;; dynamicly create TabNine.toml file
-  ;; to enable sem for each language by typing "TabNine::sem" once opened the mode
-  (when (eq system-type 'darwin)
-    (defvar tabnine-directory (expand-file-name "~/Library/Preferences/TabNine/"))
-    (if (not (file-exists-p tabnine-directory))
-        (make-directory tabnine-directory t))
-    (setq tabnine-toml-file (expand-file-name "TabNine.toml" tabnine-directory))
-    )
-  (if (not (file-exists-p tabnine-toml-file))
-      (write-region
-       (concat
-        "[language.bash]\n"
-        "command = \"bash-language-server\"\n"
-        "args = [\"start\"]\n"
-        "[language.dockerfile]\n"
-        "command = \"docker-langserver\"\n"
-        "args = [\"--stdio\"]\n"
-        "[language.go]\n"
-        "command = \"gopls\"\n"
-        "args = [\"serve\"]\n"
-        "synchronous_timeout_ms = 100\n"
-        "[language.javascript]\n"
-        "command = \"typescript-language-server\"\n"
-        "args = [\"--stdio\"]\n"
-        "always_prefer = false\n"
-        "[language.python]\n"
-        "command = \"pylsp\"\n"
-        "synchronous_timeout_ms = 100\n"
-        "[language.ruby]\n"
-        "command = \"solargraph\"\n"
-        "args = [\"stdio\"]\n"
-        "[language.typescript]\n"
-        "command = \"typescript-language-server\"\n"
-        "args = [\"--tsserver-path\", \"tsserver\", \"--stdio\"]\n"
-        ) nil tabnine-toml-file)
-    )
+;  ;; dynamicly create TabNine.toml file
+;  ;; to enable sem for each language by typing "TabNine::sem" once opened the mode
+;  (when (eq system-type 'darwin)
+;    (defvar tabnine-directory (expand-file-name "~/Library/Preferences/TabNine/"))
+;    (if (not (file-exists-p tabnine-directory))
+;        (make-directory tabnine-directory t))
+;    (setq tabnine-toml-file (expand-file-name "TabNine.toml" tabnine-directory))
+;    )
+;  (if (not (file-exists-p tabnine-toml-file))
+;      (write-region
+;       (concat
+;        "[language.bash]\n"
+;        "command = \"bash-language-server\"\n"
+;        "args = [\"start\"]\n"
+;        "[language.dockerfile]\n"
+;        "command = \"docker-langserver\"\n"
+;        "args = [\"--stdio\"]\n"
+;        "[language.go]\n"
+;        "command = \"gopls\"\n"
+;        "args = [\"serve\"]\n"
+;        "synchronous_timeout_ms = 100\n"
+;        "[language.javascript]\n"
+;        "command = \"typescript-language-server\"\n"
+;        "args = [\"--stdio\"]\n"
+;        "always_prefer = false\n"
+;        "[language.python]\n"
+;        "command = \"pylsp\"\n"
+;        "synchronous_timeout_ms = 100\n"
+;        "[language.ruby]\n"
+;        "command = \"solargraph\"\n"
+;        "args = [\"stdio\"]\n"
+;        "[language.typescript]\n"
+;        "command = \"typescript-language-server\"\n"
+;        "args = [\"--tsserver-path\", \"tsserver\", \"--stdio\"]\n"
+;        ) nil tabnine-toml-file)
+;    )
 ;  :config
 ;  (setq company-tabnine-max-num-results 3)
 ;  ;; https://emacs-china.org/t/tabnine/9988/50
@@ -1988,6 +1990,7 @@ Indent at yank/paste
 
 #+BEGIN_SRC emacs-lisp
 (use-package indent-yank
+  :disabled
   :defer 5
   :hook (window-setup . indent-yank-mode)
   :straight '(indent-yank :host github
