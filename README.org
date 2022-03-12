@@ -157,6 +157,7 @@ Configuration for =use-package=. The packages below should be loaded first befor
     visible-bell 1                              ; no bell in windows
     window-combination-resize t                 ; split windows equally
     x-stretch-cursor t                          ; stretch cursor to cover wide characters
+    vc-follow-symlinks t                        ; visiting a symbolic link to a file under version control
     )
 (defalias 'dabbrev-expand 'hippie-expand)
 (fset 'yes-or-no-p 'y-or-n-p)                   ; fast confirmation
@@ -1020,10 +1021,12 @@ Code highlighting (for now)
 (use-package git-gutter
   :diminish git-gutter-mode
   :hook ((prog-mode org-mode) . git-gutter-mode)
+  :custom
+  (git-gutter:update-interval 0.02)
   :config
   (custom-set-variables                         ; backend
    '(git-gutter:handled-backends
-     (quote (git svn))))
+     (quote (git))))
   )
 #+END_SRC
 
@@ -1328,9 +1331,11 @@ Language Server Protocol
   (lsp-ui-doc-header t)
   (lsp-ui-doc-include-signature t)
   (lsp-ui-doc-show-with-cursor t)
-  (lsp-ui-doc-position 'bottom)
-  (lsp-ui-sideline-show-hover t)
+  (lsp-eldoc-enable-hover nil)
+  (lsp-modeline-code-actions-enable nil)
   (lsp-ui-sideline-ignore-duplicate t)
+  (lsp-ui-sideline-show-code-actions t)
+  (lsp-ui-sideline-show-hover t)
   (lsp-ui-flycheck-list-position 'right))
 
 (use-package lsp-ui-flycheck :after lsp-ui :defer 2 :straight lsp-ui)
@@ -1719,8 +1724,8 @@ Visible bookmarks
   (company-tooltip-limit 10)                    ; popup window size
   (company-backends                             ; default backends
    (quote
-    ((company-capf
-      company-yasnippet)
+    ((:separate company-capf
+      :with company-yasnippet)
      (company-dabbrev-code
       company-ispell)
      (company-files                             ; files & directory
@@ -1748,7 +1753,7 @@ Visible bookmarks
   :hook (kill-emacs . company-tabnine-kill-process)
   :init
   (make-local-variable 'company-backends)
-  (setq company-backends (delete '(company-capf company-yasnippet) company-backends))
+  (setq company-backends (delete '(:separate company-capf :with company-yasnippet) company-backends))
   (add-to-list 'company-backends '(:separate company-tabnine company-capf :with company-yasnippet))
 ;  ;; dynamicly create TabNine.toml file
 ;  ;; to enable sem for each language by typing "TabNine::sem" once opened the mode
@@ -2153,9 +2158,7 @@ move where I mean
 
 (use-package treemacs-projectile
   :after treemacs projectile
-  :bind ((:map projectile-mode-map
-               ("C-c p p" . projectile-command-map))
-         ("C-c p t p" . treemacs-projectile)))
+  :bind ("C-c p t p" . treemacs-projectile))
 #+END_SRC
 
 *** scratch-pop                                                      :EDIT:
