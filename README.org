@@ -974,8 +974,7 @@ Spacemacs dark theme
     ; (c-add-style "intellij" intellij-java-style)
     )
 (add-hook 'prog-mode-hook 'modes/prog-mode)
-(add-hook 'before-save-hook                     ; remove trailing whitespace
-    'delete-trailing-whitespace)
+(add-hook 'before-save-hook #'delete-trailing-whitespace)   ; remove trailing whitespace
 
 (use-package quickrun :commands (quickrun quickrun-region quickrun-shell))
 #+END_SRC
@@ -1147,7 +1146,7 @@ Explore and test HTTP REST webservices
   )
 #+END_SRC
 
-**** yaml
+**** yaml                                                            :LSP:
 
 #+BEGIN_SRC emacs-lisp
 (use-package yaml-mode
@@ -1246,7 +1245,8 @@ Language Server Protocol
          (python-mode . lsp-deferred)
          (sh-mode . lsp-deferred)
          (terraform-mode . lsp-deferred)
-         (typescript-mode . lsp-deferred))
+         (typescript-mode . lsp-deferred)
+         (yaml-mode . lsp-deferred))
   :custom
   (lsp-auto-guess-root t)
   (lsp-client-packages '(lsp-bash
@@ -1255,7 +1255,8 @@ Language Server Protocol
                          lsp-javascript
                          lsp-json
                          lsp-pylsp
-                         lsp-solargraph))
+                         lsp-solargraph
+                         lsp-yaml))
   (lsp-clients-typescript-server-args '("--stdio" "--tsserver-log-file" "/dev/stderr"))     ; no more .log/tsserver.log files on project
   (lsp-completion-provider :none)               ; handled by company already
   (lsp-idle-delay 0.3)
@@ -1420,18 +1421,12 @@ Language Server Protocol
   :if (executable-find "go")
   :hook
   ((go-mode . (lambda ()
-                (when (executable-find "goimports") ; use goimports instead of gofmt
-                  (setq gofmt-command "goimports"))
+                (add-hook 'before-save-hook #'(lambda ()
+                                                (lsp-format-buffer)
+                                                (lsp-organize-imports)))
 
                 (unless (file-exists-p (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/go.mod"))
-                  (setenv "GO111MODULE" "off"))     ; turn off for one-off file
-
-                ;; for lsp
-                (when (not (executable-find (expand-file-name "~/.asdf/shims/ims/gopls")))
-                  (shell-command "go install golang.org/x/tools/gopls@latest"))
-                (when (not (executable-find (expand-file-name "~/.asdf/shims/goimports")))
-                  (shell-command "go install golang.org/x/tools/cmd/goimports@latest"))))
-   (before-save . gofmt-before-save)))
+                  (setenv "GO111MODULE" "off"))))))     ; turn off for one-off file
 
 (use-package gotest
   :after go-mode
@@ -1590,7 +1585,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
   )
 
-(use-package dap-python :disabled :after python-mode dap-mode :defer 2 :straight dap-mode)    ; lsp debugger
+(use-package dap-python :disabled :after python-mode dap-mode :custom (dap-python-debugger 'debugpy) :defer 2 :straight dap-mode)    ; lsp debugger
 #+END_SRC
 
 **** Ruby                                                            :LSP:
@@ -2188,6 +2183,12 @@ move where I mean
 (use-package smartparens-config :after smartparens :straight smartparens)
 #+END_SRC
 
+*** so-long                                                          :EDIT:
+
+#+BEGIN_SRC emacs-lisp
+(use-package so-long :hook (after-init-hook . global-so-long-mode))
+#+END_SRC
+
 *** symon                                                         :MONITOR:
 
 Tiny system monitor
@@ -2274,6 +2275,22 @@ auto-save buffers
   (switch-window-preferred 'helm)
   (switch-window-shortcut-appearance 'asciiart)
   (switch-window-shortcut-style 'qwerty))
+#+END_SRC
+
+*** symbol-overlay                                                     :UI:
+
+#+BEGIN_SRC emacs-lisp
+(use-package symbol-overlay
+  :commands (symbol-overlay-put
+             symbol-overlay-jump-prev
+             symbol-overlay-jump-next
+             symbol-overlay-switch-backward
+             symbol-overlay-switch-forward
+             symbol-overlay-remove-all)
+  :custom (symbol-overlay-idle-time 0.1)
+  :custom-face (symbol-overlay-default-face ((t (:inherit (region bold)))))
+  :diminish
+  :hook ((prog-mode org-mode) . symbol-overlay-mode))
 #+END_SRC
 
 *** undo-tree                                                        :EDIT:
