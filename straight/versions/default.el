@@ -66,6 +66,7 @@
  ("popup-el" . "e112ef1cc6c86151ea97a0bad49026fbbacc768c")
  ("posframe" . "c91d4d53fa479ceb604071008ce0a901770eff57")
  ("projectile" . "3c07cca10713e8212442143b6999a96ca32b68ac")
+ ("puni" . "e6681214afc6b5ae06e4813492633bb4ad9b2b1b")
  ("puppet-mode" . "71bcd383f20a457e8ad34e0e08ec47f8e1b64263")
  ("queue" . "130c2d656cd5d7376552272fab9e50a7c37d0c4a")
  ("quickrun" . "c680f5137c49e352ff3779f9c82a3f1bd4a2d9b6")

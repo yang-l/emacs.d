@@ -1095,7 +1095,7 @@ web-mode
 **** ansiable
 
 #+BEGIN_SRC emacs-lisp
-(use-package ansible :diminish ansible :hook (yaml-mode . ansible))
+(use-package ansible :disabled :diminish ansible :hook (yaml-mode . ansible))
 #+END_SRC
 
 **** es-mode
@@ -1107,7 +1107,7 @@ web-mode
 **** js2
 
 #+BEGIN_SRC emacs-lisp
-(use-package jinja2-mode)
+(use-package jinja2-mode :disabled)
 #+END_SRC
 
 **** json                                                             :LSP:
@@ -1263,6 +1263,7 @@ Language Server Protocol
   (lsp-log-io nil)
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 3)
+  (lsp-yaml-schema-store-local-db (expand-file-name (convert-standard-filename "lsp/lsp-yaml-schemas.json") no-littering-var-directory))    ; lsp-yaml
   :config
   (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
 
@@ -1508,6 +1509,7 @@ Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
 (use-package python
+  :disabled
   :if (executable-find "python3")
   :interpreter ("python" . python-mode)
   :mode ("\\.wsgi$" . python-mode)
@@ -2023,14 +2025,10 @@ Show the key pressed on the modeline
   :defer 0.2
   :config
   (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
-  (meow-motion-overwrite-define-key
-   '("j" . meow-next)
-   '("k" . meow-prev)
-   '("<escape>" . ignore))
   (meow-leader-define-key
-   ;; SPC j/k will run the original command in MOTION state.
-   '("j" . "H-j")
-   '("k" . "H-k")
+   '("e" . "C-x C-e") ; eval-last-sexp
+   '("," . xref-pop-marker-stack)
+   '("." . xref-find-definitions)
    ;; Use SPC (0-9) for digit arguments.
    '("1" . meow-digit-argument)
    '("2" . meow-digit-argument)
@@ -2137,6 +2135,23 @@ move where I mean
   :commands (mwim-beginning-of-code-or-line-or-comment mwim-end-of-code-or-line))
 #+END_SRC
 
+*** puni                                                             :EDIT:
+
+#+BEGIN_SRC emacs-lisp
+(use-package puni :init (puni-global-mode))
+
+(use-package elec-pair :hook (after-init . electric-pair-mode))
+(use-package paren
+  :custom
+  (show-paren-delay 0.03)
+  (show-paren-style 'mixed)
+  (show-paren-when-point-inside-paren t)
+  :hook (after-init . show-paren-mode)
+  :init
+  (custom-set-faces
+   '(show-paren-match ((nil (:background "#767676" :foreground "#00cd00" :weight extra-bold))))))
+#+END_SRC
+
 *** Treemacs                                                         :EDIT:
 
 #+BEGIN_SRC emacs-lisp
@@ -2165,22 +2180,6 @@ move where I mean
   (setq scratch-pop-backup-directory (expand-file-name (convert-standard-filename "scratch-pop/") no-littering-var-directory))
   (add-hook 'kill-emacs-hook #'scratch-pop-backup-scratches)
   )
-#+END_SRC
-
-*** smartparens                                                      :EDIT:
-
-#+BEGIN_SRC emacs-lisp
-(use-package smartparens
-  :diminish smartparens-mode
-  :hook (((prog-mode org-mode) . smartparens-mode)
-         ((prog-mode org-mode) . show-smartparens-mode))
-  :config
-  (setq sp-show-pair-from-inside t)             ; shown inside the matching paren delimiter
-  (set-face-attribute 'sp-show-pair-match-face nil
-                      :background "#767676" :foreground "#00cd00"
-                      :weight 'bold)
-  )
-(use-package smartparens-config :after smartparens :straight smartparens)
 #+END_SRC
 
 *** so-long                                                          :EDIT:
