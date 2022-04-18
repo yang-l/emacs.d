@@ -659,23 +659,9 @@ Markup language often for readme
 (with-eval-after-load `shell (setq-default shell-dirtrackp nil)); disable global 'shell-dirtrack-mode'
 #+END_SRC
 
-***** term
+***** vterm                                                    :TERMINAL:
 
-#+BEGIN_SRC emacs-lisp
-(use-package term
-  :disabled
-  :init
-  (add-hook 'term-mode-hook
-            #'(lambda ()
-                "term mode hook"
-                (yas-minor-mode -1)
-                (setq bidi-paragraph-direction 'left-to-right
-                      term-scroll-to-bottom-on-output t)
-                (setq-local scroll-margin 0)
-                ))
-  )
-#+END_SRC
-***** vterm
+Terminal emulator inside Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package vterm)
