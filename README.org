@@ -675,61 +675,6 @@ Markup language often for readme
                 ))
   )
 #+END_SRC
-
-***** multi-term
-
-#+BEGIN_SRC emacs-lisp
-(use-package multi-term
-  :disabled
-  :bind ("C-c t m" . (lambda ()
-                       "Start a new multi-term"
-                       (interactive)
-                       (multi-term)
-                       (term-send-raw-string ". ~/.bash_profile\nclear\n")
-                       ))
-  :config
-  (setq multi-term-program "/bin/bash"          ; bash
-        multi-term-program-switches "-il"       ; FIXME - this switch does not work with any space characters in it. Set to interactive login shell, which will read "~/.bash_profile" and source the bashrc file
-        multi-term-buffer-name "mterm"          ; buffer name
-        term-buffer-maximum-size 0              ; keep all buffer
-        multi-term-dedicated-close-back-to-open-buffer-p t
-        )
-  (setq-local scroll-margin 0)                  ; always make point visible at bottom of the window when auto-scrolling
-  (add-to-list 'term-bind-key-alist '("M-[" . multi-term-prev))
-  (add-to-list 'term-bind-key-alist '("M-]" . multi-term-next))
-  (add-to-list 'term-bind-key-alist '("C-c t h" .
-                                      (lambda ()
-                                        "New terminal to the right"
-                                        (interactive)
-                                        (split-window-horizontally)
-                                        (other-window 1)
-                                        (multi-term)
-                                        (term-send-raw-string ". ~/.bash_profile\nclear\n")
-                                        )))
-  (add-to-list 'term-bind-key-alist '("C-c t v" .
-                                      (lambda ()
-                                        "New terminal to the below"
-                                        (interactive)
-                                        (split-window-vertically)
-                                        (other-window 1)
-                                        (multi-term)
-                                        (term-send-raw-string ". ~/.bash_profile\nclear\n")
-                                        )))
-  (add-to-list 'term-bind-key-alist '("C-c t x" .
-                                      (lambda ()
-                                        "Send C-x in term mode."
-                                        (interactive)
-                                        (term-send-raw-string "\C-x")
-                                        )))
-  (add-to-list 'term-bind-key-alist '("C-c t e" .
-                                      (lambda ()
-                                        "Send escape in term mode."
-                                        (interactive)
-                                        (term-send-raw-string "\e")
-                                        )))
-  )
-#+END_SRC
-
 ***** vterm
 
 #+BEGIN_SRC emacs-lisp
