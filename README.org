@@ -2158,49 +2158,6 @@ move where I mean
 (use-package so-long :hook (after-init-hook . global-so-long-mode))
 #+END_SRC
 
-*** symon                                               :DISABLED::MONITOR:
-
-Tiny system monitor
-
-Replaced by Tmux plugins
-
-#+BEGIN_SRC emacs-lisp
-(use-package symon
-  :disabled
-  :defer 3
-  :config
-  (setq symon-sparkline-type 'bounded)
-  (define-symon-monitor symon-current-date-time-monitor
-    :interval 5
-    :display (propertize
-              (format-time-string "%k:%M %:z %d %b %Y %a      ")
-              'face 'font-lock-type-face))
-  (setq symon-monitors
-        (cond ((memq system-type '(gnu/linux cygwin))
-               '(symon-current-date-time-monitor
-                 symon-linux-memory-monitor
-                 symon-linux-cpu-monitor
-                 symon-linux-network-rx-monitor
-                 symon-linux-network-tx-monitor
-                 symon-linux-battery-monitor))
-              ((memq system-type '(darwin))
-               '(symon-current-date-time-monitor
-                 symon-darwin-memory-monitor
-                 symon-darwin-cpu-monitor
-                 symon-darwin-network-rx-monitor
-                 symon-darwin-network-tx-monitor
-                 symon-darwin-battery-monitor))
-              ((memq system-type '(windows-nt))
-               '(symon-current-date-time-monitor
-                 symon-windows-memory-monitor
-                 symon-windows-cpu-monitor
-                 symon-windows-network-rx-monitor
-                 symon-windows-network-tx-monitor
-                 symon-windows-battery-monitor))))
-  (symon-mode)
-  )
-#+END_SRC
-
 *** subword                                                          :EDIT:
 
 navigate into CamelCaseWords
