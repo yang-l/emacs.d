@@ -12,8 +12,8 @@
 
 (when (and (fboundp 'native-comp-available)
         (native-comp-available))
-  (when (boundp 'comp-deferred-compilation)
-    (setq comp-deferred-compilation t)))        ; native-comp
+  (when (boundp 'native-comp-deferred-compilation)
+    (setq native-comp-deferred-compilation t))) ; native-comp
 
 ; disable at the earliest stage
 (setq tool-bar-mode   nil

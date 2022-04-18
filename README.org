@@ -58,27 +58,27 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
   "Defer garbage collection"
   (setq gc-cons-threshold most-positive-fixnum))
 
-(defmacro lo/gen-delay-hook (mode-name)
-  "Generate delayed hook For MODE-NAME."
-  (let ((funame (intern (format "lo/%s-hook" mode-name)))
-        (delayhook (intern (format "%s-delay-hook" mode-name)))
-        (modehook (intern (format "%s-hook" mode-name))))
-    `(progn
-       (defvar ,delayhook nil)
-       (defun ,funame ()
-         ,(format "Delayed hook for %s." mode-name)
-         (run-with-idle-timer
-          0.5 nil (lambda (buf)
-                    (when (buffer-live-p buf)
-                      (with-current-buffer buf
-                        (message "Running delay hook for [%s]: %s" `,mode-name ,delayhook)
-                        (lo/unset-gc)
-                        (run-hooks ',delayhook))))
-          (current-buffer)))
-       (add-hook ',modehook (function ,funame)))))
-
-(lo/gen-delay-hook prog-mode)
-(lo/gen-delay-hook text-mode)
+; (defmacro lo/gen-delay-hook (mode-name)
+;   "Generate delayed hook For MODE-NAME."
+;   (let ((funame (intern (format "lo/%s-hook" mode-name)))
+;         (delayhook (intern (format "%s-delay-hook" mode-name)))
+;         (modehook (intern (format "%s-hook" mode-name))))
+;     `(progn
+;        (defvar ,delayhook nil)
+;        (defun ,funame ()
+;          ,(format "Delayed hook for %s." mode-name)
+;          (run-with-idle-timer
+;           0.5 nil (lambda (buf)
+;                     (when (buffer-live-p buf)
+;                       (with-current-buffer buf
+;                         (message "Running delay hook for [%s]: %s" `,mode-name ,delayhook)
+;                         (lo/unset-gc)
+;                         (run-hooks ',delayhook))))
+;           (current-buffer)))
+;        (add-hook ',modehook (function ,funame)))))
+;
+; (lo/gen-delay-hook prog-mode)
+; (lo/gen-delay-hook text-mode)
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -730,6 +730,19 @@ Markup language often for readme
   )
 #+END_SRC
 
+***** vterm
+
+#+BEGIN_SRC emacs-lisp
+(use-package vterm)
+
+(use-package vterm-toggle
+  :custom
+  (vterm-toggle-scope 'project)
+  (vterm-toggle-hide-method 'reset-window-configration)
+  :hook
+  (vterm-toggle-show . meow-insert-mode))
+#+END_SRC
+
 **** saveplace                                                     :EMACS:
 
 #+BEGIN_SRC emacs-lisp
@@ -1367,7 +1380,16 @@ Language Server Protocol
   (lsp-treemacs-sync-mode t)
   )
 
-(use-package dap-mode :after lsp-mode lsp-modeline :commands dap-ui-mode)
+(use-package dap-mode
+  :after lsp-mode lsp-modeline
+  :hook (typescript-mode)
+  :init
+  (unless (display-graphic-p)
+    (custom-set-faces
+     '(dap-ui-marker-face ((t (:background "color-166"))))
+     '(dap-ui-pending-breakpoint-face ((t (:background "blue" :underline "dim gray"))))
+     '(dap-ui-verified-breakpoint-face ((t (:background "green" :underline "green")))))
+    ))
 #+END_SRC
 
 **** Bash                                                            :LSP:
@@ -1649,6 +1671,20 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   :interpreter "node"
   :hook (typescript-mode . js2-minor-mode)
   :mode ("\\.tsx\\'" . typescript-mode))
+
+(use-package dap-node
+  :after typescript-mode dap-mode
+  :defer 2
+  :straight dap-mode
+  :config
+  (dap-register-debug-template "Node::Run TypeScript Template"
+                               (list :type "node"
+                                     :request "launch"
+                                     :name "Node::Run TypeScript Template"
+                                     :program (expand-file-name (convert-standard-filename "extension/out/src/nodeDebug.js") dap-node-debug-path)
+                                     :cwd "${workspaceFolder}"
+                                     :output ["${workspaceFolder}"]
+                                     )))
 #+END_SRC
 
 ** Mode Setting
@@ -2138,7 +2174,10 @@ move where I mean
 *** puni                                                             :EDIT:
 
 #+BEGIN_SRC emacs-lisp
-(use-package puni :init (puni-global-mode))
+(use-package puni
+  :init
+  (puni-global-mode)
+  (dolist (hook '(vterm-toggle-show-hook)) (add-hook hook #'puni-disable-puni-mode)))
 
 (use-package elec-pair :hook (after-init . electric-pair-mode))
 (use-package paren
@@ -2188,12 +2227,15 @@ move where I mean
 (use-package so-long :hook (after-init-hook . global-so-long-mode))
 #+END_SRC
 
-*** symon                                                         :MONITOR:
+*** symon                                               :DISABLED::MONITOR:
 
 Tiny system monitor
 
+Replaced by Tmux plugins
+
 #+BEGIN_SRC emacs-lisp
 (use-package symon
+  :disabled
   :defer 3
   :config
   (setq symon-sparkline-type 'bounded)
@@ -2528,8 +2570,10 @@ Diff between directories
                 "Load and compile README.org"
                 (when (equal (buffer-file-name) (expand-file-name (concat user-emacs-directory "README.org")))
                   (org-babel-tangle nil (expand-file-name (concat user-emacs-directory "README.el")) "emacs-lisp")
-                  (byte-compile-file (expand-file-name (concat user-emacs-directory "README.el"))))
-                ))
+                  (byte-compile-file (expand-file-name (concat user-emacs-directory "README.el")))
+                  (when (fboundp 'native-compile)
+                    (native-compile (expand-file-name (concat user-emacs-directory "README.el"))))
+                  )))
   )
 #+END_SRC
 
