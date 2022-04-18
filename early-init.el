@@ -16,9 +16,13 @@
     (setq native-comp-deferred-compilation t))) ; native-comp
 
 ; disable at the earliest stage
-(setq tool-bar-mode   nil
-      menu-bar-mode   nil
-      scroll-bar-mode nil)
+;; https://lists.gnu.org/archive/html/help-gnu-emacs/2019-02/msg00318.html
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+(tool-bar-mode -1)
+(tooltip-mode -1)
+
+(setq frame-resize-pixelwise t)                 ; ensure turly full-screen
 
 (unless (eq system-type 'darwin)
   (setq command-line-ns-option-alist nil))

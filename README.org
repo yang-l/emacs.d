@@ -254,12 +254,6 @@ OSX-only key bindings
 (add-hook 'window-setup-hook
     #'(lambda () (progn
         (mouse-avoidance-mode 'animate)         ; mouse avoidance
-        (if (fboundp 'scroll-bar-mode)
-            (scroll-bar-mode -1))               ; no scroll bars
-        (if (fboundp 'tool-bar-mode)
-            (tool-bar-mode -1))                 ; hide toolbar
-        (if (fboundp 'tooltip-mode)
-            (tooltip-mode -1))
         (when (fboundp                          ; windmove
                'windmove-default-keybindings)
           (windmove-default-keybindings)
@@ -292,18 +286,6 @@ OSX-only key bindings
                 (toggle-frame-maximized)        ; maximised
                 ))
             ))
-(dolist
-    (hook
-     (list
-      'emacs-startup-hook
-      'tty-setup-hook
-      ))
-  (add-hook hook
-            #'(lambda ()
-              (progn
-                (if (fboundp 'menu-bar-mode)
-                    (menu-bar-mode -1))         ; hide menu bar
-                ))))
 ; https://blog.d46.us/advanced-emacs-startup/
 (add-hook 'emacs-startup-hook
           #'(lambda ()
