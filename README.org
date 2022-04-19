@@ -57,28 +57,6 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
 (defsubst lo/unset-gc ()
   "Defer garbage collection"
   (setq gc-cons-threshold most-positive-fixnum))
-
-; (defmacro lo/gen-delay-hook (mode-name)
-;   "Generate delayed hook For MODE-NAME."
-;   (let ((funame (intern (format "lo/%s-hook" mode-name)))
-;         (delayhook (intern (format "%s-delay-hook" mode-name)))
-;         (modehook (intern (format "%s-hook" mode-name))))
-;     `(progn
-;        (defvar ,delayhook nil)
-;        (defun ,funame ()
-;          ,(format "Delayed hook for %s." mode-name)
-;          (run-with-idle-timer
-;           0.5 nil (lambda (buf)
-;                     (when (buffer-live-p buf)
-;                       (with-current-buffer buf
-;                         (message "Running delay hook for [%s]: %s" `,mode-name ,delayhook)
-;                         (lo/unset-gc)
-;                         (run-hooks ',delayhook))))
-;           (current-buffer)))
-;        (add-hook ',modehook (function ,funame)))))
-;
-; (lo/gen-delay-hook prog-mode)
-; (lo/gen-delay-hook text-mode)
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -1643,7 +1621,7 @@ Visible bookmarks
          :map company-mode-map
          ([remap indent-for-tab-command] . company-indent-or-complete-common))
   :diminish company-mode
-  :hook ((prog-mode-delay text-mode-delay) . company-mode)
+  :hook ((prog-mode text-mode) . (lambda () (run-with-idle-timer 1 nil #'(lambda () (company-mode)))))
   :custom
   (company-begin-commands
    (quote
@@ -1872,7 +1850,7 @@ Comment code block
 #+BEGIN_SRC emacs-lisp
 (use-package flycheck
   :diminish flycheck-mode
-  :hook (prog-mode-delay . flycheck-mode)
+  :hook (prog-mode . (lambda () (run-with-idle-timer 1 nil #'(lambda () (flycheck-mode)))))
   :init
   (custom-set-faces
    '(flycheck-error ((nil (:background "red"))))
@@ -1890,8 +1868,8 @@ Comment code block
 #+BEGIN_SRC emacs-lisp
 (use-package flyspell
   :diminish flyspell-mode
-  :hook ((text-mode-delay . flyspell-mode)
-         (prog-mode-delay . flyspell-prog-mode))
+  :hook ((text-mode . (lambda () (run-with-idle-timer 1 nil #'(lambda () (flyspell-mode)))))
+         (prog-mode . (lambda () (run-with-idle-timer 1 nil #'(lambda () (flyspell-prog-mode))))))
   :custom
   (flyspell-issue-message-flag nil)
   (flyspell-issue-welcome-flag nil)
