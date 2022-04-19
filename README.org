@@ -1160,6 +1160,9 @@ Language Server Protocol
                          lsp-json
                          lsp-pylsp
                          lsp-solargraph
+                         lsp-terraform ; 'terraform' is managed by 'asdf'
+                                       ; Nix installed lsp server won't do lookups properly
+                                       ; require to manually install as =~/.config/local/bin/terraform-ls=
                          lsp-yaml))
   (lsp-clients-typescript-server-args '("--stdio" "--tsserver-log-file" "/dev/stderr"))     ; no more .log/tsserver.log files on project
   (lsp-completion-provider :none)               ; handled by company already
@@ -1195,15 +1198,6 @@ Language Server Protocol
       (add-to-list 'lsp-clients-pylsp-library-directories
                    (concat (expand-file-name "~/.asdf/installs/python/") (shell-command-to-string (concat "grep python " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'")) "/"))
       ))
-
-  ;; Terraform / HashiCorp - https://github.com/hashicorp/terraform-ls
-  (when (derived-mode-p 'terraform-mode)
-    (when (executable-find (expand-file-name "~/.config/local/bin/terraform-ls"))
-      (lsp-register-client
-       (make-lsp-client :new-connection (lsp-stdio-connection '("~/.config/local/bin/terraform-ls" "serve"))
-                        :major-modes '(terraform-mode)
-                        :priority -1
-                        :server-id 'terraform-ls))))
 
   ;; Use lsp servers from PATH installed by Nix
   (with-eval-after-load 'lsp-json (lsp-dependency 'vscode-json-languageserver `(:system ,(executable-find "vscode-json-languageserver"))))
