@@ -1865,8 +1865,22 @@ Comment code block
 #+BEGIN_SRC emacs-lisp
 (use-package flyspell
   :diminish flyspell-mode
-  :hook ((text-mode . (lambda () (run-with-idle-timer 1 nil #'(lambda () (flyspell-mode)))))
-         (prog-mode . (lambda () (run-with-idle-timer 1 nil #'(lambda () (flyspell-prog-mode))))))
+  :hook ((after-change-major-mode find-file)
+         . (lambda ()
+             (run-with-idle-timer
+              1 nil
+              #'(lambda ()
+                  (if (not (symbol-value flyspell-mode))
+                      (cond
+                       ((derived-mode-p 'prog-mode)
+                        (progn
+	                        (message "Flyspell on (code)")
+	                        (flyspell-prog-mode)))
+                       ((derived-mode-p 'text-mode)
+                        (progn
+	                        (message "Flyspell on (text)")
+	                        (flyspell-mode 1))))
+                    )))))
   :custom
   (flyspell-issue-message-flag nil)
   (flyspell-issue-welcome-flag nil)
