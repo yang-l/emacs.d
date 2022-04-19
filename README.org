@@ -1204,6 +1204,9 @@ Language Server Protocol
                         :major-modes '(terraform-mode)
                         :priority -1
                         :server-id 'terraform-ls))))
+
+  ;; Use lsp servers from PATH installed by Nix
+  (with-eval-after-load 'lsp-json (lsp-dependency 'vscode-json-languageserver `(:system ,(executable-find "vscode-json-languageserver"))))
   )
 
 (use-package lsp-diagnostics :after lsp-mode :straight lsp-mode)
