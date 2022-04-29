@@ -409,16 +409,6 @@ Command interpreter
   :straight (:type built-in))
 #+END_SRC
 
-**** delsel.el                                                     :EMACS:
-
-delete marked text on typing
-
-#+BEGIN_SRC emacs-lisp
-(use-package delsel
-  :defer 3
-  :hook (window-setup . delete-selection-mode))
-#+END_SRC
-
 **** Dired                                                          :FILE:
 
 #+BEGIN_SRC emacs-lisp
@@ -2098,6 +2088,8 @@ move where I mean
 #+END_SRC
 
 *** puni                                                             :EDIT:
+
+=C-c DEL= to delete active region
 
 #+BEGIN_SRC emacs-lisp
 (use-package puni
