@@ -62,7 +62,7 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
 #+BEGIN_SRC emacs-lisp
 (use-package gcmh
   :defer 3
-  :diminish gcmh-mode
+  :diminish
   :demand t
   :config (gcmh-mode 1))
 #+END_SRC
@@ -698,10 +698,14 @@ Buffer readonly mode
 
 #+BEGIN_SRC emacs-lisp
 (use-package which-func
-  :hook ((prog-mode) . which-function-mode)
-  :config
-  (setq which-func-unknown "⊥")
-  )
+  :hook ((prog-mode) .
+         (lambda ()
+           (run-with-idle-timer
+            1 nil
+            #'(lambda ()
+                (unless (bound-and-true-p lsp-mode)
+                  (which-function-mode))))))
+  :custom (which-func-unknown "⊥"))
 #+END_SRC
 
 **** winner-mode                                                   :EMACS:
@@ -1230,7 +1234,7 @@ Language Server Protocol
   :hook ((lsp-mode . lsp-ui-mode)
          (lsp-ui-mode . yas-minor-mode))
   :custom
-  (lsp-ui-doc-delay 1.5)
+  (lsp-ui-doc-delay 1)
   (lsp-ui-doc-header t)
   (lsp-ui-doc-include-signature t)
   (lsp-ui-doc-show-with-cursor t)
@@ -1565,13 +1569,33 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   :defer 2
   :straight dap-mode
   :config
-  (dap-register-debug-template "Node::Run TypeScript Template"
+  (dap-register-debug-template "node::launch"
                                (list :type "node"
                                      :request "launch"
-                                     :name "Node::Run TypeScript Template"
-                                     :program (expand-file-name (convert-standard-filename "extension/out/src/nodeDebug.js") dap-node-debug-path)
+                                     :smartStep t
                                      :cwd "${workspaceFolder}"
-                                     :output ["${workspaceFolder}"]
+                                     :outFiles ["${workspaceFolder}/**/*.js"]
+                                     :skipFiles ["<node_internals>/**"]
+                                     ))
+  (dap-register-debug-template "node::launch::npm"
+                               (list :type "node"
+                                     :request "launch"
+                                     :smartStep t
+                                     :cwd "${workspaceFolder}"
+                                     :outFiles ["${workspaceFolder}/**/*.js"]
+                                     :skipFiles ["<node_internals>/**"]
+                                     :runtimeExecutable "npm"
+                                     :runtimeArgs ["run-script", "test"]
+                                     ))
+  (dap-register-debug-template "node::launch::yarn"
+                               (list :type "node"
+                                     :request "launch"
+                                     :smartStep t
+                                     :cwd "${workspaceFolder}"
+                                     :outFiles ["${workspaceFolder}/**/*.js"]
+                                     :skipFiles ["<node_internals>/**"]
+                                     :runtimeExecutable "yarn"
+                                     :runtimeArgs ["test"]
                                      )))
 #+END_SRC
 
@@ -2169,7 +2193,7 @@ auto-save buffers
          ([remap display-buffer] . switch-window-then-display-buffer)
          ([remap kill-buffer-and-window] . switch-window-then-kill-buffer))
   :custom
-  (switch-window-auto-resize-window t)
+  (switch-window-auto-resize-window (lambda () (if (ignore-errors (dap--cur-session-or-die)) nil t)))    ; do not resizing under dap-mode debug session
   (switch-window-default-window-size '(0.618 . 0.618))
   (switch-window-minibuffer-shortcut ?z)
   (switch-window-preferred 'helm)
