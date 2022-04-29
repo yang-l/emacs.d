@@ -60,6 +60,7 @@
  ("mwim.el" . "b4f3edb4c0fb8f8b71cecbf8095c2c25a8ffbf85")
  ("nix-mode" . "20ee8d88900b169831d6b0783bd82d2625e940c7")
  ("no-littering" . "2d7237a49ad6a9b6425e68fa4d3245cbe5a7169d")
+ ("perspective-el" . "4e38680793585a907ae46b148697030c2b552a00")
  ("pfuture" . "bde5b06795e3e35bfb2bba4c34b538d506a0856e")
  ("pkg-info" . "76ba7415480687d05a4353b27fea2ae02b8d9d61")
  ("popup-el" . "0a4a906ef747948eb6ee5521b47607970a7f3044")

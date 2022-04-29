@@ -1212,7 +1212,7 @@ Language Server Protocol
   (lsp-modeline-code-actions-segments	'(count icon name)))
 
 (use-package lsp-ui
-  :after lsp-mode yasnippet
+  :after (lsp-mode yasnippet)
   :bind-keymap ("C-c l" . lsp-command-map)
   :bind ((:map lsp-ui-mode-map
                ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
@@ -1263,7 +1263,7 @@ Language Server Protocol
   )
 
 (use-package dap-mode
-  :after lsp-mode lsp-modeline
+  :after (lsp-mode lsp-modeline)
   :hook (typescript-mode)
   :init
   (unless (display-graphic-p)
@@ -1491,7 +1491,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
   )
 
-(use-package dap-python :disabled :after python-mode dap-mode :custom (dap-python-debugger 'debugpy) :defer 2 :straight dap-mode)    ; lsp debugger
+(use-package dap-python :disabled :after (python-mode dap-mode) :custom (dap-python-debugger 'debugpy) :defer 2 :straight dap-mode)    ; lsp debugger
 #+END_SRC
 
 **** Ruby                                                            :LSP:
@@ -1555,7 +1555,7 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   :mode ("\\.tsx\\'" . typescript-mode))
 
 (use-package dap-node
-  :after typescript-mode dap-mode
+  :after (typescript-mode dap-mode)
   :defer 2
   :straight dap-mode
   :config
@@ -2087,6 +2087,19 @@ move where I mean
   :commands (mwim-beginning-of-code-or-line-or-comment mwim-end-of-code-or-line))
 #+END_SRC
 
+*** perspective-el                                                     :UI:
+
+Grouping buffers
+
+#+BEGIN_SRC emacs-lisp
+(use-package perspective
+  :custom
+  (persp-mode-prefix-key (kbd "C-c p p"))
+  :init
+  (unless (equal persp-mode t)
+    (persp-mode)))
+#+END_SRC
+
 *** puni                                                             :EDIT:
 
 =C-c DEL= to delete active region
@@ -2121,10 +2134,14 @@ move where I mean
          ("C-c p t M-t" . treemacs-find-tag))
   :init (defvar treemacs-no-load-time-warnings t))
 
-(use-package treemacs-magit :after treemacs magit)
+(use-package treemacs-magit :after (treemacs magit))
+
+(use-package treemacs-perspective
+  :after (treemacs perspective)
+  :config (treemacs-set-scope-type 'Perspectives))
 
 (use-package treemacs-projectile
-  :after treemacs projectile
+  :after (treemacs projectile)
   :bind ("C-c p t p" . treemacs-projectile))
 #+END_SRC
 
@@ -2276,7 +2293,7 @@ Diff between directories
 #+BEGIN_SRC emacs-lisp
 (use-package helm
   :bind (([remap switch-to-buffer]. helm-mini)          ; C-x b
-         ([remap list-buffers]    . helm-mini)          ; C-x C-b
+         ([remap list-buffers]    . helm-buffers-list)  ; C-x C-b
          ([remap find-file]       . helm-find-files)    ; C-x C-f
          ([remap find-library]    . helm-locate-library)
          ([remap apropos-command] . helm-apropos)       ; C-h a
