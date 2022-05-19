@@ -1140,7 +1140,6 @@ Language Server Protocol
          (go-mode . lsp-deferred)
          (js2-mode . lsp-deferred)
          (json-mode . lsp-deferred)
-         (python-mode . lsp-deferred)
          (sh-mode . lsp-deferred)
          (terraform-mode . lsp-deferred)
          (typescript-mode . lsp-deferred)
@@ -1152,7 +1151,6 @@ Language Server Protocol
                          lsp-go
                          lsp-javascript
                          lsp-json
-                         lsp-pylsp
                          lsp-solargraph
                          lsp-terraform ; 'terraform' is managed by 'asdf'
                                        ; Nix installed lsp server won't do lookups properly
@@ -1181,16 +1179,6 @@ Language Server Protocol
       (add-to-list 'lsp-solargraph-library-directories (expand-file-name "~/.asdf/installs/ruby/"))
       (add-to-list 'lsp-solargraph-library-directories
                    (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/vendor/bundle/"))
-      ))
-
-  (when (derived-mode-p 'python-mode)
-    (with-eval-after-load `lsp-pylsp
-      ; config lsp-pylsp
-      (setq lsp-pylsp-plugins-yapf-enabled t)
-      ; load libraries
-      (add-to-list 'lsp-clients-pylsp-library-directories (expand-file-name "~/.asdf/installs/python/"))
-      (add-to-list 'lsp-clients-pylsp-library-directories
-                   (concat (expand-file-name "~/.asdf/installs/python/") (shell-command-to-string (concat "grep python " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'")) "/"))
       ))
 
   ;; Use lsp servers from PATH installed by Nix
