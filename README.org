@@ -120,13 +120,13 @@ Configuration for =use-package=. The packages below should be loaded first befor
     fill-column 80                              ; column space
     frame-title-format "emacs@%b"               ; show on title
     indent-tabs-mode nil                        ; space instead of tab
-    kill-ring-max 500                           ; kill ring size
+    kill-ring-max 1000                          ; kill ring size
     mouse-wheel-scroll-amount '(1 ((shift) .1)) ; scroll one line at a time
     frame-resize-pixelwise t
     read-buffer-completion-ignore-case t        ; ignore case-sensitivity
     read-file-name-completion-ignore-case t
     require-final-newline t                     ; always add a new line at the end of a file
-    save-interprogram-paste-before-kill t       ; put clipboard into killringy
+    save-interprogram-paste-before-kill t       ; put clipboard into killring
     scroll-margin 3                             ; auto scrolling
     scroll-step 1                               ; line-by-line scrolling
     scroll-conservatively 10000                 ; do not jump to centre point in the window
@@ -2094,7 +2094,7 @@ Grouping buffers
 #+BEGIN_SRC emacs-lisp
 (use-package perspective
   :custom
-  (persp-mode-prefix-key (kbd "C-c p p"))
+  (persp-mode-prefix-key (kbd "C-c p z"))
   :init
   (unless (equal persp-mode t)
     (persp-mode)))
@@ -2303,7 +2303,7 @@ Diff between directories
          ([remap yank-pop] . helm-show-kill-ring)       ; M-y
          ([remap imenu]           . helm-imenu)
          )
-  :diminish helm-mode
+  :diminish
   :preface (require 'helm-config)
   :config
   (helm-mode 1)
@@ -2349,17 +2349,23 @@ Diff between directories
 #+BEGIN_SRC emacs-lisp
 (use-package ivy
   :bind (:map ivy-minibuffer-map
-              ("C-m" . ivy-alt-done))           ; use 'Enter' on a directory to navigate into the directory, not open it with dired
-  :diminish ivy-mode
+         ("C-j" . ivy-next-line)
+         ("C-k" . ivy-previous-line)
+         ("C-m" . ivy-alt-done)                 ; use 'Enter' on a directory to navigate into the directory, not open it with dired
+         :map ivy-switch-buffer-map
+         ("C-k" . ivy-previous-line)
+         ("C-l" . ivy-done)
+         ("C-d" . ivy-switch-buffer-kill)
+         :map ivy-reverse-i-search-map
+         ("C-k" . ivy-previous-line)
+         ("C-d" . ivy-reverse-i-search-kill))
+  :custom
+  (ivy-use-virtual-buffers t)
+  (ivy-wrap t)
+  (ivy-count-format "(%d/%d) ")                 ; show currnet and total number
+  :diminish
   :config
   (ivy-mode 1)
-  (setq ivy-use-virtual-buffers t
-        ivy-count-format "%d/%d "               ; show currnet and total number
-        ivy-display-style nil
-        ivy-minibuffer-faces nil
-        ivy-re-builders-alist                   ; ivy fuzzy matching everywhere other than in swiper
-        '((swiper . regexp-quote)
-          (t      . ivy--regex-fuzzy)))
   )
 #+END_SRC
 
