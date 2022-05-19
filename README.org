@@ -1411,17 +1411,6 @@ Language Server Protocol
   :config
   (setenv "PYTHONPATH" (shell-command-to-string "$SHELL --login -c 'echo -n $PYTHONPATH'"))
 
-  (defvar pylsp-venv-directory (concat backup-directory "venv-lsp-python3/"))
-  (unless (file-exists-p pylsp-venv-directory)
-    (make-directory pylsp-venv-directory t))
-  (unless (file-exists-p (concat pylsp-venv-directory "pylintrc"))
-    (shell-command
-     (concat
-      "pylint --generate-rcfile > "
-      (concat pylsp-venv-directory "pylintrc")
-      )))
-  (setq flycheck-pylintrc (concat pylsp-venv-directory "pylintrc"))
-
   ; use dockerised jupyter via C-c C-p
   (setq python-shell-interpreter "jupyter-console"
         python-shell-interpreter-args "--simple-prompt"
