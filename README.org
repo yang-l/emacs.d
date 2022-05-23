@@ -1140,6 +1140,7 @@ Language Server Protocol
          (go-mode . lsp-deferred)
          (js2-mode . lsp-deferred)
          (json-mode . lsp-deferred)
+         (python-mode . lsp-deferred)
          (sh-mode . lsp-deferred)
          (terraform-mode . lsp-deferred)
          (typescript-mode . lsp-deferred)
@@ -1151,6 +1152,7 @@ Language Server Protocol
                          lsp-go
                          lsp-javascript
                          lsp-json
+                         lsp-pyright
                          lsp-solargraph
                          lsp-terraform ; 'terraform' is managed by 'asdf'
                                        ; Nix installed lsp server won't do lookups properly
@@ -1183,7 +1185,20 @@ Language Server Protocol
 
   ;; Use lsp servers from PATH installed by Nix
   (with-eval-after-load 'lsp-json (lsp-dependency 'vscode-json-languageserver `(:system ,(executable-find "vscode-json-languageserver"))))
+
+  ;; ignore directories on lsp file watcher
+  (with-eval-after-load 'lsp-mode
+    (let* ((proj-root (lsp-workspace-root))
+           (ignore-folders (list ".terragrunt-cache")))
+      (when proj-root
+        (dolist (folder ignore-folders)
+          (dolist (f (directory-files-recursively proj-root folder t))
+            (add-to-list 'lsp-file-watch-ignored-directories f))))))
   )
+
+(use-package lsp-pyright
+  :after lsp-mode
+  :config (when (executable-find "python3") (setq lsp-pyright-python-executable-cmd "python3")))
 
 (use-package lsp-diagnostics :after lsp-mode :straight lsp-mode)
 (use-package lsp-headerline :after lsp-mode :straight lsp-mode)
@@ -1401,7 +1416,6 @@ Language Server Protocol
 
 #+BEGIN_SRC emacs-lisp
 (use-package python
-  :disabled
   :if (executable-find "python3")
   :interpreter ("python" . python-mode)
   :mode ("\\.wsgi$" . python-mode)
@@ -1844,9 +1858,10 @@ Comment code block
    '(flycheck-error ((nil (:background "red"))))
    '(flycheck-warning ((nil (:background "yellow")))))
   :config
-  (setq flycheck-check-syntax-automatically '(new-line idle-change save)
+  (setq flycheck-buffer-switch-check-intermediate-buffers t
+        flycheck-check-syntax-automatically '(new-line idle-change save)
         flycheck-idle-change-delay (if flycheck-current-errors 0.5 15.0)
-        flycheck-buffer-switch-check-intermediate-buffers t)
+        flycheck-python-pylint-executable "pyright")
   (flymake-mode -1)                             ; disable flymake
   )
 #+END_SRC
