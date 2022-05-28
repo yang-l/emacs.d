@@ -2267,7 +2267,6 @@ Display the key bindings in a popup.
   :custom (yas-keymap-disable-hook t)
   :config (yas-reload-all))
 (use-package yasnippet-snippets :after yasnippet)
-(use-package ivy-yasnippet :after yasnippet :commands ivy-yasnippet)
 #+END_SRC
 
 *** ztree                                                            :EDIT:
@@ -2336,43 +2335,6 @@ Diff between directories
 
 *** Ivy                                                              :EDIT:
 
-**** ivy
-
-#+BEGIN_SRC emacs-lisp
-(use-package ivy
-  :bind (:map ivy-minibuffer-map
-         ("C-j" . ivy-next-line)
-         ("C-k" . ivy-previous-line)
-         ("C-m" . ivy-alt-done)                 ; use 'Enter' on a directory to navigate into the directory, not open it with dired
-         :map ivy-switch-buffer-map
-         ("C-k" . ivy-previous-line)
-         ("C-l" . ivy-done)
-         ("C-d" . ivy-switch-buffer-kill)
-         :map ivy-reverse-i-search-map
-         ("C-k" . ivy-previous-line)
-         ("C-d" . ivy-reverse-i-search-kill))
-  :custom
-  (ivy-use-virtual-buffers t)
-  (ivy-wrap t)
-  (ivy-count-format "(%d/%d) ")                 ; show currnet and total number
-  :diminish
-  :config
-  (ivy-mode 1)
-  )
-#+END_SRC
-
-**** counsel
-
-#+BEGIN_SRC emacs-lisp
-(use-package counsel
-  :bind (("C-c p c f" . counsel-fzf)
-         ("C-c p c g" . counsel-git)
-         ("C-c p c j" . counsel-git-grep)
-         ([remap describe-bindings] . counsel-descbinds)
-         ([remap describe-function] . counsel-describe-function)
-         ([remap describe-variable] . counsel-describe-variable)))
-#+END_SRC
-
 **** projectile
 
 #+BEGIN_SRC emacs-lisp
@@ -2380,7 +2342,6 @@ Diff between directories
   :bind(:map projectile-mode-map
              ("C-c p p" . projectile-command-map))
   :custom
-  (projectile-completion-system 'ivy)                       ; via ivy backend
   (projectile-enable-caching t)                             ; enable caching unconditionally
   (projectile-file-exists-remote-cache-expire nil)          ; disable remote file exists cache
   (projectile-remember-window-configs t)
