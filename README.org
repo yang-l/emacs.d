@@ -2345,7 +2345,7 @@ Diff between directories
   (projectile-enable-caching t)                             ; enable caching unconditionally
   (projectile-file-exists-remote-cache-expire nil)          ; disable remote file exists cache
   (projectile-remember-window-configs t)
-  (projectile-switch-project-action 'counsel-projectile-find-file-or-buffer)
+  (projectile-switch-project-action #'consult-projectile-find-file)
   (projectile-sort-order 'modification-time)
   :config
   (setq projectile-globally-ignored-directories (append
@@ -2374,12 +2374,53 @@ Diff between directories
       (setq projectile-indexing-method 'alien))
   )
 
-(use-package counsel-projectile
+(use-package consult-projectile
   :bind (:map prog-mode-map
-              ("C-c p SPC" . counsel-projectile))
-  :config (counsel-projectile-mode))
+         ("C-c p SPC" . consult-projectile))
+  :config
+  (unless (equal projectile-mode t)
+    (projectile-mode)))
 
-(use-package rg :bind ("C-c p r" . rg-menu))
+(use-package rg :bind ("C-c p R" . rg-menu))
+#+END_SRC
+
+*** Vertico                                                          :EDIT:
+
+#+BEGIN_SRC emacs-lisp
+(use-package vertico
+  :config
+  (minibuffer-depth-indicate-mode)
+  :custom
+  (vertico-cycle t)
+  (enable-recursive-minibuffers t)
+  :init (vertico-mode))
+
+(use-package orderless
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles basic partial-completion)))))
+
+(use-package marginalia
+  :after vertico
+  :init (marginalia-mode))
+
+(use-package consult
+  :bind
+  (("C-c p G" . consult-git-grep)
+   ("C-c p g" . consult-grep)
+   ("C-c p r" . consult-ripgrep)
+   ([remap describe-bindings] . local/consult-descbinds)
+   ([remap goto-line] . consult-goto-line))
+  :custom
+  (xref-show-xrefs-function #'consult-xref)
+  (xref-show-definitions-function #'consult-xref)
+  :init
+  ;; https://github.com/WorldsEndless/emacs-clojure/blob/master/emacs.el
+  (defun local/consult-descbinds ()
+    (interactive)
+    (describe-bindings)
+    (other-window 1)
+    (call-interactively #'consult-focus-lines)))
 #+END_SRC
 
 *** Org                                                               :ORG:
