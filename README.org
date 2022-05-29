@@ -1241,23 +1241,6 @@ Language Server Protocol
 (use-package lsp-ui-flycheck :after lsp-ui :defer 2 :straight lsp-ui)
 (use-package lsp-ui-imenu :after lsp-ui :defer 2 :straight lsp-ui)
 
-(use-package helm-lsp
-  :after lsp-mode
-  :bind (:map lsp-mode-map
-              ([remap xref-find-apropos] . helm-lsp-workspace-symbol))
-  :commands helm-lsp-workspace-symbol
-  :config
-  (defun helm-lsp-workspace-symbol-at-point ()
-    (interactive)
-    (let ((current-prefix-arg t))
-      (call-interactively #'helm-lsp-workspace-symbol)))
-
-  (defun helm-lsp-global-workspace-symbol-at-point ()
-    (interactive)
-    (let ((current-prefix-arg t))
-      (call-interactively #'helm-lsp-global-workspace-symbol)))
-  )
-
 (use-package lsp-treemacs
   :after lsp-mode
   :commands lsp-treemacs-errors-list
@@ -1912,8 +1895,6 @@ Comment code block
   :hook (flyspell-mode . flyspell-lazy-mode))
 
 (use-package flyspell-correct :after flyspell)  ; C-u/C-u C-u/C-u C-u C-u M-x flyspell-correct-wrapper
-
-(use-package flyspell-correct-helm :after flyspell-correct)
 #+END_SRC
 
 *** indent-guide                                                     :EDIT:
@@ -2197,7 +2178,6 @@ auto-save buffers
   (switch-window-auto-resize-window (lambda () (if (ignore-errors (dap--cur-session-or-die)) nil t)))    ; do not resizing under dap-mode debug session
   (switch-window-default-window-size '(0.618 . 0.618))
   (switch-window-minibuffer-shortcut ?z)
-  (switch-window-preferred 'helm)
   (switch-window-shortcut-appearance 'asciiart)
   (switch-window-shortcut-style 'qwerty))
 #+END_SRC
@@ -2275,62 +2255,6 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package ztree :config (setq ztree-draw-unicode-lines t))
-#+END_SRC
-
-*** Helm                                                             :EDIT:
-
-**** helm
-
-#+BEGIN_SRC emacs-lisp
-(use-package helm
-  :bind (([remap switch-to-buffer]. helm-mini)          ; C-x b
-         ([remap list-buffers]    . helm-buffers-list)  ; C-x C-b
-         ([remap find-file]       . helm-find-files)    ; C-x C-f
-         ([remap find-library]    . helm-locate-library)
-         ([remap apropos-command] . helm-apropos)       ; C-h a
-         ([remap dabbrev-expand]  . helm-dabbrev)       ; M-/
-         ([remap occur]           . helm-occur)         ; M-s o
-         ([remap execute-extended-command] . helm-M-x)  ; M-x
-         ([remap yank-pop] . helm-show-kill-ring)       ; M-y
-         ([remap imenu]           . helm-imenu)
-         )
-  :diminish
-  :preface (require 'helm-config)
-  :config
-  (helm-mode 1)
-  (helm-adaptive-mode 1)
-  (helm-autoresize-mode 1)                      ; buffer window resizing
-  (setq helm-buffers-fuzzy-matching t           ; fuzzy matching when non-nil
-        completion-styles `(basic partial-completion emacs22 initials
-                                  ,(if (version<= emacs-version "27.0") 'helm-flex 'flex))
-        helm-semantic-fuzzy-match t
-        helm-apropos-fuzzy-match t
-        helm-lisp-fuzzy-completion t
-        helm-imenu-fuzzy-match t
-        helm-completion-in-region-fuzzy-match t
-        helm-M-x-fuzzy-match t
-        helm-recentf-fuzzy-match t
-        helm-semantic-fuzzy-match t
-        helm-candidate-number-limit 100         ; candidate limit
-        helm-ff-search-library-in-sexp t        ; search for library in `require' and `declare-function' sexp
-        helm-move-to-line-cycle-in-source t     ; move to end or beginning of source when reaching top or bottom of source
-        helm-quick-update t                     ; do not display invisible candidates
-        helm-split-window-inside-p t            ; open helm buffer inside current window, not occupy whole other window
-        )
-  (add-hook 'eshell-mode-hook                   ; eshell
-            #'(lambda ()
-                (define-key eshell-mode-map
-                  [remap eshell-pcomplete]
-                  'helm-esh-pcomplete)))
-  (add-to-list 'helm-completing-read-handlers-alist (cons #'find-file-at-point nil)))
-#+END_SRC
-
-**** swiper
-
-#+BEGIN_SRC emacs-lisp
-(use-package swiper-helm
-  :bind (([remap isearch-forward]  . swiper-helm)   ; C-s
-         ([remap isearch-backward] . swiper-helm))) ; C-r
 #+END_SRC
 
 *** Ivy                                                              :EDIT:
@@ -2453,8 +2377,6 @@ Diff between directories
   (add-hook 'org-shiftleft-final-hook 'windmove-left)
   (add-hook 'org-shiftdown-final-hook 'windmove-down)
   (add-hook 'org-shiftright-final-hook 'windmove-right)
-
-  (org-defkey org-mode-map [remap imenu] #'helm-org-in-buffer-headings)
 
   ;; recompile README.org/.el/.elc
   (add-hook 'after-save-hook
