@@ -1322,9 +1322,9 @@ Language Server Protocol
 (use-package gotest
   :after go-mode
   :bind (:map go-mode-map
-         ("C-x x f" . go-test-current-file)
-         ("C-x x t" . go-test-current-test)
-         ("C-x x x" . go-run))
+              ("C-x x f" . go-test-current-file)
+              ("C-x x t" . go-test-current-test)
+              ("C-x x x" . go-run))
   :commands (go-test-current-file go-test-current-test go-run))
 #+END_SRC
 
@@ -1603,8 +1603,8 @@ Visible bookmarks
 #+BEGIN_SRC emacs-lisp
 (use-package company
   :bind (([remap hippie-expand] . company-complete)
-         :map company-mode-map
-         ([remap indent-for-tab-command] . company-indent-or-complete-common))
+         (:map company-mode-map
+               ([remap indent-for-tab-command] . company-indent-or-complete-common)))
   :diminish company-mode
   :hook ((prog-mode text-mode) . (lambda () (run-with-idle-timer 1 nil #'(lambda () (company-mode)))))
   :custom
@@ -2066,6 +2066,7 @@ Grouping buffers
 
 #+BEGIN_SRC emacs-lisp
 (use-package perspective
+  :defer 1
   :custom
   (persp-mode-prefix-key (kbd "C-c p z"))
   :init
@@ -2264,7 +2265,7 @@ Diff between directories
 #+BEGIN_SRC emacs-lisp
 (use-package projectile
   :bind(:map projectile-mode-map
-        ("C-c p p" . projectile-command-map))
+             ("C-c p p" . projectile-command-map))
   :custom
   (projectile-enable-caching t)                             ; enable caching unconditionally
   (projectile-file-exists-remote-cache-expire nil)          ; disable remote file exists cache
@@ -2300,7 +2301,7 @@ Diff between directories
 
 (use-package consult-projectile
   :bind (:map prog-mode-map
-         ("C-c p SPC" . consult-projectile))
+              ("C-c p SPC" . consult-projectile))
   :config
   (unless (equal projectile-mode t)
     (projectile-mode)))
@@ -2312,13 +2313,17 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package vertico
+  :bind (:map vertico-map
+              ("M-q" . vertico-quick-insert)
+              ("C-q" . vertico-quick-exit))
   :config
   (minibuffer-depth-indicate-mode)
   :custom
   (enable-recursive-minibuffers t)
   (vertico-cycle t)
   (vertico-resize t)
-  :hook (after-init . vertico-mode))
+  :hook ((after-init . vertico-mode)
+         (rfn-eshadow-update-overlay . vertico-directory-tidy)))
 
 (use-package orderless
   :custom
