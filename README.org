@@ -137,7 +137,6 @@ Configuration for =use-package=. The packages below should be loaded first befor
     x-stretch-cursor t                          ; stretch cursor to cover wide characters
     vc-follow-symlinks t                        ; visiting a symbolic link to a file under version control
     )
-(defalias 'dabbrev-expand 'hippie-expand)
 (fset 'yes-or-no-p 'y-or-n-p)                   ; fast confirmation
 #+END_SRC
 
@@ -368,15 +367,14 @@ savehist - save the minibuffer histories
 
 #+BEGIN_SRC emacs-lisp
 (use-package abbrev
-  :after company
-  :defer 5
-  :diminish abbrev-mode
+  :bind (("M-/"   . dabbrev-completion)
+         ("C-M-/" . dabbrev-expand))
+  :diminish
   :straight (:type built-in)
-  :custom (save-abbrevs 'silently)
-  :config
-  (if (file-exists-p abbrev-file-name)
-      (quietly-read-abbrev-file))
-  )
+  :custom
+  (save-abbrevs 'silently)
+  (dabbrev-ignored-buffer-regexps '("\\.\\(?:pdf\\|jpe?g\\|png\\)\\'"))
+  :config (if (file-exists-p abbrev-file-name) (quietly-read-abbrev-file)))
 #+END_SRC
 
 **** Auto-compression                                              :EMACS:
@@ -955,12 +953,7 @@ web-mode
 #+BEGIN_SRC emacs-lisp
 (use-package web-mode
   :mode ("\\.html\\'" . web-mode)
-  :custom
-  (web-mode-enable-css-colorization t)
-  :config
-  (with-eval-after-load `company-mode
-    (add-to-list (make-local-variable 'company-backends)
-               '(company-css company-nxml))))
+  :custom (web-mode-enable-css-colorization t))
 #+END_SRC
 
 *** Scripting
@@ -1134,6 +1127,9 @@ Language Server Protocol
   :hook ((lsp-mode . (lambda ()
                        (let ((lsp-keymap-prefix "C-c l"))
                          #'lsp-enable-which-key-integration)))
+         (lsp-completion-mode . (lambda ()
+                                  (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+                                        '(orderless))))
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
          (dockerfile-mode . lsp-deferred)
          (enh-ruby-mode . lsp-deferred)
@@ -1159,7 +1155,7 @@ Language Server Protocol
                                        ; require to manually install as =~/.config/local/bin/terraform-ls=
                          lsp-yaml))
   (lsp-clients-typescript-server-args '("--stdio" "--tsserver-log-file" "/dev/stderr"))     ; no more .log/tsserver.log files on project
-  (lsp-completion-provider :none)               ; handled by company already
+  (lsp-completion-provider :none)               ; handled by corfu
   (lsp-idle-delay 0.3)
   (lsp-log-io nil)
   (lsp-prefer-flymake nil)
@@ -1240,6 +1236,11 @@ Language Server Protocol
 
 (use-package lsp-ui-flycheck :after lsp-ui :defer 2 :straight lsp-ui)
 (use-package lsp-ui-imenu :after lsp-ui :defer 2 :straight lsp-ui)
+
+(use-package consult-lsp
+  :after lsp-mode
+  :bind (:map lsp-mode-map
+              ([remap xref-find-apropos] . consult-lsp-symbols)))
 
 (use-package lsp-treemacs
   :after lsp-mode
@@ -1511,13 +1512,10 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
 
 #+BEGIN_SRC emacs-lisp
 (use-package terraform-mode
-  :hook (terraform-mode . company-mode)
   :mode "\\.tf\\(vars\\)?\\'"
-  :custom
-  (terraform-indent-level 2))
+  :custom (terraform-indent-level 2))
 
   (use-package terraform-doc :after terraform-mode)
-  (use-package company-terraform :after terraform-mode)
 #+END_SRC
 
 **** TypeScript                                                      :LSP:
@@ -1595,120 +1593,6 @@ Visible bookmarks
   (add-hook 'after-save-hook #'bm-buffer-save)
   (add-hook 'find-file-hook  #'bm-buffer-restore)
   (add-hook 'after-revert-hook #'bm-buffer-restore)
-  )
-#+END_SRC
-
-*** company                                                          :EDIT:
-
-#+BEGIN_SRC emacs-lisp
-(use-package company
-  :bind (([remap hippie-expand] . company-complete)
-         (:map company-mode-map
-               ([remap indent-for-tab-command] . company-indent-or-complete-common)))
-  :diminish company-mode
-  :hook ((prog-mode text-mode) . (lambda () (run-with-idle-timer 1 nil #'(lambda () (company-mode)))))
-  :custom
-  (company-begin-commands
-   (quote
-    (self-insert-command)                       ; start autocompletion only after typing
-    ))
-  (company-dabbrev-downcase nil)                ; do not change case in dabbrev
-  (company-dabbrev-ignore-case t)
-  (company-dabbrev-other-buffers t)
-  (company-global-modes
-   (quote
-    (not eshell-mode)
-    ))
-  (company-idle-delay 0.02)                     ; delay before autocompletion popup shows
-  (company-minimum-prefix-length 2)
-  (company-require-match 'never)
-  (company-selection-wrap-around t)             ; loop over candidates
-  (company-show-numbers t)                      ; show number
-  (company-transformers
-   (quote
-    (company-sort-by-occurrence)
-    ))
-  (company-tooltip-align-annotations t)
-  (company-tooltip-flip-when-above   t)         ; flip the popup menu when near the bottom of windows
-  (company-tooltip-limit 10)                    ; popup window size
-  (company-backends                             ; default backends
-   (quote
-    ((:separate company-capf
-      :with company-yasnippet)
-     (company-dabbrev-code
-      company-ispell)
-     (company-files                             ; files & directory
-      company-keywords)                         ; keywords
-     (company-abbrev
-      company-dabbrev)
-     )))
-  (company-frontends
-   (quote
-    (company-pseudo-tooltip-frontend
-     company-echo-metadata-frontend)
-    )))
-
-(use-package company-tng
-  :after company
-  :custom (company-selection-default nil)
-  :demand t
-  :straight company-mode
-  :config (company-tng-mode))
-
-(use-package company-tabnine
-  :disabled
-  :after company
-  :commands company-tabnine
-  :hook (kill-emacs . company-tabnine-kill-process)
-  :init
-  (make-local-variable 'company-backends)
-  (setq company-backends (delete '(:separate company-capf :with company-yasnippet) company-backends))
-  (add-to-list 'company-backends '(:separate company-tabnine company-capf :with company-yasnippet))
-;  ;; dynamicly create TabNine.toml file
-;  ;; to enable sem for each language by typing "TabNine::sem" once opened the mode
-;  (when (eq system-type 'darwin)
-;    (defvar tabnine-directory (expand-file-name "~/Library/Preferences/TabNine/"))
-;    (if (not (file-exists-p tabnine-directory))
-;        (make-directory tabnine-directory t))
-;    (setq tabnine-toml-file (expand-file-name "TabNine.toml" tabnine-directory))
-;    )
-;  (if (not (file-exists-p tabnine-toml-file))
-;      (write-region
-;       (concat
-;        "[language.bash]\n"
-;        "command = \"bash-language-server\"\n"
-;        "args = [\"start\"]\n"
-;        "[language.dockerfile]\n"
-;        "command = \"docker-langserver\"\n"
-;        "args = [\"--stdio\"]\n"
-;        "[language.go]\n"
-;        "command = \"gopls\"\n"
-;        "args = [\"serve\"]\n"
-;        "synchronous_timeout_ms = 100\n"
-;        "[language.javascript]\n"
-;        "command = \"typescript-language-server\"\n"
-;        "args = [\"--stdio\"]\n"
-;        "always_prefer = false\n"
-;        "[language.python]\n"
-;        "command = \"pylsp\"\n"
-;        "synchronous_timeout_ms = 100\n"
-;        "[language.ruby]\n"
-;        "command = \"solargraph\"\n"
-;        "args = [\"stdio\"]\n"
-;        "[language.typescript]\n"
-;        "command = \"typescript-language-server\"\n"
-;        "args = [\"--tsserver-path\", \"tsserver\", \"--stdio\"]\n"
-;        ) nil tabnine-toml-file)
-;    )
-;  :config
-;  (setq company-tabnine-max-num-results 3)
-;  ;; https://emacs-china.org/t/tabnine/9988/50
-;  (defadvice company-echo-show (around disable-tabnine-upgrade-message activate)
-;    (let ((company-message-func (ad-get-arg 0)))
-;      (when (and company-message-func
-;                 (stringp (funcall company-message-func)))
-;        (unless (string-match "The free version of TabNine only indexes up to" (funcall company-message-func))
-;          ad-do-it))))
   )
 #+END_SRC
 
@@ -1877,11 +1761,6 @@ Comment code block
   (ispell-program-name "aspell")
   (ispell-extra-args '("--sug-mode=ultra" "--run-together" "--run-together-limit=8"))
   :config
-  (when (eq system-type 'darwin)                ; mac only settings
-    (define-key flyspell-mouse-map [down-mouse-3] #'flyspell-correct-word)
-    (define-key flyspell-mouse-map [mouse-3] #'undefined)
-    )
-
   (advice-add 'message :around
               #'(lambda (old-fun format &rest args)
                   "Supress \"Starting \"look\" process\" message from 'ispell-lookup-words'"
@@ -2313,9 +2192,12 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package vertico
-  :bind (:map vertico-map
-              ("M-q" . vertico-quick-insert)
-              ("C-q" . vertico-quick-exit))
+  :bind (("C-c p v r" . vertico-repeat)
+         :map vertico-map
+              ("C-j" . vertico-directory-enter)
+              ("C-l" . vertico-directory-up)
+              ("C-q" . vertico-quick-exit)
+              ("M-q" . vertico-quick-insert))
   :config
   (minibuffer-depth-indicate-mode)
   :custom
@@ -2323,7 +2205,10 @@ Diff between directories
   (vertico-cycle t)
   (vertico-resize t)
   :hook ((after-init . vertico-mode)
-         (rfn-eshadow-update-overlay . vertico-directory-tidy)))
+         (minibuffer-setup . vertico-repeat-save)
+         (rfn-eshadow-update-overlay . vertico-directory-tidy))
+  :straight (vertico :files (:defaults "extensions/vertico-*.el")
+                     :includes (vertico-directory vertico-quick vertico-repeat)))
 
 (use-package orderless
   :custom
@@ -2376,6 +2261,70 @@ Diff between directories
     (describe-bindings)
     (other-window 1)
     (call-interactively #'consult-focus-lines)))
+
+(use-package corfu
+  :bind (:map corfu-map
+              ("M-d"     . corfu-info-documentation)
+              ("M-l"     . corfu-info-location)
+              ("TAB"     . corfu-next)
+              ([tab]     . corfu-next)
+              ("S-TAB"   . corfu-previous)
+              ([backtab] . corfu-previous)
+              ("M-q"     . corfu-quick-insert))
+  :config
+  (corfu-history-mode 1)
+  (add-to-list 'savehist-additional-variables 'corfu-history)
+  :custom
+  (corfu-auto t)
+  (corfu-bar-width 0)               ; hide popup right scroll bar
+  (corfu-cycle t)
+  (corfu-min-width 30)
+  (corfu-preselect-first nil)
+  (corfu-right-margin-width 0)      ; hide popup right scroll bar
+  :hook ((prog-mode
+          terraform-mode
+          text-mode) . (lambda ()
+                         (run-with-idle-timer
+                          1 nil
+                          #'(lambda ()
+                              (corfu-mode)                  ; corfu
+                              (unless (display-graphic-p)   ; corfu-terminal
+                                (corfu-terminal-mode 1))
+                              (add-to-list                  ; kind-icon
+                               'corfu-margin-formatters #'kind-icon-margin-formatter)
+                              ))))
+  :init
+  (setq completion-cycle-threshold 3
+        tab-always-indent 'complete)
+  :straight (corfu :files (:defaults "extensions/*")
+                   :includes (corfu-history corfu-info corfu-quick)))
+
+(use-package popon
+  :after corfu
+  :straight (popon :type git :repo "https://codeberg.org/akib/emacs-popon.git")
+  :unless (display-graphic-p))
+
+(use-package corfu-terminal
+  :after (corfu popon)
+  :straight (corfu-terminal :type git :repo "https://codeberg.org/akib/emacs-corfu-terminal.git")
+  :unless (display-graphic-p))
+
+(use-package cape
+  :after corfu
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev t)
+  (add-to-list 'completion-at-point-functions #'cape-keyword t)
+  (add-to-list 'completion-at-point-functions #'cape-file t)
+  (add-to-list 'completion-at-point-functions #'cape-history t)
+  (add-to-list 'completion-at-point-functions #'cape-ispell t))
+
+(use-package kind-icon
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default)
+  (kind-icon-blend-background nil)
+  (kind-icon-blend-frac 0.08)
+  (svg-lib-icons-dir (no-littering-expand-var-file-name "svg-lib/cache/")))
 #+END_SRC
 
 *** Org                                                               :ORG:
