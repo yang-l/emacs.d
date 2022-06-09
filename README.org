@@ -689,7 +689,7 @@ Buffer readonly mode
   :hook ((prog-mode) .
          (lambda ()
            (run-with-idle-timer
-            1 nil
+            5 nil
             #'(lambda ()
                 (unless (bound-and-true-p lsp-mode)
                   (which-function-mode))))))
@@ -1189,7 +1189,8 @@ Language Server Protocol
       (when proj-root
         (dolist (folder ignore-folders)
           (dolist (f (directory-files-recursively proj-root folder t))
-            (add-to-list 'lsp-file-watch-ignored-directories f))))))
+            (add-to-list 'lsp-file-watch-ignored-directories f)))))
+    (add-to-list 'lsp-file-watch-ignored-directories (expand-file-name "~/.asdf")))
   )
 
 (use-package lsp-pyright
@@ -1251,7 +1252,7 @@ Language Server Protocol
 
 (use-package dap-mode
   :after (lsp-mode lsp-modeline)
-  :hook (typescript-mode)
+  :hook (python typescript-mode)
   :init
   (unless (display-graphic-p)
     (custom-set-faces
@@ -1409,13 +1410,6 @@ Language Server Protocol
   :config
   (setenv "PYTHONPATH" (shell-command-to-string "$SHELL --login -c 'echo -n $PYTHONPATH'"))
 
-  ; use dockerised jupyter via C-c C-p
-  (setq python-shell-interpreter "jupyter-console"
-        python-shell-interpreter-args "--simple-prompt"
-        python-shell-prompt-detect-failure-warning nil)
-  (add-to-list 'python-shell-completion-native-disabled-interpreters
-               "jupyter")
-
   (when (eq 1 (point-max))                ; new file template
     (insert
      "#!/usr/bin/env python3\n"
@@ -1427,46 +1421,31 @@ Language Server Protocol
      "    main()\n"
      ))
 
-  ;; from https://github.com/syl20bnr/spacemacs/blob/master/layers/%2Blang/python/funcs.el
-  (defun python-remove-unused-imports ()
-    "Use Autoflake to remove unused function
-autoflake --remove-all-unused-imports -i unused_imports.py"
+  (defun python-lsp-organise-imports ()
+    "pyright does not provide source.organizeImports code action,
+so using Autoflake to implement the same function"
     (interactive)
-    (if (executable-find "autoflake")
-        (progn
-          (shell-command (format "autoflake --remove-all-unused-imports -i %s"
-                                 (shell-quote-argument (buffer-file-name))))
-          (revert-buffer t t t))
-      (message "Error: Cannot find autoflake executable.")))
-  (local-set-key (kbd "A-M-f") #'(lambda ()
-                                   (interactive)
-                                   (lsp-format-buffer)                  ; built-in lsp-mode formatting
-                                   (save-buffer)                        ; work on file only, and need to save the file first
-                                   (python-remove-unused-imports))      ; remove unused imports via external cmd
-                 )
+    (save-buffer)                               ; work on file only, and need to save the file first
+    (shell-command (format "autoflake --remove-all-unused-imports -i %s"
+                           (shell-quote-argument (buffer-file-name))))
+    (revert-buffer t t t))
 
-  ;; from https://github.com/syl20bnr/spacemacs/blob/master/layers/%2Blang/python/funcs.el
-  (defun python-toggle-breakpoint ()      ; toggle python breakpoint
-    "Add a break point, highlight it."
+  (defun python-lsp-document-formatting ()
+    "pyright does not provide document formatting code action,
+so using Black to implement the same function"
     (interactive)
-    (let ((trace (cond ((executable-find "wdb") "import wdb; wdb.set_trace()")
-                       ((executable-find "ipdb") "import ipdb; ipdb.set_trace()")
-                       ((executable-find "pudb") "import pudb; pudb.set_trace()")
-                       ((executable-find "ipdb3") "import ipdb; ipdb.set_trace()")
-                       ((executable-find "pudb3") "import pudb; pudb.set_trace()")
-                       (t "import pdb; pdb.set_trace()")))
-          (line (thing-at-point 'line)))
-      (if (and line (string-match trace line))
-          (kill-whole-line)
-        (progn
-          (back-to-indentation)
-          (insert trace)
-          (insert "\n")
-          (python-indent-line)))))
-  (local-set-key (kbd "<f9>") #'python-toggle-breakpoint) ; insert breakpoint
+    (save-buffer)                               ; work on file only, and need to save the file first
+    (shell-command (format "python -m black -q %s"
+                           (shell-quote-argument (buffer-file-name))))
+    (revert-buffer t t t))
   )
 
-(use-package dap-python :disabled :after (python-mode dap-mode) :custom (dap-python-debugger 'debugpy) :defer 2 :straight dap-mode)    ; lsp debugger
+(use-package dap-python                         ; lsp debugger
+  :after (python dap-mode)
+  :custom (dap-python-debugger 'debugpy)
+  :defer 2
+  :demand t
+  :straight dap-mode)
 #+END_SRC
 
 **** Ruby                                                            :LSP:
@@ -1531,13 +1510,17 @@ autoflake --remove-all-unused-imports -i unused_imports.py"
   :defer 2
   :straight dap-mode
   :config
-  (dap-register-debug-template "node::launch"
+  (dap-register-debug-template "node::launch::debug_current_file"
                                (list :type "node"
                                      :request "launch"
                                      :smartStep t
                                      :cwd "${workspaceFolder}"
                                      :outFiles ["${workspaceFolder}/**/*.js"]
                                      :skipFiles ["<node_internals>/**"]
+                                     :program "${file}"
+                                     ;; Or
+                                     ;; :program "${workspaceFolder}//APP.ts" ; replace with the filename & path to debug
+                                     ;; :args (list "")                       ; uncomment & replace with the arguments to program
                                      ))
   (dap-register-debug-template "node::launch::npm"
                                (list :type "node"
