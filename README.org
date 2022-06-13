@@ -1224,15 +1224,10 @@ Language Server Protocol
   :hook ((lsp-mode . lsp-ui-mode)
          (lsp-ui-mode . yas-minor-mode))
   :custom
-  (lsp-ui-doc-delay 1)
-  (lsp-ui-doc-header t)
-  (lsp-ui-doc-include-signature t)
-  (lsp-ui-doc-show-with-cursor t)
-  (lsp-eldoc-enable-hover nil)
   (lsp-modeline-code-actions-enable nil)
+  (lsp-ui-doc-enable nil)
   (lsp-ui-sideline-ignore-duplicate t)
   (lsp-ui-sideline-show-code-actions t)
-  (lsp-ui-sideline-show-hover t)
   (lsp-ui-flycheck-list-position 'right))
 
 (use-package lsp-ui-flycheck :after lsp-ui :defer 2 :straight lsp-ui)
@@ -1763,12 +1758,12 @@ Comment code block
 
 #+BEGIN_SRC emacs-lisp
 (use-package indent-guide
+  :disabled
   :diminish indent-guide-mode
   :hook ((prog-mode org-mode) . indent-guide-mode)
   :custom
-  (indent-guide-char "┊")
   (indent-guide-delay 0.3)
-  :config (set-face-foreground 'indent-guide-face "lightslategrey"))
+  :config (set-face-foreground 'indent-guide-face "dimgray"))
 #+END_SRC
 
 *** indent-yank                                                      :EDIT:
@@ -2195,9 +2190,10 @@ Diff between directories
 
 (use-package orderless
   :custom
-  (completion-styles '(orderless basic))
   (completion-category-defaults nil)
-  (completion-category-overrides '((file (styles basic partial-completion)))))
+  (completion-category-overrides '((file (styles basic partial-completion))))
+  (completion-styles '(orderless basic))
+  (orderless-component-separator #'orderless-escapable-split-on-space))
 
 (use-package marginalia
   :after vertico
@@ -2233,6 +2229,17 @@ Diff between directories
    ([remap isearch-backward]  . consult-line)             ; C-r
    ([remap switch-to-buffer]  . consult-buffer)           ; C-x b
    )
+  :config
+  (with-eval-after-load `perspective
+    (consult-customize consult--source-buffer :hidden t :default nil)
+    (defvar consult--source-perspective
+      (list :name     "Perspective"
+            :narrow   ?s
+            :category 'buffer
+            :state    #'consult--buffer-state
+            :default  t
+            :items    #'persp-get-buffer-names))
+    (push consult--source-perspective consult-buffer-sources))
   :custom
   (consult-narrow-key "<")
   (xref-show-xrefs-function #'consult-xref)
@@ -2295,11 +2302,18 @@ Diff between directories
 (use-package cape
   :after corfu
   :init
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev t)
-  (add-to-list 'completion-at-point-functions #'cape-keyword t)
-  (add-to-list 'completion-at-point-functions #'cape-file t)
-  (add-to-list 'completion-at-point-functions #'cape-history t)
-  (add-to-list 'completion-at-point-functions #'cape-ispell t))
+  (setq completion-at-point-functions
+        (list
+         (cape-super-capf #'cape-dabbrev #'cape-keyword)
+         #'cape-file
+         #'cape-history
+         #'cape-ispell))
+
+  (with-eval-after-load `lsp-mode
+    (advice-add 'lsp-completion--enable :after
+                #'(lambda ()
+                    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))))
+  )
 
 (use-package kind-icon
   :after corfu
