@@ -1745,7 +1745,8 @@ Comment code block
                   (if (string= format "Starting \"%s\" process...")
                       (ignore)
                     (apply old-fun format args))))
-  )
+  :init
+  (setq flyspell-use-meta-tab nil))              ; do not bundle to M-Tab
 
 (use-package flyspell-lazy
   :after flyspell
@@ -2284,8 +2285,7 @@ Diff between directories
                                'corfu-margin-formatters #'kind-icon-margin-formatter)
                               ))))
   :init
-  (setq completion-cycle-threshold 3
-        tab-always-indent 'complete)
+  (setq completion-cycle-threshold 3)
   :straight (corfu :files (:defaults "extensions/*")
                    :includes (corfu-history corfu-info corfu-quick)))
 
