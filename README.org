@@ -1748,10 +1748,6 @@ Comment code block
   :init
   (setq flyspell-use-meta-tab nil))              ; do not bundle to M-Tab
 
-(use-package flyspell-lazy
-  :after flyspell
-  :hook (flyspell-mode . flyspell-lazy-mode))
-
 (use-package flyspell-correct :after flyspell)  ; C-u/C-u C-u/C-u C-u C-u M-x flyspell-correct-wrapper
 #+END_SRC
 
