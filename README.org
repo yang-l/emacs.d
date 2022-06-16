@@ -881,6 +881,12 @@ Respect to the =.editorconfig= file in a project
 (use-package editorconfig :diminish editorconfig-mode :hook (prog-mode . editorconfig-mode-apply))
 #+END_SRC
 
+*** apheleia                                           :EDITING::FORMATTER:
+
+#+BEGIN_SRC emacs-lisp
+(use-package apheleia :hook (prog-mode . apheleia-mode))
+#+END_SRC
+
 *** tree-sitter                                             :PARSING::CODE:
 
 Code highlighting (for now)
@@ -888,9 +894,16 @@ Code highlighting (for now)
 #+BEGIN_SRC emacs-lisp
 (use-package tree-sitter
   :diminish tree-sitter-mode
-  :hook (((enh-ruby-mode go-mode json-mode sh-mode typescript-mode) . tree-sitter-mode)
+  :hook (((enh-ruby-mode
+           go-mode
+           json-mode
+           sh-mode
+           typescript-mode) . tree-sitter-mode)
          (tree-sitter-after-on . tree-sitter-hl-mode))
-  :config (add-to-list 'tree-sitter-major-mode-language-alist '(enh-ruby-mode . ruby)))
+  :config
+  (with-eval-after-load `enh-ruby-mode
+    (add-to-list 'tree-sitter-major-mode-language-alist '(enh-ruby-mode . ruby)))
+  )
 
 (use-package tree-sitter-langs :after tree-sitter)
 #+END_SRC
