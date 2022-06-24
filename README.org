@@ -884,7 +884,7 @@ Respect to the =.editorconfig= file in a project
 *** apheleia                                           :EDITING::FORMATTER:
 
 #+BEGIN_SRC emacs-lisp
-(use-package apheleia :hook (prog-mode . apheleia-mode))
+(use-package apheleia :disabled :diminish apheleia-mode :hook (prog-mode . apheleia-mode))
 #+END_SRC
 
 *** tree-sitter                                             :PARSING::CODE:
@@ -1139,7 +1139,16 @@ Language Server Protocol
   :commands (lsp lsp-deferred)
   :hook ((lsp-mode . (lambda ()
                        (let ((lsp-keymap-prefix "C-c l"))
-                         #'lsp-enable-which-key-integration)))
+                         #'lsp-enable-which-key-integration)
+                       (advice-add 'lsp-completion--enable :after
+                                   #'(lambda ()
+                                       (setq-local completion-at-point-functions
+                                                   (list
+                                                    (cape-capf-buster
+                                                     (cape-super-capf
+                                                      #'tabnine-completion-at-point
+                                                      #'lsp-completion-at-point)
+                                                     'equal)))))))
          (lsp-completion-mode . (lambda ()
                                   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
                                         '(orderless))))
@@ -2284,15 +2293,19 @@ Diff between directories
   :hook ((prog-mode
           terraform-mode
           text-mode) . (lambda ()
-                         (run-with-idle-timer
-                          1 nil
-                          #'(lambda ()
-                              (corfu-mode)                  ; corfu
-                              (unless (display-graphic-p)   ; corfu-terminal
-                                (corfu-terminal-mode 1))
-                              (add-to-list                  ; kind-icon
-                               'corfu-margin-formatters #'kind-icon-margin-formatter)
-                              ))))
+                         (let ((frame (selected-frame)))
+                           (run-with-idle-timer
+                            1 nil
+                            #'(lambda ()
+                                (when (active-minibuffer-window)
+                                  "Sometime, the minibuffer window is focused during the initialisation, and this function switches back to the orinal frame"
+                                  (select-frame frame))
+                                (unless (bound-and-true-p corfu-mode)
+                                  (corfu-mode)                ; corfu
+                                  (unless (display-graphic-p) ; corfu-terminal
+                                    (corfu-terminal-mode 1))
+                                  (add-to-list                ; kind-icon
+                                   'corfu-margin-formatters #'kind-icon-margin-formatter)))))))
   :init
   (setq completion-cycle-threshold 3)
   :straight (corfu :files (:defaults "extensions/*")
@@ -2308,29 +2321,35 @@ Diff between directories
   :straight (corfu-terminal :type git :repo "https://codeberg.org/akib/emacs-corfu-terminal.git")
   :unless (display-graphic-p))
 
-(use-package cape
-  :after corfu
-  :init
-  (setq completion-at-point-functions
-        (list
-         (cape-super-capf #'cape-dabbrev #'cape-keyword)
-         #'cape-file
-         #'cape-history
-         #'cape-ispell))
-
-  (with-eval-after-load `lsp-mode
-    (advice-add 'lsp-completion--enable :after
-                #'(lambda ()
-                    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))))
-  )
-
 (use-package kind-icon
   :after corfu
+  :config
+  (add-to-list 'kind-icon-mapping '(tabnine "ai" :icon "cloud" :face shadow) t)
   :custom
   (kind-icon-default-face 'corfu-default)
   (kind-icon-blend-background nil)
   (kind-icon-blend-frac 0.08)
   (svg-lib-icons-dir (no-littering-expand-var-file-name "svg-lib/cache/")))
+
+(use-package cape
+  :after corfu
+  :init
+  (add-to-list 'completion-at-point-functions
+               (cape-capf-buster
+                (cape-super-capf
+                 #'tabnine-completion-at-point
+                 #'cape-dabbrev
+                 #'cape-ispell
+                 #'cape-keyword)
+                'equal)
+               t)
+  (add-to-list 'completion-at-point-functions #'cape-file t))
+
+(use-package tabnine-capf
+  :after cape
+  :commands (tabnine-completion-at-point)
+  :hook (kill-emacs . tabnine-capf-kill-process)
+  :straight (:host github :repo "50ways2sayhard/tabnine-capf" :files ("*.el" "*.sh")))
 #+END_SRC
 
 *** Org                                                               :ORG:
