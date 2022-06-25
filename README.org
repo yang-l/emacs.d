@@ -887,6 +887,21 @@ Respect to the =.editorconfig= file in a project
 (use-package apheleia :disabled :diminish apheleia-mode :hook (prog-mode . apheleia-mode))
 #+END_SRC
 
+*** separedit                                               :COMMENT::CODE:
+
+#+BEGIN_SRC emacs-lisp
+(use-package separedit
+  :bind (:map prog-mode-map
+              ("C-c \"" . separedit))
+  :custom
+  (separedit-buffer-creation-hook #'auto-fill-mode)
+  (separedit-continue-fill-column t)
+  (separedit-default-mode 'markdown-mode)
+  (separedit-preserve-string-indentation t)
+  (separedit-remove-trailing-spaces-in-comment t)
+  (separedit-write-file-when-execute-save t))
+#+END_SRC
+
 *** tree-sitter                                             :PARSING::CODE:
 
 Code highlighting (for now)
