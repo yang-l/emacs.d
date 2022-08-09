@@ -42,7 +42,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 
 *** Package management
 
-=straight.el= defined =init.el=
+=straight.el= defined in =init.el=
 
 Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package=
 
