@@ -1265,7 +1265,10 @@ Language Server Protocol
   (lsp-ui-doc-enable nil)
   (lsp-ui-sideline-ignore-duplicate t)
   (lsp-ui-sideline-show-code-actions t)
-  (lsp-ui-flycheck-list-position 'right))
+  (lsp-ui-flycheck-list-position 'right)
+  :config
+  ;; https://www.reddit.com/r/emacs/comments/x1nwxi/how_to_customize_lspuisideline/
+  (defun lsp-ui-sideline--compute-height nil '(height unspecified)))
 
 (use-package lsp-ui-flycheck :after lsp-ui :defer 2 :straight lsp-ui)
 (use-package lsp-ui-imenu :after lsp-ui :defer 2 :straight lsp-ui)
@@ -2694,8 +2697,8 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
   (interactive "p")
   (indent-text (- count)))
 
-(global-set-key (kbd "C-c > >") #'(lambda () (interactive) (inc-line-indent 4)))
-(global-set-key (kbd "C-c < <") #'(lambda () (interactive) (dec-line-indent 4)))
+;(global-set-key (kbd "C-c > >") #'(lambda () (interactive) (inc-line-indent 4)))
+;(global-set-key (kbd "C-c < <") #'(lambda () (interactive) (dec-line-indent 4)))
 #+END_SRC
 
 *** File Format Convertion
