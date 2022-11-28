@@ -1354,7 +1354,42 @@ Language Server Protocol
                                                 (lsp-organize-imports)))
 
                 (unless (file-exists-p (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/go.mod"))
-                  (setenv "GO111MODULE" "off"))))))     ; turn off for one-off file
+                  (setenv "GO111MODULE" "off")))))      ; turn off for one-off file
+  :config
+  (run-with-idle-timer
+   0.1 nil
+   #'(lambda ()
+       (when (derived-mode-p 'go-mode)
+         (when (eq 1 (point-max))               ; new file template
+           (insert
+            "package main\n\n"
+            "import (\n"
+            "\t\"bufio\"\n"
+            "\t\"fmt\"\n"
+            "\t\"os/exec\"\n"
+            "\t\"strings\"\n"
+            "\t)\n\n"
+            "func main() {\n"
+            "\tcmdName := `sh -c \"ls\"`\n"
+            "\tcmdArgs := strings.Fields(cmdName)\n"
+            "\tcmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)\n\n"
+            "\tstdout, err := cmd.StdoutPipe()\n"
+            "\tif err != nil {\n"
+            "\t\tfmt.Println(err)\n"
+            "\t}\n\n"
+            "\tif err = cmd.Start(); err != nil {\n"
+            "\t\tfmt.Println(err)\n"
+            "\t}\n\n"
+            "\tscanner := bufio.NewScanner(stdout)\n"
+            "\tfor scanner.Scan() {\n"
+            "\t\tmsg := scanner.Text()\n"
+            "\t\tfmt.Println(msg)\n"
+            "\t}\n\n"
+            "\tif err = cmd.Wait(); err != nil {\n"
+            "\t\tfmt.Println(err)\n"
+            "\t}\n"
+            "}\n"))
+         ))))
 
 (use-package gotest
   :after go-mode
