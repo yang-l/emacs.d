@@ -778,18 +778,14 @@ Spacemacs dark theme
 (add-hook
  'window-setup-hook
  #'(lambda ()
-     (use-package spacemacs-common
-       :demand t
-       :straight spacemacs-theme
+     (use-package spacemacs-theme
+       :defer t
+       :straight (spacemacs-theme :type git :host github :repo "nashamri/spacemacs-theme")
        :init
        (custom-set-variables
         '(spacemacs-theme-custom-colors
-          '((border . "#4f4f4f")
-            ))
-        )
-       :config
-       (load-theme 'spacemacs-dark t)
-       )
+          '((border . "#4f4f4f"))))
+       (load-theme 'spacemacs-dark t))
 
      (when (eq system-type 'darwin)             ; mac only
        (when (display-graphic-p)                ; gui only
@@ -2393,7 +2389,7 @@ Diff between directories
                 (cape-super-capf
                  #'tabnine-completion-at-point
                  #'cape-dabbrev
-                 #'cape-ispell
+                 #'cape-dict
                  #'cape-keyword)
                 'equal)
                t)
