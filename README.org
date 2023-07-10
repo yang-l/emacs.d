@@ -2129,7 +2129,7 @@ auto-save buffers
 
 #+BEGIN_SRC emacs-lisp
 (use-package undo-tree
-  :defer 2
+  :commands undo-tree-visualize
   :diminish undo-tree-mode
   :config
   (add-to-list 'undo-tree-history-directory-alist
