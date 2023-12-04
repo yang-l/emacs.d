@@ -138,6 +138,13 @@ Configuration for =use-package=. The packages below should be loaded first befor
     vc-follow-symlinks t                        ; visiting a symbolic link to a file under version control
     )
 (fset 'yes-or-no-p 'y-or-n-p)                   ; fast confirmation
+
+;; tuning for very long line
+(setq-default bidi-display-reordering nil)
+(setq bidi-inhibit-bpa t
+      long-line-threshold 1000
+      large-hscroll-threshold 1000
+      syntax-wholeline-max 1000)
 #+END_SRC
 
 *** PATH
@@ -1157,7 +1164,7 @@ Language Server Protocol
                                        (setq-local completion-at-point-functions
                                                    (list
                                                     (cape-capf-buster
-                                                     (cape-super-capf
+                                                     (cape-capf-super
                                                       #'tabnine-completion-at-point
                                                       #'lsp-completion-at-point)
                                                      'equal)))))))
@@ -2388,7 +2395,7 @@ Diff between directories
   :init
   (add-to-list 'completion-at-point-functions
                (cape-capf-buster
-                (cape-super-capf
+                (cape-capf-super
                  #'tabnine-completion-at-point
                  #'cape-dabbrev
                  #'cape-dict
