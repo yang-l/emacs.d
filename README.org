@@ -1164,7 +1164,7 @@ Language Server Protocol
                                        (setq-local completion-at-point-functions
                                                    (list
                                                     (cape-capf-buster
-                                                     (cape-capf-super
+                                                     (cape-super-capf
                                                       #'tabnine-completion-at-point
                                                       #'lsp-completion-at-point)
                                                      'equal)))))))
@@ -1195,7 +1195,7 @@ Language Server Protocol
                                        ; Nix installed lsp server won't do lookups properly
                                        ; require to manually install as =~/.config/local/bin/terraform-ls=
                          lsp-yaml))
-  (lsp-clients-typescript-server-args '("--stdio" "--tsserver-log-file" "/dev/stderr"))     ; no more .log/tsserver.log files on project
+  (lsp-clients-typescript-server-args '("--stdio"))
   (lsp-completion-provider :none)               ; handled by corfu
   (lsp-idle-delay 0.3)
   (lsp-log-io nil)
@@ -2395,7 +2395,7 @@ Diff between directories
   :init
   (add-to-list 'completion-at-point-functions
                (cape-capf-buster
-                (cape-capf-super
+                (cape-super-capf
                  #'tabnine-completion-at-point
                  #'cape-dabbrev
                  #'cape-dict
