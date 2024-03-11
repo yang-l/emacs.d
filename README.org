@@ -1867,12 +1867,12 @@ Show the key pressed on the modeline
   (custom-set-faces
    '(keycast-key ((nil (:height 1 :background "gray30" :foreground "gray70")))))
   :custom
-  (keycast-insert-after 'mode-line-misc-info)
   (keycast-remove-tail-elements nil)
   (keycast-separator-width 2)
-  (mode-line-keycast-format "%s%k%c%r%s")
+  (keycast-mode-line-insert-after 'mode-line-misc-info)
+  (keycast-mode-line-format "%10s%k%c%r%5s")
   :config
-  (keycast-mode)
+  (keycast-mode-line-mode)
   )
 #+END_SRC
 
@@ -2805,7 +2805,7 @@ File manager
 (defun json-format ()
   (interactive)
   (save-excursion
-    (shell-command-on-region (mark) (point) "python -m json.tool" (buffer-name) t)
+    (shell-command-on-region (mark) (point) "python3 -m json.tool" (buffer-name) t)
     )
   )
 #+END_SRC
