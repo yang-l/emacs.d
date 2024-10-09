@@ -659,7 +659,7 @@ Terminal emulator inside Emacs
   :init (autoload #'tramp-register-crypt-file-name-handler "tramp-crypt")
   :config
   (setq tramp-default-method "ssh"              ; faster than the default scp
-        tramp-use-ssh-controlmaster-options nil)
+        tramp-use-connection-share nil)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (tramp-set-completion-function
    "ssh"
@@ -882,7 +882,7 @@ Spacemacs dark theme
 Respect to the =.editorconfig= file in a project
 
 #+BEGIN_SRC emacs-lisp
-(use-package editorconfig :diminish editorconfig-mode :hook (prog-mode . editorconfig-mode-apply))
+(use-package editorconfig :diminish editorconfig-mode :hook (prog-mode . (lambda () (editorconfig-mode 1))))
 #+END_SRC
 
 *** apheleia                                           :EDITING::FORMATTER:
@@ -1060,7 +1060,7 @@ Explore and test HTTP REST webservices
   :mode ("\\.\\(http\\|https\\|rest\\)$" . restclient-mode)
   :config
   (defun restclient-ignore-ssl ()
-    "Ignore SSL verification. Identical to 'curl -k'"
+    "Ignore SSL verification. Identical to \=curl -k\="
     (interactive)
     (custom-reevaluate-setting 'gnutls-verify-error)
     (make-local-variable 'gnutls-verify-error)
@@ -1164,7 +1164,7 @@ Language Server Protocol
                                        (setq-local completion-at-point-functions
                                                    (list
                                                     (cape-capf-buster
-                                                     (cape-super-capf
+                                                     (cape-capf-super
                                                       #'tabnine-completion-at-point
                                                       #'lsp-completion-at-point)
                                                      'equal)))))))
@@ -1820,7 +1820,7 @@ Comment code block
   :config
   (advice-add 'message :around
               #'(lambda (old-fun format &rest args)
-                  "Supress \"Starting \"look\" process\" message from 'ispell-lookup-words'"
+                  "Supress \"Starting \"look\" process\" message from \=ispell-lookup-words\="
                   (if (string= format "Starting \"%s\" process...")
                       (ignore)
                     (apply old-fun format args))))
@@ -2395,7 +2395,7 @@ Diff between directories
   :init
   (add-to-list 'completion-at-point-functions
                (cape-capf-buster
-                (cape-super-capf
+                (cape-capf-super
                  #'tabnine-completion-at-point
                  #'cape-dabbrev
                  #'cape-dict
@@ -2432,6 +2432,7 @@ Diff between directories
         org-use-speed-commands t                ; speed keys
         org-startup-indented t
         org-hide-leading-stars t
+        tab-width 8
         )
 
   (org-indent-mode t)                           ; list-oriented
