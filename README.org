@@ -620,9 +620,10 @@ Markup language often for readme
 Terminal emulator inside Emacs
 
 #+BEGIN_SRC emacs-lisp
-(use-package vterm)
+(use-package vterm :disabled)
 
 (use-package vterm-toggle
+  :disabled
   :custom
   (vterm-toggle-scope 'project)
   (vterm-toggle-hide-method 'reset-window-configration)
@@ -1027,7 +1028,7 @@ web-mode
 (use-package es-mode :config (setq es-always-pretty-print t))
 #+END_SRC
 
-**** js2
+**** jinja2
 
 #+BEGIN_SRC emacs-lisp
 (use-package jinja2-mode :disabled)
@@ -1048,7 +1049,7 @@ web-mode
 **** puppet-mode
 
 #+BEGIN_SRC emacs-lisp
-(use-package puppet-mode)
+(use-package puppet-mode :disabled)
 #+END_SRC
 
 **** restclient
@@ -1577,7 +1578,9 @@ so using Black to implement the same function"
 (use-package typescript-mode
   :interpreter "node"
   :hook (typescript-mode . js2-minor-mode)
-  :mode ("\\.tsx\\'" . typescript-mode))
+  :mode ("\\.tsx\\'" . typescript-mode)
+  :custom
+  (typescript-indent-level 2))
 
 (use-package dap-node
   :after (typescript-mode dap-mode)
@@ -1616,6 +1619,18 @@ so using Black to implement the same function"
                                      :runtimeExecutable "yarn"
                                      :runtimeArgs ["test"]
                                      )))
+#+END_SRC
+
+*** AI
+
+**** copilot.el
+
+#+BEGIN_SRC emacs-lisp
+(use-package copilot
+  :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
+  :requires editorconfig
+  :init
+  (use-package jsonrpc :defer t))
 #+END_SRC
 
 ** Mode Setting
@@ -2431,9 +2446,7 @@ Diff between directories
         org-src-tab-acts-natively t             ; mative tab in SRC block
         org-use-speed-commands t                ; speed keys
         org-startup-indented t
-        org-hide-leading-stars t
-        tab-width 8
-        )
+        org-hide-leading-stars t)
 
   (org-indent-mode t)                           ; list-oriented
   (diminish 'org-indent-mode)
