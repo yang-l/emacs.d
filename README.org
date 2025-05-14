@@ -1627,11 +1627,22 @@ so using Black to implement the same function"
 
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
+  :disabled
   :if (executable-find "node")
   :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
   :requires editorconfig
   :custom
   (copilto-idle-delay 1.2))
+#+END_SRC
+
+**** copilot-chat.el
+
+#+BEGIN_SRC emacs-lisp
+  (use-package copilot-chat
+    :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
+    :after org
+    :commands copilot-chat
+    :hook (git-commit-setup . copilot-chat-insert-commit-message))
 #+END_SRC
 
 ** Mode Setting
