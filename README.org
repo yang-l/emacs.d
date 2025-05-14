@@ -1025,7 +1025,7 @@ web-mode
 **** es-mode
 
 #+BEGIN_SRC emacs-lisp
-(use-package es-mode :config (setq es-always-pretty-print t))
+(use-package es-mode :disabled :config (setq es-always-pretty-print t))
 #+END_SRC
 
 **** jinja2
@@ -1198,7 +1198,7 @@ Language Server Protocol
                          lsp-yaml))
   (lsp-clients-typescript-server-args '("--stdio"))
   (lsp-completion-provider :none)               ; handled by corfu
-  (lsp-idle-delay 0.3)
+  (lsp-idle-delay 0.7)
   (lsp-log-io nil)
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 3)
@@ -1627,10 +1627,11 @@ so using Black to implement the same function"
 
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
+  :if (executable-find "node")
   :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
   :requires editorconfig
-  :init
-  (use-package jsonrpc :defer t))
+  :custom
+  (copilto-idle-delay 1.2))
 #+END_SRC
 
 ** Mode Setting
@@ -2168,7 +2169,7 @@ auto-save buffers
 vim-like text folding
 
 #+BEGIN_SRC emacs-lisp
-(use-package vimish-fold :commands (vimish-fold vimish-fold-delete vimish-fold-toggle))
+(use-package vimish-fold :disabled :commands (vimish-fold vimish-fold-delete vimish-fold-toggle))
 #+END_SRC
 
 *** which-key
@@ -2422,6 +2423,9 @@ Diff between directories
 (use-package tabnine-capf
   :after cape
   :commands (tabnine-completion-at-point)
+  :custom
+  (tabnine-capf-max-num-results 5)
+  (tabnine-capf-wait 0.5)
   :hook (kill-emacs . tabnine-capf-kill-process)
   :straight (:host github :repo "50ways2sayhard/tabnine-capf" :files ("*.el" "*.sh")))
 #+END_SRC
