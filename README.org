@@ -2447,8 +2447,21 @@ Diff between directories
 
 #+BEGIN_SRC emacs-lisp
 (use-package org
-  :bind ("C-c o b" . org-switchb)
   :straight (:type built-in)
+  :bind ("C-c o b" . org-switchb)
+  :hook ((after-save . (lambda ()                    ; recompile README.org/.el/.elc
+                         "Load and compile README.org"
+                         (when (equal (buffer-file-name) (expand-file-name (concat user-emacs-directory "README.org")))
+                           (org-babel-tangle nil (expand-file-name (concat user-emacs-directory "README.el")) "emacs-lisp")
+                           (byte-compile-file (expand-file-name (concat user-emacs-directory "README.el")))
+                           (when (fboundp 'native-compile)
+                             (native-compile (expand-file-name (concat user-emacs-directory "README.el"))))
+                           )))
+         (org-shiftup-final    . windmove-up)   ; active windmove
+         (org-shiftleft-final  . windmove-left)
+         (org-shiftdown-final  . windmove-down)
+         (org-shiftright-final . windmove-right)
+         )
   :config
   (setq truncate-lines nil                      ; line wrap
         org-edit-src-content-indentation 0      ; no indentation in SRC block
@@ -2465,22 +2478,6 @@ Diff between directories
 
   (org-indent-mode t)                           ; list-oriented
   (diminish 'org-indent-mode)
-
-  (add-hook 'org-shiftup-final-hook 'windmove-up)  ; active windmove
-  (add-hook 'org-shiftleft-final-hook 'windmove-left)
-  (add-hook 'org-shiftdown-final-hook 'windmove-down)
-  (add-hook 'org-shiftright-final-hook 'windmove-right)
-
-  ;; recompile README.org/.el/.elc
-  (add-hook 'after-save-hook
-            #'(lambda ()
-                "Load and compile README.org"
-                (when (equal (buffer-file-name) (expand-file-name (concat user-emacs-directory "README.org")))
-                  (org-babel-tangle nil (expand-file-name (concat user-emacs-directory "README.el")) "emacs-lisp")
-                  (byte-compile-file (expand-file-name (concat user-emacs-directory "README.el")))
-                  (when (fboundp 'native-compile)
-                    (native-compile (expand-file-name (concat user-emacs-directory "README.el"))))
-                  )))
   )
 #+END_SRC
 
