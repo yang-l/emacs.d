@@ -899,12 +899,12 @@ Respect to the =.editorconfig= file in a project
   :bind (:map prog-mode-map
               ("C-c \"" . separedit))
   :custom
-  (separedit-buffer-creation-hook #'auto-fill-mode)
   (separedit-continue-fill-column t)
   (separedit-default-mode 'markdown-mode)
   (separedit-preserve-string-indentation t)
   (separedit-remove-trailing-spaces-in-comment t)
-  (separedit-write-file-when-execute-save t))
+  (separedit-write-file-when-execute-save t)
+  :hook (separedit-buffer-creation . auto-fill-mode))
 #+END_SRC
 
 *** tree-sitter                                             :PARSING::CODE:
@@ -937,7 +937,7 @@ Code highlighting (for now)
                         :branch "master"
                         :repo "artawower/turbo-log.el")
   :custom
-  (turbo-log-allow-insert-without-tree-sitter-p t)
+  (turbo-log-allow-insert-without-treesit-p t)
   (turbo-log-msg-format-template "\"%s\""))
 #+END_SRC
 
@@ -950,7 +950,7 @@ Code highlighting (for now)
   :diminish git-gutter-mode
   :hook ((prog-mode org-mode) . git-gutter-mode)
   :custom
-  (git-gutter:update-interval 0.02)
+  (git-gutter:update-interval 0.1)
   :config
   (custom-set-variables                         ; backend
    '(git-gutter:handled-backends
@@ -1632,7 +1632,7 @@ so using Black to implement the same function"
   :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
   :requires editorconfig
   :custom
-  (copilto-idle-delay 1.2))
+  (copilot-idle-delay 1.2))
 #+END_SRC
 
 **** copilot-chat.el
@@ -2283,8 +2283,8 @@ Diff between directories
               ("M-q" . vertico-quick-insert))
   :config
   (minibuffer-depth-indicate-mode)
+  (setq enable-recursive-minibuffers t)
   :custom
-  (enable-recursive-minibuffers t)
   (vertico-cycle t)
   (vertico-resize t)
   :hook ((after-init . vertico-mode)
@@ -2374,7 +2374,6 @@ Diff between directories
   (corfu-bar-width 0)               ; hide popup right scroll bar
   (corfu-cycle t)
   (corfu-min-width 30)
-  (corfu-preselect-first nil)
   (corfu-right-margin-width 0)      ; hide popup right scroll bar
   :hook ((prog-mode
           terraform-mode
