@@ -13,6 +13,10 @@ git clone https://github.com/yang-l/emacs.d.git ~/.emacs.d
 
 * Emacs init.el
 
+#+BEGIN_SRC emacs-lisp
+;;  -*- lexical-binding: t; -*-
+#+END_SRC
+
 ** Initialisation
 
 *** Load files
@@ -198,17 +202,17 @@ Use the stock key bindings when possible.
 passing tmux keystrokes within emacs terminal
 
 #+BEGIN_SRC emacs-lisp
-(defadvice terminal-init-screen
-    ;; The advice is named `tmux', and is run before `terminal-init-screen' runs.
-    (before tmux activate)
-    ;; Docstring.  This describes the advice and is made available inside emacs;
-    ;; for example when doing C-h f terminal-init-screen RET
-    "Apply xterm keymap, allowing use of keys passed through tmux."
-    ;; This is the elisp code that is run before `terminal-init-screen'.
-    (if (getenv "TMUX")
-        (let ((map (copy-keymap xterm-function-map)))
-          (set-keymap-parent map (keymap-parent input-decode-map))
-          (set-keymap-parent input-decode-map map))))
+;; (defadvice terminal-init-screen
+;;     ;; The advice is named `tmux', and is run before `terminal-init-screen' runs.
+;;     (before tmux activate)
+;;     ;; Docstring.  This describes the advice and is made available inside emacs;
+;;     ;; for example when doing C-h f terminal-init-screen RET
+;;     "Apply xterm keymap, allowing use of keys passed through tmux."
+;;     ;; This is the elisp code that is run before `terminal-init-screen'.
+;;     (if (getenv "TMUX")
+;;         (let ((map (copy-keymap xterm-function-map)))
+;;           (set-keymap-parent map (keymap-parent input-decode-map))
+;;           (set-keymap-parent input-decode-map map))))
 #+END_SRC
 
 OSX-only key bindings
@@ -284,7 +288,7 @@ OSX-only key bindings
 
 ; https://emacs.stackexchange.com/questions/32150/how-to-add-a-timestamp-to-each-entry-in-emacs-messages-buffer
 (advice-add 'message :before                    ; add timestamp in *Messages* buffer
-            #'(lambda (FORMAT-STRING &rest args)
+            #'(lambda (&rest args)
                 "Advice to run before `message' that prepends a timestamp to each message."
                 (if message-log-max
                     (let ((deactivate-mark nil)
@@ -970,10 +974,11 @@ Code highlighting (for now)
         )
 
   ;; full screen magit-status
-  (defadvice magit-status (around magit-fullscreen activate)
+  (defun magit-status--magit-fullscreen (orig-fun &rest args)
     (window-configuration-to-register :magit-fullscreen)
-    ad-do-it
+    (apply orig-fun args)
     (delete-other-windows))
+  (advice-add 'magit-status :around #'magit-status--magit-fullscreen)
   )
 
 (use-package autorevert :diminish auto-revert-mode)
@@ -1291,6 +1296,7 @@ Language Server Protocol
   )
 
 (use-package dap-mode
+  :disabled
   :after (lsp-mode lsp-modeline)
   :hook (python typescript-mode)
   :init
@@ -1516,6 +1522,7 @@ so using Black to implement the same function"
   )
 
 (use-package dap-python                         ; lsp debugger
+  :disabled
   :after (python dap-mode)
   :custom (dap-python-debugger 'debugpy)
   :defer 2
@@ -1583,6 +1590,7 @@ so using Black to implement the same function"
   (typescript-indent-level 2))
 
 (use-package dap-node
+  :disabled
   :after (typescript-mode dap-mode)
   :defer 2
   :straight dap-mode
@@ -2005,7 +2013,7 @@ Show the key pressed on the modeline
         (meow-insert-exit))))
   (advice-add #'save-buffers-kill-terminal
               :before
-              (lambda (func &rest args)
+              (lambda (&rest args)
                 (exit-meow-insert-mode))))
 #+END_SRC
 
@@ -2742,29 +2750,29 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
 *** Line Indent
 
 #+BEGIN_SRC emacs-lisp
-(defun indent-text (distance)
-  (if (use-region-p)
-      (let ((mark (mark)))
-        (save-excursion
-          (indent-rigidly (region-beginning)
-                          (region-end)
-                          distance)
-          (push-mark mark t t)
-          (setq deactivate-mark nil)))
-    (indent-rigidly (line-beginning-position)
-                    (line-end-position)
-                    distance)))
-
-(defun inc-line-indent (count)
-  (interactive "p")
-  (indent-text count))
-
-(defun dec-line-indent (count)
-  (interactive "p")
-  (indent-text (- count)))
-
-;(global-set-key (kbd "C-c > >") #'(lambda () (interactive) (inc-line-indent 4)))
-;(global-set-key (kbd "C-c < <") #'(lambda () (interactive) (dec-line-indent 4)))
+;; (defun indent-text (distance)
+;;   (if (use-region-p)
+;;       (let ((mark (mark)))
+;;         (save-excursion
+;;           (indent-rigidly (region-beginning)
+;;                           (region-end)
+;;                           distance)
+;;           (push-mark mark t t)
+;;           (setq deactivate-mark nil)))
+;;     (indent-rigidly (line-beginning-position)
+;;                     (line-end-position)
+;;                     distance)))
+;;
+;; (defun inc-line-indent (count)
+;;   (interactive "p")
+;;   (indent-text count))
+;;
+;; (defun dec-line-indent (count)
+;;   (interactive "p")
+;;   (indent-text (- count)))
+;;
+;; ;(global-set-key (kbd "C-c > >") #'(lambda () (interactive) (inc-line-indent 4)))
+;; ;(global-set-key (kbd "C-c < <") #'(lambda () (interactive) (dec-line-indent 4)))
 #+END_SRC
 
 *** File Format Convertion
