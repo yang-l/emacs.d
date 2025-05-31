@@ -32,12 +32,12 @@ Path to personal/credential info in =~/.emacs.d/private.el=
   (concat (getenv "HOME") "/"))
 (defvar my-win-default-directory default-directory)
 (defvar my-lin-default-directory default-directory)
-(defvar my-erc-nick "")                         ; ERC
-(defvar my-erc-user-full-name "")
-(defvar my-erc-email-userid "")
-(defvar my-op/repository-directory "")          ; org-page
-(defvar my-op/site-domain "")
-(defvar my-op/personal-github-link "")
+;; (defvar my-erc-nick "")                         ; ERC
+;; (defvar my-erc-user-full-name "")
+;; (defvar my-erc-email-userid "")
+;; (defvar my-op/repository-directory "")          ; org-page
+;; (defvar my-op/site-domain "")
+;; (defvar my-op/personal-github-link "")
 
 ;; override
 (when (file-exists-p (concat user-emacs-directory "private.el"))
@@ -1016,7 +1016,7 @@ web-mode
 **** Groovy
 
 #+BEGIN_SRC emacs-lisp
-(use-package groovy-mode :mode "\\.groovy\\'\\|\\.gradle\\'")
+(use-package groovy-mode :disabled :mode "\\.groovy\\'\\|\\.gradle\\'")
 #+END_SRC
 
 *** Infrastructure
@@ -1178,16 +1178,16 @@ Language Server Protocol
                                   (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
                                         '(orderless))))
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
-         (dockerfile-mode . lsp-deferred)
-         (enh-ruby-mode . lsp-deferred)
-         (go-mode . lsp-deferred)
-         (js2-mode . lsp-deferred)
-         (json-mode . lsp-deferred)
-         (python-mode . lsp-deferred)
-         (sh-mode . lsp-deferred)
-         (terraform-mode . lsp-deferred)
-         (typescript-mode . lsp-deferred)
-         (yaml-mode . lsp-deferred))
+         ((dockerfile-mode
+           enh-ruby-mode
+           go-mode
+           js2-mode
+           json-mode
+           python-mode
+           sh-mode
+           terraform-mode
+           typescript-mode
+           yaml-mode) . lsp-deferred))
   :custom
   (lsp-auto-guess-root t)
   (lsp-client-packages '(lsp-bash
@@ -1268,8 +1268,7 @@ Language Server Protocol
                ("d f" . lsp-ui-doc-focus-frame) ; keyboard scrolling in the lsp-ui-doc popup frame, and graphic display only
                ("d u" . lsp-ui-doc-unfocus-frame)))
   :commands lsp-ui-mode
-  :hook ((lsp-mode . lsp-ui-mode)
-         (lsp-ui-mode . yas-minor-mode))
+  :hook (lsp-mode . lsp-ui-mode)
   :custom
   (lsp-modeline-code-actions-enable nil)
   (lsp-ui-doc-enable nil)
@@ -1635,12 +1634,11 @@ so using Black to implement the same function"
 
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
-  :disabled
-  :if (executable-find "node")
   :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
-  :requires editorconfig
+  :hook ((sh-mode
+          terraform-mode) . copilot-mode)
   :custom
-  (copilot-idle-delay 1.2))
+  (copilot-idle-delay 1))
 #+END_SRC
 
 **** copilot-chat.el
@@ -1671,6 +1669,7 @@ Visible bookmarks
 
 #+BEGIN_SRC emacs-lisp
 (use-package bm
+  :disabled
   :init
   (setq bm-restore-repository-on-load t)        ; restore on load
   :config
@@ -1694,6 +1693,7 @@ moving word/line/region around
 
 #+BEGIN_SRC emacs-lisp
 (use-package drag-stuff
+  :disabled
   :diminish drag-stuff-mode
   :hook ((prog-mode org-mode text-mode) . drag-stuff-mode)
   :config
@@ -1717,63 +1717,63 @@ simple implementation of jumping to definition/source
 *** erc                                                               :IRC:
 
 #+BEGIN_SRC emacs-lisp
-(autoload 'define-erc-response-handler "erc-backend" nil t)
-(with-eval-after-load `erc
-  (progn
-    (setq erc-server  "irc.freenode.net"        ; default to freenode.net
-          erc-port    "6697"
-          erc-nick my-erc-nick
-          erc-user-full-name my-erc-user-full-name
-          erc-email-userid my-erc-email-userid
-          erc-hide-list                         ; hide unwanted messages
-          '("JOIN" "PART" "QUIT")
-          erc-interpret-mirc-color t            ; color highlighting
-          erc-rename-buffers t                  ; Rename buffers to the current network name instead of SERVER:PORT
-          erc-server-coding-system              ; always utf-8
-          '(utf-8 . utf-8)
-          erc-log-mode t                        ; enable logging
-          erc-generate-log-file-name-function
-          (quote erc-generate-log-file-name-with-date)
-          erc-hide-timestamps t                 ; hide logging timestamp when chatting
-          erc-log-channels-directory            ; directory
-          (concat backup-directory "erc.logs/")
-          erc-log-insert-log-on-open nil        ; ignore previous messages
-          erc-log-file-coding-system 'utf-8-unix
-          erc-button-url-regexp                 ; Button URL
-            "\\([-a-zA-Z0-9_=!?#$@~`%&*+\\/:;,]+\\.\\)+[-a-zA-Z0-9_=!?#$@~`%&*+\\/:;,]*[-a-zA-Z0-9\\/]"
-          erc-prompt (lambda () (concat "[" (buffer-name) "]"))
-          erc-auto-discard-away t               ; autoaway
-          erc-autoaway-idle-seconds 600
-          erc-autoaway-use-emacs-idle t
-          erc-query-display 'buffer             ; open query in the current window
-          )
-    (erc-log-mode)
-    (erc-truncate-mode +1)                      ; truncate long irc buffers
-    (require 'erc-sasl)                         ; sasl
-    (add-to-list 'erc-sasl-server-regexp-list "irc\\.freenode\\.net")
-
-    ;; for erc-sasl
-    (defun erc-login ()
-      "Perform user authentication at the IRC server."
-      (erc-log (format "login: nick: %s, user: %s %s %s :%s"
-                       (erc-current-nick)
-                       (user-login-name)
-                       (or erc-system-name (system-name))
-                       erc-session-server
-                       erc-session-user-full-name))
-      (if erc-session-password
-          (erc-server-send (format "PASS %s" erc-session-password))
-        (message "Logging in without password"))
-      (when (and (featurep 'erc-sasl) (erc-sasl-use-sasl-p))
-        (erc-server-send "CAP REQ :sasl"))
-      (erc-server-send (format "NICK %s" (erc-current-nick)))
-      (erc-server-send
-       (format "USER %s %s %s :%s"
-               (if erc-anonymous-login erc-email-userid (user-login-name))
-               "0" "*"
-               erc-session-user-full-name))
-      (erc-update-mode-line))
-    ))
+;; (autoload 'define-erc-response-handler "erc-backend" nil t)
+;; (with-eval-after-load `erc
+;;   (progn
+;;     (setq erc-server  "irc.freenode.net"        ; default to freenode.net
+;;           erc-port    "6697"
+;;           erc-nick my-erc-nick
+;;           erc-user-full-name my-erc-user-full-name
+;;           erc-email-userid my-erc-email-userid
+;;           erc-hide-list                         ; hide unwanted messages
+;;           '("JOIN" "PART" "QUIT")
+;;           erc-interpret-mirc-color t            ; color highlighting
+;;           erc-rename-buffers t                  ; Rename buffers to the current network name instead of SERVER:PORT
+;;           erc-server-coding-system              ; always utf-8
+;;           '(utf-8 . utf-8)
+;;           erc-log-mode t                        ; enable logging
+;;           erc-generate-log-file-name-function
+;;           (quote erc-generate-log-file-name-with-date)
+;;           erc-hide-timestamps t                 ; hide logging timestamp when chatting
+;;           erc-log-channels-directory            ; directory
+;;           (concat backup-directory "erc.logs/")
+;;           erc-log-insert-log-on-open nil        ; ignore previous messages
+;;           erc-log-file-coding-system 'utf-8-unix
+;;           erc-button-url-regexp                 ; Button URL
+;;             "\\([-a-zA-Z0-9_=!?#$@~`%&*+\\/:;,]+\\.\\)+[-a-zA-Z0-9_=!?#$@~`%&*+\\/:;,]*[-a-zA-Z0-9\\/]"
+;;           erc-prompt (lambda () (concat "[" (buffer-name) "]"))
+;;           erc-auto-discard-away t               ; autoaway
+;;           erc-autoaway-idle-seconds 600
+;;           erc-autoaway-use-emacs-idle t
+;;           erc-query-display 'buffer             ; open query in the current window
+;;           )
+;;     (erc-log-mode)
+;;     (erc-truncate-mode +1)                      ; truncate long irc buffers
+;;     (require 'erc-sasl)                         ; sasl
+;;     (add-to-list 'erc-sasl-server-regexp-list "irc\\.freenode\\.net")
+;;
+;;     ;; for erc-sasl
+;;     (defun erc-login ()
+;;       "Perform user authentication at the IRC server."
+;;       (erc-log (format "login: nick: %s, user: %s %s %s :%s"
+;;                        (erc-current-nick)
+;;                        (user-login-name)
+;;                        (or erc-system-name (system-name))
+;;                        erc-session-server
+;;                        erc-session-user-full-name))
+;;       (if erc-session-password
+;;           (erc-server-send (format "PASS %s" erc-session-password))
+;;         (message "Logging in without password"))
+;;       (when (and (featurep 'erc-sasl) (erc-sasl-use-sasl-p))
+;;         (erc-server-send "CAP REQ :sasl"))
+;;       (erc-server-send (format "NICK %s" (erc-current-nick)))
+;;       (erc-server-send
+;;        (format "USER %s %s %s :%s"
+;;                (if erc-anonymous-login erc-email-userid (user-login-name))
+;;                "0" "*"
+;;                erc-session-user-full-name))
+;;       (erc-update-mode-line))
+;;     ))
 #+END_SRC
 
 *** evil-nerd-commenter                                              :EDIT:
@@ -2215,6 +2215,7 @@ Display the key bindings in a popup.
 (use-package yasnippet
   :commands yas-minor-mode
   :diminish yas-minor-mode
+  :hook (lsp-ui-mode . yas-minor-mode)
   :custom (yas-keymap-disable-hook t)
   :config (yas-reload-all))
 (use-package yasnippet-snippets :after yasnippet)
