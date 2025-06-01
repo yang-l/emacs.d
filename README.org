@@ -23,7 +23,7 @@ git clone https://github.com/yang-l/emacs.d.git ~/.emacs.d
 
 Path to non ELPA included lisp files
 #+BEGIN_SRC emacs-lisp
-(add-to-list 'load-path "~/.emacs.d/lisp/")
+;; (add-to-list 'load-path "~/.emacs.d/lisp/")
 #+END_SRC
 
 Path to personal/credential info in =~/.emacs.d/private.el=
@@ -38,6 +38,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 ;; (defvar my-op/repository-directory "")          ; org-page
 ;; (defvar my-op/site-domain "")
 ;; (defvar my-op/personal-github-link "")
+(defvar my-OPENAI_API_KEY "" "OpenAI API Key for Aider/Aidermacs")
 
 ;; override
 (when (file-exists-p (concat user-emacs-directory "private.el"))
@@ -624,7 +625,8 @@ Markup language often for readme
 Terminal emulator inside Emacs
 
 #+BEGIN_SRC emacs-lisp
-(use-package vterm :disabled)
+(use-package vterm
+  :commands vterm)
 
 (use-package vterm-toggle
   :disabled
@@ -1314,6 +1316,7 @@ Language Server Protocol
   :mode (("\\.*bashrc$"      . sh-mode)
          ("\\.*bash_profile" . sh-mode))
   :custom
+  (sh-basic-offset 2)
   (sh-indent-comment t)
   :config
   ; Fixing OSX/node "Operation not permitted" - add 'node' under "Security & Privacy"
@@ -1638,7 +1641,7 @@ so using Black to implement the same function"
   :hook ((sh-mode
           terraform-mode) . copilot-mode)
   :custom
-  (copilot-idle-delay 1))
+  (copilot-idle-delay 1.2))
 #+END_SRC
 
 **** copilot-chat.el
@@ -1650,6 +1653,26 @@ so using Black to implement the same function"
     :commands copilot-chat
     :hook (git-commit-setup . copilot-chat-insert-commit-message))
 #+END_SRC
+
+**** aidermacs
+
+- `emigo` for v2 initiative
+- get token from https://aider.chat/docs/llms/github.html#where-do-i-get-the-token
+- check GitHub Copilot [base model](https://docs.github.com/en/copilot/managing-copilot/monitoring-usage-and-entitlements/about-premium-requests#model-multipliers) setting
+
+#+begin_src emacs-lisp
+(use-package aidermacs
+  :commands aidermacs-transient-menu
+  :custom
+  (aidermacs-use-architect-mode t)
+  (aidermacs-default-model "openai/gpt-4.1")
+  (aidermacs-backend 'vterm)
+  :hook (aidermacs-before-run-backend
+         . (lambda ()
+             ; Github Copilot
+             (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
+             (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))))
+#+end_src
 
 ** Mode Setting
 

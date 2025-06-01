@@ -1,4 +1,5 @@
 README.el*
+private.el
 eln-cache/
 elpa/
 files/rubylsp.sh
