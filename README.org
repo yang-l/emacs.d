@@ -626,6 +626,7 @@ Terminal emulator inside Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package vterm
+  :bind (:map vterm-mode-map ("DEL" . vterm-send-backspace))
   :commands vterm)
 
 (use-package vterm-toggle
@@ -1664,9 +1665,10 @@ so using Black to implement the same function"
 (use-package aidermacs
   :commands aidermacs-transient-menu
   :custom
+  (aidermacs-backend 'vterm)
   (aidermacs-use-architect-mode t)
   (aidermacs-default-model "openai/gpt-4.1")
-  (aidermacs-backend 'vterm)
+  (aidermacs-extra-args '("--map-tokens 1024"))
   :hook (aidermacs-before-run-backend
          . (lambda ()
              ; Github Copilot
@@ -2071,9 +2073,8 @@ Grouping buffers
 
 #+BEGIN_SRC emacs-lisp
 (use-package puni
-  :init
-  (puni-global-mode)
-  (dolist (hook '(vterm-toggle-show-hook)) (add-hook hook #'puni-disable-puni-mode)))
+  :hook ((vterm-mode) . puni-disable-puni-mode)
+  :init (puni-global-mode))
 
 (use-package elec-pair :hook (after-init . electric-pair-mode))
 (use-package paren
