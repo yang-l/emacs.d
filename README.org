@@ -1647,7 +1647,7 @@ so using Black to implement the same function"
 
 *** AI
 
-**** copilot.el
+**** copilot.el                                                   :github:
 
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
@@ -1658,7 +1658,7 @@ so using Black to implement the same function"
   (copilot-idle-delay 1.2))
 #+END_SRC
 
-**** copilot-chat.el
+**** copilot-chat.el                                              :github:
 
 #+BEGIN_SRC emacs-lisp
   (use-package copilot-chat
@@ -1681,7 +1681,7 @@ so using Black to implement the same function"
   (aidermacs-backend 'vterm)
   (aidermacs-use-architect-mode t)
   (aidermacs-default-model "openai/gpt-4.1")
-  (aidermacs-extra-args '("--map-tokens 1024"))
+  (aidermacs-extra-args '("--map-tokens 1024" "--watch-files"))
   :hook (aidermacs-before-run-backend
          . (lambda ()
              ; Github Copilot
