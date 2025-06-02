@@ -121,7 +121,6 @@ Configuration for =use-package=. The packages below should be loaded first befor
     custom-file                                 ; save customisations into a sibling file
     (no-littering-expand-etc-file-name "custom.el")
     default-major-mode 'text-mode               ; set new buffers as text files
-    enable-recursive-minibuffers t              ; enable minibuffer recursive
     fill-column 80                              ; column space
     frame-title-format "emacs@%b"               ; show on title
     indent-tabs-mode nil                        ; space instead of tab
@@ -150,6 +149,18 @@ Configuration for =use-package=. The packages below should be loaded first befor
       long-line-threshold 1000
       large-hscroll-threshold 1000
       syntax-wholeline-max 1000)
+
+(use-package emacs
+  :custom
+  ;; Support opening new minibuffers from inside existing minibuffers.
+  (enable-recursive-minibuffers t)
+  ;; Hide commands in M-x which do not work in the current mode.  Vertico
+  ;; commands are hidden in normal buffers. This setting is useful beyond
+  ;; Vertico.
+  (read-extended-command-predicate #'command-completion-default-include-p)
+  ;; Do not allow the cursor in the minibuffer prompt
+  (minibuffer-prompt-properties
+   '(read-only t cursor-intangible t face minibuffer-prompt)))
 #+END_SRC
 
 *** PATH
@@ -626,7 +637,9 @@ Terminal emulator inside Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package vterm
-  :bind (:map vterm-mode-map ("DEL" . vterm-send-backspace))
+  :bind (:map vterm-mode-map
+              ("DEL" . vterm-send-backspace)
+              ("<deletechar>" . vterm-send-delete))
   :commands vterm)
 
 (use-package vterm-toggle
@@ -2316,7 +2329,6 @@ Diff between directories
               ("M-q" . vertico-quick-insert))
   :config
   (minibuffer-depth-indicate-mode)
-  (setq enable-recursive-minibuffers t)
   :custom
   (vertico-cycle t)
   (vertico-resize t)
