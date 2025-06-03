@@ -7,3 +7,4 @@ scratches/
 straight/
 !straight/versions/default.el
 var/
+.cache/

@@ -637,7 +637,7 @@ Terminal emulator inside Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package vterm
-  :bind (:map vterm-mode-map
+  :bind (:map vterm-mode-map                    ; `C-h k` for key sequence
               ("DEL" . vterm-send-backspace)
               ("<deletechar>" . vterm-send-delete))
   :commands vterm)
@@ -1649,6 +1649,10 @@ so using Black to implement the same function"
 
 **** copilot.el                                                   :github:
 
+- Alternative - `minuet-ai.el`
+- using `@github/copilot-language-server`
+- Token stored under `~/.config/github-copilot/hosts.json`
+
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
   :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
@@ -1658,10 +1662,14 @@ so using Black to implement the same function"
   (copilot-idle-delay 1.2))
 #+END_SRC
 
-**** copilot-chat.el                                              :github:
+**** copilot-chat.el                                     :github:DISABLED:
+
+- Token stored under `~/.config/copilot-chat/github-token`
+- Replaced by `gptel`
 
 #+BEGIN_SRC emacs-lisp
   (use-package copilot-chat
+    :disabled
     :straight (:host github :repo "chep/copilot-chat.el" :files ("*.el"))
     :after org
     :commands copilot-chat
@@ -1671,7 +1679,7 @@ so using Black to implement the same function"
 **** aidermacs
 
 - `emigo` for v2 initiative
-- get token from https://aider.chat/docs/llms/github.html#where-do-i-get-the-token
+- get token from https://aider.chat/docs/llms/github.html#where-do-i-get-the-token, stored under `~/.config/github-copilot/apps.json`
 - check GitHub Copilot [base model](https://docs.github.com/en/copilot/managing-copilot/monitoring-usage-and-entitlements/about-premium-requests#model-multipliers) setting
 
 #+begin_src emacs-lisp
@@ -1687,6 +1695,18 @@ so using Black to implement the same function"
              ; Github Copilot
              (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
              (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))))
+#+end_src
+
+**** gptel
+
+#+begin_src emacs-lisp
+(use-package gptel
+  :commands (gptel gptel-send)
+  :config
+  (add-hook 'gptel-post-response-functions 'gptel-end-of-response)
+  (setq gptel-model 'gpt-4.1
+        gptel-backend (gptel-make-gh-copilot "Copilot")
+        gptel-default-mode #'org-mode))
 #+end_src
 
 ** Mode Setting
