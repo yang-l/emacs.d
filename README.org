@@ -938,9 +938,15 @@ Available in Emacs 29+
         (json-mode       . json-ts-mode)
         (python-mode     . python-ts-mode)
         (sh-mode         . bash-ts-mode)
-        (terraform-mode  . terraform-ts-mode)
         (typescript-mode . typescript-ts-mode)
         (yaml-mode       . yaml-ts-mode)))
+
+(add-hook 'bash-ts-mode-hook #'(lambda () (run-hooks #'sh-mode-hook)))
+(add-hook 'go-ts-mode-hook #'(lambda () (run-hooks #'go-mode-hook)))
+(add-hook 'json-ts-mode-hook #'(lambda () (run-hooks #'json-mode-hook)))
+(add-hook 'python-ts-mode-hook #'(lambda () (run-hooks #'python-mode-hook)))
+(add-hook 'typescript-ts-mode-hook #'(lambda () (run-hooks #'typescript-mode-hook)))
+(add-hook 'yaml-ts-mode-hook #'(lambda () (run-hooks #'yaml-mode-hook)))
 #+end_src
 
 **** turbo-log                                                    :LOGGING:
@@ -1651,8 +1657,11 @@ so using Black to implement the same function"
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
   :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
-  :hook ((sh-mode
-          terraform-mode) . copilot-mode)
+  :hook ((go-mode
+          python-mode
+          sh-mode
+          terraform-mode
+          typescript-mode) . copilot-mode)
   :custom
   (copilot-idle-delay 1.2))
 #+END_SRC
