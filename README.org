@@ -209,6 +209,7 @@ Use the stock key bindings when possible.
 (global-unset-key (kbd "C-SPC"))                ; set-mark-command
 (global-unset-key (kbd "C-x f"))                ; set-fill-column
 (global-unset-key (kbd "C-z"))                  ; suspend-frame
+(global-unset-key (kbd "C-x C-z"))
 #+END_SRC
 
 passing tmux keystrokes within emacs terminal
@@ -929,24 +930,18 @@ Respect to the =.editorconfig= file in a project
 
 *** tree-sitter                                             :PARSING::CODE:
 
-Code highlighting (for now)
+Available in Emacs 29+
 
-#+BEGIN_SRC emacs-lisp
-(use-package tree-sitter
-  :diminish tree-sitter-mode
-  :hook (((enh-ruby-mode
-           go-mode
-           json-mode
-           sh-mode
-           typescript-mode) . tree-sitter-mode)
-         (tree-sitter-after-on . tree-sitter-hl-mode))
-  :config
-  (with-eval-after-load `enh-ruby-mode
-    (add-to-list 'tree-sitter-major-mode-language-alist '(enh-ruby-mode . ruby)))
-  )
-
-(use-package tree-sitter-langs :after tree-sitter)
-#+END_SRC
+#+begin_src emacs-lisp
+(setq major-mode-remap-alist
+      '((go-mode         . go-ts-mode)
+        (json-mode       . json-ts-mode)
+        (python-mode     . python-ts-mode)
+        (sh-mode         . bash-ts-mode)
+        (terraform-mode  . terraform-ts-mode)
+        (typescript-mode . typescript-ts-mode)
+        (yaml-mode       . yaml-ts-mode)))
+#+end_src
 
 **** turbo-log                                                    :LOGGING:
 
@@ -997,7 +992,7 @@ Code highlighting (for now)
   (advice-add 'magit-status :around #'magit-status--magit-fullscreen)
   )
 
-(use-package autorevert :diminish auto-revert-mode)
+(use-package autorevert :diminish auto-revert-mode :hook (after-init . global-auto-revert-mode))
 #+END_SRC
 
 *** Web
