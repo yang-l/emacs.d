@@ -928,25 +928,28 @@ Respect to the =.editorconfig= file in a project
   :hook (separedit-buffer-creation . auto-fill-mode))
 #+END_SRC
 
-*** tree-sitter                                             :PARSING::CODE:
+*** treesit/tree-sitter                                     :PARSING::CODE:
 
 Available in Emacs 29+
 
 #+begin_src emacs-lisp
-(setq major-mode-remap-alist
-      '((go-mode         . go-ts-mode)
-        (json-mode       . json-ts-mode)
-        (python-mode     . python-ts-mode)
-        (sh-mode         . bash-ts-mode)
-        (typescript-mode . typescript-ts-mode)
-        (yaml-mode       . yaml-ts-mode)))
-
-(add-hook 'bash-ts-mode-hook #'(lambda () (run-hooks #'sh-mode-hook)))
-(add-hook 'go-ts-mode-hook #'(lambda () (run-hooks #'go-mode-hook)))
-(add-hook 'json-ts-mode-hook #'(lambda () (run-hooks #'json-mode-hook)))
-(add-hook 'python-ts-mode-hook #'(lambda () (run-hooks #'python-mode-hook)))
-(add-hook 'typescript-ts-mode-hook #'(lambda () (run-hooks #'typescript-mode-hook)))
-(add-hook 'yaml-ts-mode-hook #'(lambda () (run-hooks #'yaml-mode-hook)))
+(use-package treesit
+  :config
+  (add-hook 'bash-ts-mode-hook       #'(lambda () (run-hooks #'sh-mode-hook)))
+  (add-hook 'go-ts-mode-hook         #'(lambda () (run-hooks #'go-mode-hook)))
+  (add-hook 'json-ts-mode-hook       #'(lambda () (run-hooks #'json-mode-hook)))
+  (add-hook 'python-ts-mode-hook     #'(lambda () (run-hooks #'python-mode-hook)))
+  (add-hook 'typescript-ts-mode-hook #'(lambda () (run-hooks #'typescript-mode-hook)))
+  (add-hook 'yaml-ts-mode-hook       #'(lambda () (run-hooks #'yaml-mode-hook)))
+  :custom (treesit-font-lock-level 4)
+  :init
+  (add-to-list 'major-mode-remap-alist '(go-mode         . go-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(json-mode       . json-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(python-mode     . python-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(sh-mode         . bash-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(yaml-mode       . yaml-ts-mode))
+  :straight (:type built-in))
 #+end_src
 
 **** turbo-log                                                    :LOGGING:
