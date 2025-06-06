@@ -543,7 +543,7 @@ Call =ediff= or =ediff3= in Emace for file comparisons
   )
 #+END_SRC
 
-**** Hideshow                                                    :CODEING:
+**** Hideshow                                                       :CODE:
 
 Code folding
 
@@ -2259,16 +2259,16 @@ Display the key bindings in a popup.
   )
 #+END_SRC
 
-*** yasnippet
+*** yasnippet                                                        :CODE:
+
+No key bind, and use `yas-next-field-or-maybe-expand` to loop through fields
 
 #+BEGIN_SRC emacs-lisp
 (use-package yasnippet
-  :commands yas-minor-mode
   :diminish yas-minor-mode
   :hook (lsp-ui-mode . yas-minor-mode)
-  :custom (yas-keymap-disable-hook t)
-  :config (yas-reload-all))
-(use-package yasnippet-snippets :after yasnippet)
+  :custom (yas-keymap-disable-hook t))
+(use-package yasnippet-snippets :after yasnippet :config (yas-reload-all))
 #+END_SRC
 
 *** ztree                                                            :EDIT:
