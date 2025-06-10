@@ -48,7 +48,9 @@
 
 (load bootstrap-file nil 'nomessage)            ;; init
 
-(straight-use-package 'use-package)             ; use-package
+(if (version< emacs-version "29")
+    (straight-use-package 'use-package)         ; use-package
+  (setq straight-built-in-pseudo-packages '(use-package)))
 
 (use-package straight
   :custom
@@ -61,8 +63,7 @@
   (use-package-always-defer t)
   (use-package-compute-statistics t))           ; bootstrap statistics
 
-(eval-when-compile
-  (require 'bind-key))
+(eval-when-compile (require 'bind-key))
 ;; end of straight.el & use-package
 
 ;; load or compile elc file

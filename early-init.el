@@ -24,9 +24,7 @@
 
 (setq frame-resize-pixelwise t)                 ; ensure turly full-screen
 
-(unless (eq system-type 'darwin)
-  (setq command-line-ns-option-alist nil))
-(unless (eq system-type 'gnu/linux)
-  (setq command-line-x-option-alist nil))
+(unless (eq system-type 'darwin) (setq command-line-ns-option-alist nil))
+(unless (eq system-type 'gnu/linux) (setq command-line-x-option-alist nil))
 
 ;;; early-init.el ends here

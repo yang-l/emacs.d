@@ -2876,10 +2876,10 @@ Selective copy and paste
 File manager
 
 #+BEGIN_SRC emacs-lisp
-(defun dired-open-home ()
-  (interactive)
-  (dired "~/")
-  )
+;; (defun dired-open-home ()
+;;   (interactive)
+;;   (dired "~/")
+;;   )
 #+END_SRC
 
 *** Json Formatter                                                   :EDIT:
