@@ -39,6 +39,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 ;; (defvar my-op/site-domain "")
 ;; (defvar my-op/personal-github-link "")
 (defvar my-OPENAI_API_KEY "" "OpenAI/Github Copilot API Key for Aider/Aidermacs")
+(defvar my-ANTHROPIC_API_KEY "" "Claude/Anthropic API Key for Aider/Aidermacs")
 
 ;; override
 (when (file-exists-p (concat user-emacs-directory "private.el"))
@@ -1685,19 +1686,20 @@ so using Black to implement the same function"
   (aidermacs-backend 'vterm)
   (aidermacs-use-architect-mode t)
   (aidermacs-default-model "openai/gpt-4.1")
-  (aidermacs-extra-args '("--map-tokens 1024" "--watch-files" "--code-theme solarized-dark"))
+  (aidermacs-extra-args '("--map-tokens 2048" "--watch-files" "--code-theme solarized-dark"))
   :hook (aidermacs-before-run-backend
          . (lambda ()
-             (when (not (string-empty-p my-OPENAI_API_KEY)) ; Github Copilot
+             (when (not (string-empty-p my-OPENAI_API_KEY))     ; Github Copilot
                (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
-               (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))
-             ))
+               (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))     ; Claude
+             (when (not (string-empty-p my-ANTHROPIC_API_KEY))
+               (setenv "ANTHROPIC_API_KEY" my-ANTHROPIC_API_KEY))))
   :if (executable-find "aider")
   :init
   (with-eval-after-load 'aidermacs
     (setq aidermacs-vterm-theme-foreground-colors-plist
           (plist-put aidermacs-vterm-theme-foreground-colors-plist
-                     "--user-input-color"
+                     "--user-input-color"   ; https://github.com/nashamri/spacemacs-theme/blob/2ffca41e6e9aa55d8de5c40c6fb61e0d47763b5d/spacemacs-theme.el#L157
                      "#67b11d"))))
 #+end_src
 
@@ -1710,6 +1712,7 @@ so using Black to implement the same function"
   (add-hook 'gptel-post-response-functions 'gptel-end-of-response)
   (setq gptel-model 'gpt-4.1
         gptel-backend (gptel-make-gh-copilot "Copilot")
+        gptel-backend (gptel-make-anthropic "Claude" :stream t :key my-ANTHROPIC_API_KEY)
         gptel-default-mode #'org-mode))
 #+end_src
 
