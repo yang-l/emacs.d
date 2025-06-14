@@ -38,7 +38,7 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 ;; (defvar my-op/repository-directory "")          ; org-page
 ;; (defvar my-op/site-domain "")
 ;; (defvar my-op/personal-github-link "")
-(defvar my-OPENAI_API_KEY "" "OpenAI API Key for Aider/Aidermacs")
+(defvar my-OPENAI_API_KEY "" "OpenAI/Github Copilot API Key for Aider/Aidermacs")
 
 ;; override
 (when (file-exists-p (concat user-emacs-directory "private.el"))
@@ -635,6 +635,8 @@ Markup language often for readme
 ***** vterm                                                    :TERMINAL:
 
 Terminal emulator inside Emacs
+
+`vterm-copy-mode` to scroll
 
 #+BEGIN_SRC emacs-lisp
 (use-package vterm
@@ -1674,6 +1676,7 @@ so using Black to implement the same function"
 - `emigo` for v2 initiative
 - get token from https://aider.chat/docs/llms/github.html#where-do-i-get-the-token, stored under `~/.config/github-copilot/apps.json`
 - check GitHub Copilot [base model](https://docs.github.com/en/copilot/managing-copilot/monitoring-usage-and-entitlements/about-premium-requests#model-multipliers) setting
+- Gemini and OpenRouter may provide some free models, but rate limited
 
 #+begin_src emacs-lisp
 (use-package aidermacs
@@ -1682,19 +1685,27 @@ so using Black to implement the same function"
   (aidermacs-backend 'vterm)
   (aidermacs-use-architect-mode t)
   (aidermacs-default-model "openai/gpt-4.1")
-  (aidermacs-extra-args '("--map-tokens 1024" "--watch-files"))
+  (aidermacs-extra-args '("--map-tokens 1024" "--watch-files" "--code-theme solarized-dark"))
   :hook (aidermacs-before-run-backend
          . (lambda ()
-             ; Github Copilot
-             (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
-             (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))))
+             (when (not (string-empty-p my-OPENAI_API_KEY)) ; Github Copilot
+               (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
+               (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))
+             ))
+  :if (executable-find "aider")
+  :init
+  (with-eval-after-load 'aidermacs
+    (setq aidermacs-vterm-theme-foreground-colors-plist
+          (plist-put aidermacs-vterm-theme-foreground-colors-plist
+                     "--user-input-color"
+                     "#67b11d"))))
 #+end_src
 
 **** gptel
 
 #+begin_src emacs-lisp
 (use-package gptel
-  :commands (gptel gptel-send)
+  :commands (gptel gptel-menu gptel-send)
   :config
   (add-hook 'gptel-post-response-functions 'gptel-end-of-response)
   (setq gptel-model 'gpt-4.1
