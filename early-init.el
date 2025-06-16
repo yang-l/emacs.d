@@ -7,13 +7,11 @@
 ;; optimise startup speed
 (setq gc-cons-threshold most-positive-fixnum)   ; set GC at beginning to speed up Emacs loading
 
-(setq load-prefer-newer t)
-(setq package-enable-at-startup nil)            ; disable package.el
+(setq load-prefer-newer nil                     ; all default values
+      native-comp-deferred-compilation t
+      native-comp-jit-compilation t)
 
-(when (and (fboundp 'native-comp-available)
-        (native-comp-available))
-  (when (boundp 'native-comp-deferred-compilation)
-    (setq native-comp-deferred-compilation t))) ; native-comp
+(setq package-enable-at-startup nil)            ; disable package.el
 
 ; disable at the earliest stage
 ;; https://lists.gnu.org/archive/html/help-gnu-emacs/2019-02/msg00318.html

@@ -5,7 +5,7 @@
 ;;; Code:
 
 ;; version check
-(let ((minver "28.1"))
+(let ((minver "30.1"))
   (if (version< emacs-version minver)
     (error "Emacs v%s or higher is required!" minver)))
 

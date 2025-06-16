@@ -2526,16 +2526,15 @@ Diff between directories
   :hook ((after-save . (lambda ()                    ; recompile README.org/.el/.elc
                          "Load and compile README.org"
                          (when (equal (buffer-file-name) (expand-file-name (concat user-emacs-directory "README.org")))
+                           (delete-file (expand-file-name (concat user-emacs-directory "README.el")))
                            (org-babel-tangle nil (expand-file-name (concat user-emacs-directory "README.el")) "emacs-lisp")
                            (byte-compile-file (expand-file-name (concat user-emacs-directory "README.el")))
                            (when (fboundp 'native-compile)
-                             (native-compile (expand-file-name (concat user-emacs-directory "README.el"))))
-                           )))
+                             (native-compile (expand-file-name (concat user-emacs-directory "README.el")))))))
          (org-shiftup-final    . windmove-up)   ; active windmove
          (org-shiftleft-final  . windmove-left)
          (org-shiftdown-final  . windmove-down)
-         (org-shiftright-final . windmove-right)
-         )
+         (org-shiftright-final . windmove-right))
   :config
   (setq truncate-lines nil                      ; line wrap
         org-edit-src-content-indentation 0      ; no indentation in SRC block
