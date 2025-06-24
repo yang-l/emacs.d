@@ -59,10 +59,6 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
 ;; https://github.com/Ergus/EmacsConfig/blob/master/early-init.el
 (defvar lo/gc-cons-default (* 1024 1024 32))
 (defvar lo/gc-cons-lsp (* 1024 1024 128))
-
-(defsubst lo/unset-gc ()
-  "Defer garbage collection"
-  (setq gc-cons-threshold most-positive-fixnum))
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -70,7 +66,11 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
   :defer 3
   :diminish
   :demand t
-  :config (gcmh-mode 1))
+  :config (gcmh-mode 1)
+  :custom
+  (gcmh-low-cons-threshold (* 1024 1024 16))
+  (gcmh-idle-delay 3)
+  (gc-cons-percentage 0.2))
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -625,6 +625,14 @@ Markup language often for readme
                      narrow-to-page
                      narrow-to-region)
         do (put fn 'disabled nil))
+#+END_SRC
+
+**** re-builder                                                    :REGEX:
+
+#+BEGIN_SRC emacs-lisp
+(use-package re-builder
+  :commands re-builder
+  :custom (reb-re-syntax 'string))
 #+END_SRC
 
 **** Shell & Term
@@ -1226,7 +1234,7 @@ Language Server Protocol
                          lsp-yaml))
   (lsp-clients-typescript-server-args '("--stdio"))
   (lsp-completion-provider :none)               ; handled by corfu
-  (lsp-idle-delay 0.7)
+  (lsp-idle-delay 0.5)
   (lsp-log-io nil)
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 3)
@@ -1238,8 +1246,7 @@ Language Server Protocol
     (run-with-idle-timer
      5 nil #'(lambda ()
                (with-eval-after-load `gcmh
-                 (setq gcmh-high-cons-threshold lo/gc-cons-lsp))    ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
-               (setq read-process-output-max (* 1024 1024 4)))))
+                 (setq gcmh-high-cons-threshold lo/gc-cons-lsp)))))    ; performance tuning @ https://emacs-lsp.github.io/lsp-mode/page/performance/
 
   (when (derived-mode-p 'enh-ruby-mode)
     (with-eval-after-load `lsp-solargraph
@@ -1598,8 +1605,6 @@ so using Black to implement the same function"
 (use-package terraform-mode
   :mode "\\.tf\\(vars\\)?\\'"
   :custom (terraform-indent-level 2))
-
-  (use-package terraform-doc :after terraform-mode)
 #+END_SRC
 
 **** TypeScript                                                      :LSP:
@@ -1662,14 +1667,13 @@ so using Black to implement the same function"
 
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
-  :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
+  :custom (copilot-idle-delay 1)
   :hook ((go-mode
           python-mode
           sh-mode
           terraform-mode
           typescript-mode) . copilot-mode)
-  :custom
-  (copilot-idle-delay 1.2))
+  :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
 #+END_SRC
 
 **** aidermacs
