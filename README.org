@@ -70,7 +70,8 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
   :custom
   (gcmh-low-cons-threshold (* 1024 1024 16))
   (gcmh-idle-delay 3)
-  (gc-cons-percentage 0.2))
+  (gc-cons-percentage 0.2)
+  (inhibit-compacting-font-caches t))           ; no fount cache gc
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -127,7 +128,6 @@ Configuration for =use-package=. The packages below should be loaded first befor
     indent-tabs-mode nil                        ; space instead of tab
     kill-ring-max 1000                          ; kill ring size
     mouse-wheel-scroll-amount '(1 ((shift) .1)) ; scroll one line at a time
-    frame-resize-pixelwise t
     read-buffer-completion-ignore-case t        ; ignore case-sensitivity
     read-file-name-completion-ignore-case t
     require-final-newline t                     ; always add a new line at the end of a file
@@ -143,9 +143,13 @@ Configuration for =use-package=. The packages below should be loaded first befor
     vc-follow-symlinks t                        ; visiting a symbolic link to a file under version control
     )
 (fset 'yes-or-no-p 'y-or-n-p)                   ; fast confirmation
+(setopt use-short-answers t)
+(setq y-or-n-p-use-read-key t
+      read-char-choice-use-read-key t)
 
 ;; tuning for very long line
-(setq-default bidi-display-reordering nil)
+(setq-default bidi-display-reordering nil
+              bidi-paragraph-direction 'left-to-right)
 (setq bidi-inhibit-bpa t
       long-line-threshold 1000
       large-hscroll-threshold 1000
@@ -161,7 +165,9 @@ Configuration for =use-package=. The packages below should be loaded first befor
   (read-extended-command-predicate #'command-completion-default-include-p)
   ;; Do not allow the cursor in the minibuffer prompt
   (minibuffer-prompt-properties
-   '(read-only t cursor-intangible t face minibuffer-prompt)))
+   '(read-only t cursor-intangible t face minibuffer-prompt))
+  (display-raw-bytes-as-hex t)                  ; display improvement
+  (redisplay-skip-fontification-on-input t))
 #+END_SRC
 
 *** PATH
@@ -268,7 +274,11 @@ OSX-only key bindings
                             (switch-window--auto-resize-window)))))
         (setq eval-expression-print-length nil  ; do not truncate output in the echo area
               message-log-max 10000             ; increase number of lines in *Messages*
-              use-dialog-box nil)               ; disable usage of dialog box, and in echo area instead
+              use-dialog-box nil                ; disable usage of dialog box, and in echo area instead
+              inhibit-x-resources t
+              inhibit-startup-message t
+              inhibit-startup-buffer-menu t
+              use-file-dialog nil)
     )))
 (dolist
     (hook
@@ -1691,7 +1701,7 @@ so using Black to implement the same function"
   (aidermacs-use-architect-mode t)
   (aidermacs-default-model "openai/gpt-4.1")
   (aidermacs-editor-model "sonnet")
-  (aidermacs-extra-args '("--map-tokens 2048" "--watch-files" "--code-theme solarized-dark"))
+  (aidermacs-extra-args '("--map-tokens 2048" "--watch-files" "--code-theme solarized-dark" "--editor emacs"))
   :hook (aidermacs-before-run-backend
          . (lambda ()
              (when (not (string-empty-p my-OPENAI_API_KEY))     ; Github Copilot

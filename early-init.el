@@ -27,7 +27,8 @@
 (push '(tool-bar-lines . 0) default-frame-alist)
 (push '(vertical-scroll-bars) default-frame-alist)
 
-(setq frame-resize-pixelwise t)                 ; ensure turly full-screen
+(setq frame-resize-pixelwise t                  ; ensure turly full-screen
+      window-resize-pixelwise t)
 
 (unless (eq system-type 'darwin) (setq command-line-ns-option-alist nil))
 (unless (eq system-type 'gnu/linux) (setq command-line-x-option-alist nil))
