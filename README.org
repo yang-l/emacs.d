@@ -1238,7 +1238,7 @@ Language Server Protocol
                          lsp-json
                          lsp-pyright
                          lsp-solargraph
-                         lsp-terraform ; 'terraform' is managed by 'asdf'
+                         lsp-terraform ; 'terraform' is managed by `mise`
                                        ; Nix installed lsp server won't do lookups properly
                                        ; require to manually install as =~/.config/local/bin/terraform-ls=
                          lsp-yaml))
@@ -1261,7 +1261,7 @@ Language Server Protocol
   (when (derived-mode-p 'enh-ruby-mode)
     (with-eval-after-load `lsp-solargraph
       ; load libraries
-      (add-to-list 'lsp-solargraph-library-directories (expand-file-name "~/.asdf/installs/ruby/"))
+      (add-to-list 'lsp-solargraph-library-directories (expand-file-name "~/.local/share/mise/installs/ruby/"))
       (add-to-list 'lsp-solargraph-library-directories
                    (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/vendor/bundle/"))
       ))
@@ -1276,8 +1276,7 @@ Language Server Protocol
       (when proj-root
         (dolist (folder ignore-folders)
           (dolist (f (directory-files-recursively proj-root folder t))
-            (add-to-list 'lsp-file-watch-ignored-directories f)))))
-    (add-to-list 'lsp-file-watch-ignored-directories (expand-file-name "~/.asdf")))
+            (add-to-list 'lsp-file-watch-ignored-directories f))))))
   )
 
 (use-package lsp-pyright
@@ -1593,8 +1592,8 @@ so using Black to implement the same function"
   (setenv "RUBYOPT" "--jit")
   :config
   (add-to-list 'exec-path
-               (concat (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin"))
-  (setenv "PATH" (concat (getenv "PATH") ":" (expand-file-name "~/.asdf/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin"))
+               (concat (expand-file-name "~/.local/share/mise/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin"))
+  (setenv "PATH" (concat (getenv "PATH") ":" (expand-file-name "~/.local/share/mise/installs/ruby/") (shell-command-to-string (concat "grep ruby " (expand-file-name "~/.tool-versions") " 2>/dev/null | cut -d' ' -f2 | tr -d $'\n'" )) "/bin"))
   )
 
 (use-package inf-ruby
@@ -1678,7 +1677,8 @@ so using Black to implement the same function"
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
   :custom (copilot-idle-delay 1)
-  :hook ((go-mode
+  :hook ((enh-ruby-mode
+          go-mode
           python-mode
           sh-mode
           terraform-mode
@@ -1706,8 +1706,8 @@ so using Black to implement the same function"
          . (lambda ()
              (when (not (string-empty-p my-OPENAI_API_KEY))     ; Github Copilot
                (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
-               (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))     ; Claude
-             (when (not (string-empty-p my-ANTHROPIC_API_KEY))
+               (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))
+             (when (not (string-empty-p my-ANTHROPIC_API_KEY))  ; Claude
                (setenv "ANTHROPIC_API_KEY" my-ANTHROPIC_API_KEY))))
   :if (executable-find "aider")
   :init
