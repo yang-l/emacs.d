@@ -799,12 +799,11 @@ Emacs GUI font settings - https://emacs-china.org/t/emacs/15676
            (set-fontset-font "fontset-default"  ; 中文字体
                              'han '("WenQuanYi Zen Hei Sharp" . "unicode-bmp"))))
         ((eq system-type 'darwin)               ; macOS
-         (set-face-attribute 'default nil :font "Monaco" :height 120))
+         (set-face-attribute 'default nil :font "Maple Mono Normal NL CN" :height 135))
         (t                                      ; default
-         (when (member "Inconsolata" (font-family-list))
-           (set-face-attribute 'default nil :font "Inconsolata" :height 120)))
-        )
-       )))
+         (when (member "Monaco" (font-family-list))
+           (set-face-attribute 'default nil :font "Monaco" :height 120)))
+        ))))
 
 (when (daemonp)                                 ; for emacsclient -c
   (add-hook 'after-make-frame-functions
@@ -812,12 +811,11 @@ Emacs GUI font settings - https://emacs-china.org/t/emacs/15676
                 (select-frame frame)
                 (cond
                  ((eq system-type 'darwin)      ; macOS
-                  (set-face-attribute 'default nil :font "Monaco" :height 120))
+                  (set-face-attribute 'default nil :font "Maple Mono Normal NL CN" :height 135))
                  (t                             ; default
-                  (when (member "Inconsolata" (font-family-list))
-                    (set-face-attribute 'default nil :font "Inconsolata" :height 120)))
-                 )
-                )))
+                  (when (member "Monaco" (font-family-list))
+                    (set-face-attribute 'default nil :font "Monaco" :height 120)))
+                 ))))
 #+END_SRC
 
 **** Theme
