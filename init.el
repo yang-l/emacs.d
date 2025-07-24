@@ -33,7 +33,7 @@
 (eval-and-compile                               ; straight.el
   (defvar bootstrap-file
     (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-    (defvar bootstrap-version 6))
+  (defvar bootstrap-version 7))
 
 (unless (file-exists-p bootstrap-file)          ;; bootstrap
   (with-current-buffer
@@ -50,7 +50,8 @@
 
 (if (version< emacs-version "29")
     (straight-use-package 'use-package)         ; use-package
-  (setq straight-built-in-pseudo-packages '(use-package)))
+  (add-to-list 'straight-built-in-pseudo-packages 'use-package t)
+  (add-to-list 'straight-built-in-pseudo-packages 'use-package-ensure-system-package t))
 
 (use-package straight
   :custom
@@ -62,6 +63,7 @@
   :custom
   (use-package-always-defer t)
   (use-package-compute-statistics t))           ; bootstrap statistics
+(require 'use-package-ensure-system-package)
 
 (eval-when-compile (require 'bind-key))
 ;; end of straight.el & use-package

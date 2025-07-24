@@ -1701,7 +1701,7 @@ so using Black to implement the same function"
   (aidermacs-use-architect-mode t)
   (aidermacs-default-model "openai/gpt-4.1")
   (aidermacs-editor-model "sonnet")
-  (aidermacs-extra-args '("--map-tokens 2048" "--watch-files" "--code-theme solarized-dark" "--editor emacs"))
+  (aidermacs-extra-args '("--map-tokens 2048" "--watch-files" "--code-theme solarized-dark" "--editor emacs" "--no-gitignore"))
   :hook (aidermacs-before-run-backend
          . (lambda ()
              (when (not (string-empty-p my-OPENAI_API_KEY))     ; Github Copilot
@@ -1717,6 +1717,23 @@ so using Black to implement the same function"
                      "--user-input-color"   ; https://github.com/nashamri/spacemacs-theme/blob/2ffca41e6e9aa55d8de5c40c6fb61e0d47763b5d/spacemacs-theme.el#L157
                      "#67b11d"))))
 #+end_src
+
+**** claude-code.el
+
+#+BEGIN_SRC emacs-lisp
+(use-package claude-code
+  :straight (:type git :host github :repo "stevemolitor/claude-code.el" :branch "main" :depth 1
+                   :files ("*.el" (:exclude "images/*")))
+  :bind-keymap ("C-c c" . claude-code-command-map)
+  :commands claude-code-transient
+  :custom
+  (claude-code-terminal-backend 'vterm)
+  :ensure-system-package (claude . "npm install -g @anthropic-ai/claude-code")
+  :hook (claude-code-start
+         . (lambda ()
+             (when (eq claude-code-terminal-backend 'vterm)
+               (setq-local vterm-max-scrollback 100000)))))
+#+END_SRC
 
 **** gptel
 
