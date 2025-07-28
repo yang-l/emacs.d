@@ -11,8 +11,8 @@
       process-adaptive-read-buffering nil)
 
 (setq load-prefer-newer nil                     ; all default values
-      native-comp-deferred-compilation t
       native-comp-jit-compilation t)
+(setq native-comp-async-report-warnings-errors nil)
 
 (setq package-enable-at-startup nil)            ; disable package.el
 
