@@ -1782,6 +1782,8 @@ Different from Claude Code which acts as an agent involving very limited coding,
                                    (current-buffer))))
             (funcall orig-fun process input))))))
   (advice-add 'vterm--filter :around #'claude-code--vterm-multiline-buffer-filter)
+
+  (claude-code-ide-emacs-tools-setup)   ; enable mcp
   :commands claude-code-ide-menu
   :ensure-system-package (claude . "npm install -g @anthropic-ai/claude-code")
   :hook (buffer-list-update
