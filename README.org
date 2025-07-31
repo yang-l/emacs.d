@@ -1236,9 +1236,7 @@ Language Server Protocol
                          lsp-json
                          lsp-pyright
                          lsp-solargraph
-                         lsp-terraform ; 'terraform' is managed by `mise`
-                                       ; Nix installed lsp server won't do lookups properly
-                                       ; require to manually install as =~/.config/local/bin/terraform-ls=
+                         lsp-terraform ; 'terraform' and 'terraform-ls' are managed by `mise`
                          lsp-yaml))
   (lsp-clients-typescript-server-args '("--stdio"))
   (lsp-completion-provider :none)               ; handled by corfu
@@ -1611,7 +1609,8 @@ so using Black to implement the same function"
 #+BEGIN_SRC emacs-lisp
 (use-package terraform-mode
   :mode "\\.tf\\(vars\\)?\\'"
-  :custom (terraform-indent-level 2))
+  :custom (terraform-indent-level 2)
+  :ensure-system-package (terraform-ls . "mise install terraform-ls"))
 #+END_SRC
 
 **** TypeScript                                                      :LSP:
