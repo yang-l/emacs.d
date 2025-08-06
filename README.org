@@ -63,24 +63,14 @@ Call =pp-macroexpand-last-sexp= to check the expanded macro done by =use-package
 
 #+BEGIN_SRC emacs-lisp
 (use-package gcmh
-  :defer 3
+  :defer 5
   :diminish
-  :demand t
   :config (gcmh-mode 1)
   :custom
   (gcmh-low-cons-threshold (* 1024 1024 16))
-  (gcmh-idle-delay 3)
+  (gcmh-idle-delay 5)
   (gc-cons-percentage 0.2)
   (inhibit-compacting-font-caches t))           ; no fount cache gc
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp
-;; benchmarking emacs boot sequence
-(use-package benchmark-init
-  :disabled                                     ; by default
-  :config
-  ;; To disable collection of benchmark data after init is done.
-  (add-hook 'after-init-hook 'benchmark-init/deactivate))
 #+END_SRC
 
 Configuration for =use-package=. The packages below should be loaded first before any =use-package= has been invoked
@@ -174,22 +164,15 @@ Configuration for =use-package=. The packages below should be loaded first befor
 
 #+BEGIN_SRC emacs-lisp
 (use-package exec-path-from-shell
-  :defer 0.1
-  :custom (exec-path-from-shell-arguments '("-l"))
-  :config
-  (when (eq system-type 'darwin)                    ; only apply to under OSX graphic and console UI
-    (setq exec-path-from-shell-arguments nil
-          exec-path-from-shell-check-startup-files nil)
-    (exec-path-from-shell-initialize))
-
-  (exec-path-from-shell-copy-env "SSH_AGENT_PID")   ; inherent ssh-agent from system
-  (exec-path-from-shell-copy-env "SSH_AUTH_SOCK")
-
-  (setenv "PATH"
-          (concat
-           (getenv "PATH")
-           ))
-  )
+  :custom
+  (exec-path-from-shell-variables '("SSH_AGENT_PID" ; inherent ssh-agent from system
+                                    "SSH_AUTH_SOCK"))
+  :hook (after-init
+         . (lambda ()
+             (when (eq system-type 'darwin)         ; only apply to under OSX graphic and console UI
+               (setq exec-path-from-shell-arguments nil
+                     exec-path-from-shell-check-startup-files nil)
+               (exec-path-from-shell-initialize)))))
 #+END_SRC
 
 *** Server mode
@@ -752,9 +735,7 @@ Buffer readonly mode
 Undo Emacs window changes
 
 #+BEGIN_SRC emacs-lisp
-(use-package winner
-  :defer 2
-  :config (winner-mode))
+(use-package winner :hook (window-setup . winner-mode))
 #+END_SRC
 
 **** ZapUpToChar
@@ -990,6 +971,7 @@ Available in Emacs 29+
 
 #+BEGIN_SRC emacs-lisp
 (use-package git-gutter
+  :defer 3
   :diminish git-gutter-mode
   :hook ((prog-mode org-mode) . git-gutter-mode)
   :custom
@@ -1005,12 +987,11 @@ Available in Emacs 29+
 
 #+BEGIN_SRC emacs-lisp
 (use-package magit
-  :bind (("C-x g" . magit-status))
+  :bind ("C-x g" . magit-status)
   :config
   (setq magit-completing-read-function
         (quote magit-builtin-completing-read)
-        magit-diff-refine-hunk t                ; highlight changes
-        )
+        magit-diff-refine-hunk t)               ; highlight changes
 
   ;; full screen magit-status
   (defun magit-status--magit-fullscreen (orig-fun &rest args)
@@ -1087,7 +1068,7 @@ web-mode
 **** nix-mode
 
 #+BEGIN_SRC emacs-lisp
-(use-package nix-mode)
+(use-package nix-mode :mode "\\.nix\\'")
 #+END_SRC
 
 **** puppet-mode
@@ -1240,7 +1221,7 @@ Language Server Protocol
                          lsp-yaml))
   (lsp-clients-typescript-server-args '("--stdio"))
   (lsp-completion-provider :none)               ; handled by corfu
-  (lsp-idle-delay 0.5)
+  (lsp-idle-delay 0.7)
   (lsp-log-io nil)
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 3)
@@ -1268,7 +1249,9 @@ Language Server Protocol
   ;; ignore directories on lsp file watcher
   (with-eval-after-load 'lsp-mode
     (let* ((proj-root (lsp-workspace-root))
-           (ignore-folders (list ".terragrunt-cache")))
+           (ignore-folders (list "[/\\\\]\\.git$"
+                                 "[/\\\\]node_modules$"
+                                 "[/\\\\]\\.terragrunt-cache$")))
       (when proj-root
         (dolist (folder ignore-folders)
           (dolist (f (directory-files-recursively proj-root folder t))
@@ -2055,7 +2038,7 @@ Show the key pressed on the modeline
 
 #+BEGIN_SRC emacs-lisp
 (use-package keycast
-  :defer 2
+  :defer 3
   :init
   (custom-set-faces
    '(keycast-key ((nil (:height 1 :background "gray30" :foreground "gray70")))))
@@ -2192,12 +2175,12 @@ Grouping buffers
 
 #+BEGIN_SRC emacs-lisp
 (use-package perspective
-  :defer 1
+  :defer 5
   :custom
   (persp-mode-prefix-key (kbd "C-c p z"))
-  :init
-  (unless (equal persp-mode t)
-    (persp-mode)))
+  (persp-state-default-file (expand-file-name "perspectives" no-littering-var-directory))
+  (persp-modestring-short t)
+  :config (persp-mode))
 #+END_SRC
 
 *** puni                                                             :EDIT:
@@ -2277,7 +2260,7 @@ auto-save buffers
 
 #+BEGIN_SRC emacs-lisp
 (use-package super-save
-  :defer 3
+  :hook (after-init . super-save-mode)
   :diminish super-save-mode
   :config
   (super-save-mode +1)
@@ -2354,7 +2337,7 @@ Display the key bindings in a popup.
 
 #+BEGIN_SRC emacs-lisp
 (use-package which-key
-  :defer 2
+  :defer 5
   :diminish which-key-mode
   :custom
   (which-key-idle-delay 0.5)                    ; popup delay
@@ -2459,6 +2442,7 @@ Diff between directories
                      :includes (vertico-directory vertico-quick vertico-repeat)))
 
 (use-package orderless
+  :after vertico
   :custom
   (completion-category-defaults nil)
   (completion-category-overrides '((file (styles basic partial-completion))))

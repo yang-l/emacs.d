@@ -12,7 +12,8 @@
 
 (setq load-prefer-newer nil                     ; all default values
       native-comp-jit-compilation t)
-(setq native-comp-async-report-warnings-errors nil)
+
+(setq native-comp-async-report-warnings-errors 'silent)
 
 (setq package-enable-at-startup nil)            ; disable package.el
 
@@ -27,7 +28,7 @@
 (push '(tool-bar-lines . 0) default-frame-alist)
 (push '(vertical-scroll-bars) default-frame-alist)
 
-(setq frame-resize-pixelwise t                  ; ensure turly full-screen
+(setq frame-resize-pixelwise t                  ; ensure turely full-screen
       window-resize-pixelwise t)
 
 (unless (eq system-type 'darwin) (setq command-line-ns-option-alist nil))
