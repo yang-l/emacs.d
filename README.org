@@ -804,43 +804,25 @@ Emacs GUI font settings - https://emacs-china.org/t/emacs/15676
 Spacemacs dark theme
 
 #+BEGIN_SRC emacs-lisp
-(add-hook
- 'window-setup-hook
- #'(lambda ()
-     ;; when failed in use-package, remove `README.el*` and reopen this file again
-     (use-package spacemacs-theme
-       :defer t
-       :init
-       (custom-set-variables
-        '(spacemacs-theme-custom-colors
-          '((border . "#4f4f4f"))))
-       (load-theme 'spacemacs-dark t))
+(use-package spacemacs-theme
+  :hook (window-setup . (lambda () (load-theme 'spacemacs-dark t nil)))
+  :init
+  (custom-set-variables
+   '(spacemacs-theme-custom-colors
+     '((border . "#4f4f4f"))))
 
-     (when (eq system-type 'darwin)             ; mac only
-       (when (display-graphic-p)                ; gui only
-         (let ((win-sys (window-system)))
-           (when (eq win-sys 'ns)               ; emacs ns port
-             (setq
-              x-colors (ns-list-colors)         ; fix macports emacs-app port bug
-              ns-use-thin-smoothing t
-              )
-             )))
+  (when (eq system-type 'darwin)                ; mac only
+    (defun my/setup-theme ()
+      (when (and (display-graphic-p)            ; gui only
+                 (eq (window-system) 'ns))      ; emacs ns port
+        (setq x-colors (ns-list-colors)         ; fix macports emacs-app port bug
+              ns-use-thin-smoothing t)))
 
-       (when (daemonp)                          ; for emacsclient -c
-         (add-hook 'after-make-frame-functions
-                   #'(lambda (frame)
-                       (select-frame frame)
-                       (when (display-graphic-p frame)
-                         (let ((win-sys (window-system)))
-                           (when (eq win-sys 'ns)           ; emacs ns port
-                             (setq
-                              x-colors (ns-list-colors)     ; fix macports emacs-app port bug
-                              ns-use-thin-smoothing t
-                              )
-                             ))))
-                   ))
-       )
-     ))
+    (add-hook 'window-setup-hook #'my/setup-theme)
+    (when (daemonp)                             ; for emacsclient -c
+      (add-hook 'after-make-frame-functions
+                #'(lambda (frame)
+                    (with-selected-frame frame #'(my/setup-theme)))))))
 #+END_SRC
 
 **** Transparent
@@ -971,16 +953,16 @@ Available in Emacs 29+
 
 #+BEGIN_SRC emacs-lisp
 (use-package git-gutter
-  :defer 3
   :diminish git-gutter-mode
-  :hook ((prog-mode org-mode) . git-gutter-mode)
+  :hook ((prog-mode org-mode)
+         . (lambda ()
+             (run-with-idle-timer
+              3 nil #'(lambda () (git-gutter-mode)))))
   :custom
   (git-gutter:update-interval 0.1)
   :config
   (custom-set-variables                         ; backend
-   '(git-gutter:handled-backends
-     (quote (git))))
-  )
+   '(git-gutter:handled-backends (quote (git)))))
 #+END_SRC
 
 **** magit
@@ -1767,6 +1749,7 @@ Different from Claude Code which acts as an agent involving very limited coding,
 
   (claude-code-ide-emacs-tools-setup)   ; enable mcp
   :commands claude-code-ide-menu
+  :custom (claude-code-ide-cli-extra-flags "--permission-mode plan")
   :ensure-system-package (claude . "npm install -g @anthropic-ai/claude-code")
   :hook (buffer-list-update
          . (lambda ()
@@ -2337,7 +2320,7 @@ Display the key bindings in a popup.
 
 #+BEGIN_SRC emacs-lisp
 (use-package which-key
-  :defer 5
+  :defer 1
   :diminish which-key-mode
   :custom
   (which-key-idle-delay 0.5)                    ; popup delay
