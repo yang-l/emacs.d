@@ -88,8 +88,7 @@ Configuration for =use-package=. The packages below should be loaded first befor
 (use-package no-littering                       ; keep `litter` files in one location
   :init
   (setq no-littering-var-directory (expand-file-name (convert-standard-filename "cache/var/") backup-directory)
-        no-littering-etc-directory (expand-file-name (convert-standard-filename "cache/etc/") backup-directory))
-  )
+        no-littering-etc-directory (expand-file-name (convert-standard-filename "cache/etc/") backup-directory)))
 
 (use-package diminish)                          ; shorten mode-line
 #+END_SRC
@@ -386,6 +385,7 @@ savehist - save the minibuffer histories
 
 #+BEGIN_SRC emacs-lisp
 (use-package abbrev
+  :disabled
   :bind (("M-/"   . dabbrev-completion)
          ("C-M-/" . dabbrev-expand))
   :diminish
@@ -669,10 +669,14 @@ Terminal emulator inside Emacs
 
 #+BEGIN_SRC emacs-lisp
 (use-package simple
-  :defer 1
   :diminish visual-line-mode
-  :hook ((window-setup . visual-line-mode)      ; soft line warpping
-         (window-setup . size-indication-mode)) ; show total buffer size
+  :hook (window-setup
+         . (lambda()
+               (run-with-idle-timer
+                1 nil
+                #'(lambda ()
+                    (visual-line-mode)          ; soft line warpping
+                    (size-indication-mode)))))  ; show total buffer size
   :straight (:type built-in))
 #+END_SRC
 
@@ -2042,10 +2046,11 @@ Show the key pressed on the modeline
   :defer 0.2
   :config
   (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+  (meow-motion-define-key
+   '("j" . meow-next)
+   '("k" . meow-prev)
+   '("<escape>" . ignore))
   (meow-leader-define-key
-   '("e" . "C-x C-e") ; eval-last-sexp
-   '("," . xref-pop-marker-stack)
-   '("." . xref-find-definitions)
    ;; Use SPC (0-9) for digit arguments.
    '("1" . meow-digit-argument)
    '("2" . meow-digit-argument)
