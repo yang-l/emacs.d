@@ -146,6 +146,9 @@ Configuration for =use-package=. The packages below should be loaded first befor
 
 (use-package emacs
   :custom
+  ;; Enable context menu. `vertico-multiform-mode' adds a menu in the minibuffer
+  ;; to switch display modes.
+  (context-menu-mode t)
   ;; Support opening new minibuffers from inside existing minibuffers.
   (enable-recursive-minibuffers t)
   ;; Hide commands in M-x which do not work in the current mode.  Vertico
@@ -673,7 +676,7 @@ Terminal emulator inside Emacs
   :hook (window-setup
          . (lambda()
                (run-with-idle-timer
-                1 nil
+                2 nil
                 #'(lambda ()
                     (visual-line-mode)          ; soft line warpping
                     (size-indication-mode)))))  ; show total buffer size
@@ -2532,6 +2535,11 @@ Diff between directories
   (setq completion-cycle-threshold 3)
   :straight (corfu :files (:defaults "extensions/*")
                    :includes (corfu-history corfu-info corfu-quick)))
+
+(use-package corfu-prescient
+  :after corfu
+  :hook (corfu-mode . corfu-prescient-mode)
+  :config (add-to-list 'prescient-filter-method 'fuzzy))
 
 (use-package popon
   :after corfu
