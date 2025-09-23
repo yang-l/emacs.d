@@ -38,7 +38,8 @@ Path to personal/credential info in =~/.emacs.d/private.el=
 ;; (defvar my-op/repository-directory "")          ; org-page
 ;; (defvar my-op/site-domain "")
 ;; (defvar my-op/personal-github-link "")
-(defvar my-OPENAI_API_KEY "" "OpenAI/Github Copilot API Key for Aider/Aidermacs")
+(defvar my-GH_COPILOT_API_KEY "" "Github Copilot API Key for Aider/Aidermacs")
+(defvar my-OPENAI_API_KEY "" "OpenAI API Key for Aider/Aidermacs")
 (defvar my-ANTHROPIC_API_KEY "" "Claude/Anthropic API Key for Aider/Aidermacs")
 
 ;; override
@@ -1339,7 +1340,7 @@ Language Server Protocol
               "\n"
               "err() {\n"
               "  echo \"errexit with status [$?] at line $(caller)\" >&2\n"
-              "  awk 'NR>L-5 && NR<L+3 { printf \"%-5d%3s%s\\n\",NR,(NR==L?\">> \":\"\"),$0 }' L=$1 $0\n"
+              "  awk 'NR>L-5 && NR<L+3 { printf \"%-5d%3s%s\\n\",NR,(NR==L?\">> \":\"\"),$0 }' L=\"$1\" \"$0\"\n"
               "}\n"
               "trap 'err $LINENO' ERR\n"
               "\n\n\n\n"
@@ -1667,16 +1668,19 @@ so using Black to implement the same function"
   :commands aidermacs-transient-menu
   :custom
   (aidermacs-backend 'vterm)
-  (aidermacs-use-architect-mode t)
-  (aidermacs-default-model "openai/gpt-4.1")
+  (aidermacs-default-chat-mode 'architect)
+  (aidermacs-default-model "o3")
+  ; (aidermacs-default-model "openai/gpt-4.1")
   (aidermacs-editor-model "sonnet")
-  (aidermacs-extra-args '("--map-tokens 2048" "--watch-files" "--code-theme solarized-dark" "--editor emacs" "--no-gitignore" "--analytics-disable"))
+  (aidermacs-extra-args '("--reasoning-effort high" "--map-tokens 2048" "--watch-files" "--code-theme solarized-dark" "--editor emacs" "--no-gitignore" "--analytics-disable"))
   :hook (aidermacs-before-run-backend
          . (lambda ()
-             (when (not (string-empty-p my-OPENAI_API_KEY))     ; Github Copilot
-               (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
-               (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))
-             (when (not (string-empty-p my-ANTHROPIC_API_KEY))  ; Claude
+             (if (not (string-empty-p my-OPENAI_API_KEY))           ; openai/default
+                 (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY)
+               (when (not (string-empty-p my-GH_COPILOT_API_KEY))   ; Github Copilot
+                 (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
+                 (setenv "OPENAI_API_KEY" my-GH_COPILOT_API_KEY)))
+             (when (not (string-empty-p my-ANTHROPIC_API_KEY))      ; Claude
                (setenv "ANTHROPIC_API_KEY" my-ANTHROPIC_API_KEY))))
   :if (executable-find "aider")
   :init
@@ -1774,11 +1778,13 @@ Different from Claude Code which acts as an agent involving very limited coding,
   :commands (gptel gptel-menu gptel-send)
   :config
   (add-hook 'gptel-post-response-functions 'gptel-end-of-response)
-  (when (not (string-empty-p my-OPENAI_API_KEY))
-    (setq gptel-model 'gpt-4.1
-          gptel-backend (gptel-make-gh-copilot "Copilot")))
-  (when (not (string-empty-p my-ANTHROPIC_API_KEY))
-    (setq gptel-backend (gptel-make-anthropic "Claude" :stream t :key my-ANTHROPIC_API_KEY)))
+  (if (not (string-empty-p my-OPENAI_API_KEY))
+      (setq gptel-api-key my-OPENAI_API_KEY)                ; openai/default
+    (when (not (string-empty-p my-GH_COPILOT_API_KEY))      ; github copilot
+      (setq gptel-model 'gpt-4.1
+            gptel-backend (gptel-make-gh-copilot "Copilot")))
+    (when (not (string-empty-p my-ANTHROPIC_API_KEY))       ; claude
+      (setq gptel-backend (gptel-make-anthropic "Claude" :stream t :key my-ANTHROPIC_API_KEY))))
   (setq gptel-default-mode #'org-mode))
 #+end_src
 
