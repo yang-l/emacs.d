@@ -168,7 +168,9 @@ Configuration for =use-package=. The packages below should be loaded first befor
 #+BEGIN_SRC emacs-lisp
 (use-package exec-path-from-shell
   :custom
-  (exec-path-from-shell-variables '("SSH_AGENT_PID" ; inherent ssh-agent from system
+  (exec-path-from-shell-variables '("GOROOT"
+                                    "PATH"
+                                    "SSH_AGENT_PID" ; inherent ssh-agent from system
                                     "SSH_AUTH_SOCK"))
   :hook (after-init
          . (lambda ()
@@ -1097,8 +1099,8 @@ Explore and test HTTP REST webservices
 
 #+BEGIN_SRC emacs-lisp
 (add-hook 'sql-interactive-mode-hook
-          (lambda ()
-            (toggle-truncate-lines t)))         ; no line wrap when working on DB
+          #'(lambda ()
+              (toggle-truncate-lines t)))       ; no line wrap when working on DB
 #+END_SRC
 
 *** C/C++
@@ -1172,21 +1174,23 @@ Language Server Protocol
 #+BEGIN_SRC emacs-lisp
 (use-package lsp-mode
   :commands (lsp lsp-deferred)
-  :hook ((lsp-mode . (lambda ()
-                       (let ((lsp-keymap-prefix "C-c l"))
-                         #'lsp-enable-which-key-integration)
-                       (advice-add 'lsp-completion--enable :after
-                                   #'(lambda ()
-                                       (setq-local completion-at-point-functions
-                                                   (list
-                                                    (cape-capf-buster
-                                                     (cape-capf-super
-                                                      #'tabnine-completion-at-point
-                                                      #'lsp-completion-at-point)
-                                                     'equal)))))))
-         (lsp-completion-mode . (lambda ()
-                                  (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-                                        '(orderless))))
+  :hook ((lsp-mode
+          . (lambda ()
+              (let ((lsp-keymap-prefix "C-c l"))
+                #'lsp-enable-which-key-integration)
+              (advice-add 'lsp-completion--enable :after
+                          #'(lambda ()
+                              (setq-local completion-at-point-functions
+                                          (list
+                                           (cape-capf-buster
+                                            (cape-capf-super
+                                             #'tabnine-completion-at-point
+                                             #'lsp-completion-at-point)
+                                            'equal)))))))
+         (lsp-completion-mode
+          . (lambda ()
+              (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+                    '(orderless))))
          (lsp-managed-mode . lsp-modeline-diagnostics-mode)
          ((dockerfile-mode
            enh-ruby-mode
@@ -1246,6 +1250,17 @@ Language Server Protocol
         (dolist (folder ignore-folders)
           (dolist (f (directory-files-recursively proj-root folder t))
             (add-to-list 'lsp-file-watch-ignored-directories f))))))
+
+  (with-eval-after-load 'lsp-go
+    ;; Set Go environment for lsp-go
+    (setq lsp-go-env `((GO111MODULE . "on")
+                       (GOPATH . ,(concat (getenv "HOME") "/go"))
+                       (GOPROXY . "https://proxy.golang.org,direct")
+                       (GOSUMDB . "sum.golang.org")))
+    ;; Configure gopls with proper environment variables
+    (lsp-register-custom-settings
+     '(("gopls.gofumpt" t)
+       ("gopls.staticcheck" t))))
   )
 
 (use-package lsp-pyright
@@ -1367,13 +1382,28 @@ Language Server Protocol
 (use-package go-mode
   :if (executable-find "go")
   :hook
-  ((go-mode . (lambda ()
-                (add-hook 'before-save-hook #'(lambda ()
-                                                (lsp-format-buffer)
-                                                (lsp-organize-imports)))
+  ((go-mode
+    . (lambda ()
+        (setq-local indent-tabs-mode t          ; go standards
+                    tab-width 4
+                    go-ts-mode-indent-offset 4)
 
-                (unless (file-exists-p (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/go.mod"))
-                  (setenv "GO111MODULE" "off")))))      ; turn off for one-off file
+        (add-hook 'before-save-hook #'(lambda ()
+                                        (lsp-format-buffer)
+                                        (lsp-organize-imports)))
+
+        (when (executable-find "mise")          ; mise
+          (let* ((go-path (string-trim
+                           (shell-command-to-string
+                            "mise where go 2>/dev/null")))
+                 (go-bin (when (and go-path (file-exists-p go-path))
+                           (concat go-path "/bin"))))
+            (when go-bin
+              (setenv "PATH" (concat go-bin ":" (getenv "PATH")))
+              (setq exec-path (cons go-bin exec-path)))))
+
+        (unless (file-exists-p (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/go.mod"))
+          (setenv "GO111MODULE" "off")))))      ; turn off for one-off file
   :config
   (run-with-idle-timer
    0.1 nil
@@ -2610,7 +2640,8 @@ Diff between directories
          (org-shiftup-final    . windmove-up)   ; active windmove
          (org-shiftleft-final  . windmove-left)
          (org-shiftdown-final  . windmove-down)
-         (org-shiftright-final . windmove-right))
+         (org-shiftright-final . windmove-right)
+         (org-mode . (lambda () (setq-local tab-width 8))))
   :config
   (setq truncate-lines nil                      ; line wrap
         org-edit-src-content-indentation 0      ; no indentation in SRC block
