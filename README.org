@@ -1729,10 +1729,8 @@ Different from Claude Code which acts as an agent involving very limited coding,
 
 #+BEGIN_SRC emacs-lisp
 (use-package claude-code
-  :disabled
   :straight (:type git :host github :repo "stevemolitor/claude-code.el" :branch "main" :depth 1
                    :files ("*.el" (:exclude "images/*")))
-  :bind-keymap ("C-c c" . claude-code-command-map)
   :commands claude-code-transient
   :custom
   (claude-code-terminal-backend 'vterm)
@@ -1749,6 +1747,7 @@ Different from Claude Code which acts as an agent involving very limited coding,
 #+BEGIN_SRC emacs-lisp
 (use-package claude-code-ide
   :straight (:type git :host github :repo "manzaltu/claude-code-ide.el" :branch "main" :depth 1 :files ("*.el"))
+  :commands claude-code-ide-menu
   :config
   ; Avoid Claude Code inputbox flickering when typing under vterm
   ; copied from https://github.com/stevemolitor/claude-code.el/blob/0197f15d592befd7d2550bb3376e983af412ba90/claude-code.el#L1426
@@ -1789,7 +1788,6 @@ Different from Claude Code which acts as an agent involving very limited coding,
   (advice-add 'vterm--filter :around #'claude-code--vterm-multiline-buffer-filter)
 
   (claude-code-ide-emacs-tools-setup)   ; enable mcp
-  :commands claude-code-ide-menu
   :custom (claude-code-ide-cli-extra-flags "--permission-mode plan")
   :ensure-system-package (claude . "npm install -g @anthropic-ai/claude-code")
   :hook (buffer-list-update
@@ -1816,6 +1814,21 @@ Different from Claude Code which acts as an agent involving very limited coding,
     (when (not (string-empty-p my-ANTHROPIC_API_KEY))       ; claude
       (setq gptel-backend (gptel-make-anthropic "Claude" :stream t :key my-ANTHROPIC_API_KEY))))
   (setq gptel-default-mode #'org-mode))
+#+end_src
+
+**** ai-code-interface.el
+
+#+begin_src emacs-lisp
+(use-package ai-code-interface
+  :straight (:host github :repo "tninja/ai-code-interface.el" :branch "main" :depth 1)
+  :commands ai-code-menu
+  :config
+  (require 'claude-code)
+
+  (ai-code-set-backend  'codex)
+  (when (not (string-empty-p my-OPENAI_API_KEY))
+    (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))
+  :ensure-system-package (codex . "npm install -g @openai/codex"))
 #+end_src
 
 ** Mode Setting
