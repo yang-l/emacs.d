@@ -161,6 +161,10 @@ Configuration for =use-package=. The packages below should be loaded first befor
    '(read-only t cursor-intangible t face minibuffer-prompt))
   (display-raw-bytes-as-hex t)                  ; display improvement
   (redisplay-skip-fontification-on-input t))
+
+(use-package warnings
+  :config
+  (add-to-list 'warning-suppress-types '(org-element)))
 #+END_SRC
 
 *** PATH
@@ -513,7 +517,14 @@ Call =ediff= or =ediff3= in Emace for file comparisons
 #+BEGIN_SRC emacs-lisp
 (use-package ediff
   :commands (ediff ediff3)
-  :hook (ediff-before-setup . (lambda () (setq ediff-saved-window-configuration (current-window-configuration))))
+  :hook ((ediff-before-setup . (lambda () (setq ediff-saved-window-configuration (current-window-configuration))))
+         (ediff-startup . (lambda ()
+                            ;; Shrink control buffer to fit content
+                            (when (window-live-p ediff-control-window)
+                              (with-selected-window ediff-control-window
+                                (shrink-window-if-larger-than-buffer)
+                                ;; Prevent window from being resized
+                                (setq window-size-fixed 'height))))))
   :custom
   ;; horizontal window split
   (ediff-split-window-function 'split-window-horizontally)
@@ -1788,7 +1799,10 @@ Different from Claude Code which acts as an agent involving very limited coding,
   (advice-add 'vterm--filter :around #'claude-code--vterm-multiline-buffer-filter)
 
   (claude-code-ide-emacs-tools-setup)   ; enable mcp
-  :custom (claude-code-ide-cli-extra-flags "--permission-mode plan")
+  :custom
+  (claude-code-ide-cli-extra-flags "--permission-mode plan")
+  (claude-code-ide-focus-claude-after-ediff nil)
+  (claude-code-ide-focus-on-open nil)
   :ensure-system-package (claude . "npm install -g @anthropic-ai/claude-code")
   :hook (buffer-list-update
          . (lambda ()
