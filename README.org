@@ -1838,11 +1838,8 @@ Different from Claude Code which acts as an agent involving very limited coding,
   :commands ai-code-menu
   :config
   (require 'claude-code)
-
-  (ai-code-set-backend  'codex)
-  (when (not (string-empty-p my-OPENAI_API_KEY))
-    (setenv "OPENAI_API_KEY" my-OPENAI_API_KEY))
-  :ensure-system-package (codex . "npm install -g @openai/codex"))
+  (ai-code-set-backend  'opencode)
+  :ensure-system-package (opencode . "npm i -g opencode-ai@latest"))
 #+end_src
 
 ** Mode Setting
