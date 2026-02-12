@@ -1810,7 +1810,9 @@ Different from Claude Code which acts as an agent involving very limited coding,
                         (string-match "claude-code" (buffer-name)))
                (setq-local global-hl-line-mode nil)                     ; no more last line flashing when typing
                (face-remap-add-relative 'nobreak-space :underline nil)  ; remove underlines from _>_
-               (balance-windows)))))
+               (balance-windows))))
+  :init
+  (setenv "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "1"))
 #+END_SRC
 
 **** gptel
