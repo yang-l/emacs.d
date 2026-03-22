@@ -1706,6 +1706,7 @@ so using Black to implement the same function"
 
 #+begin_src emacs-lisp
 (use-package aidermacs
+  :disabled
   :commands aidermacs-transient-menu
   :custom
   (aidermacs-backend 'vterm)
