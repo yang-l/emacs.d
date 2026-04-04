@@ -316,7 +316,13 @@ OSX-only key bindings
                         (insert (format-time-string "[%F %T.%3N %:z] ")))))
                 ))
 
-(unless (display-graphic-p) (mouse-wheel-mode 0))   ; disable 'mouse-wheel-mode' under character-based terminal
+;; enable mouse support in terminal when the terminal type supports it
+;; tty-type matches xterm-256color (iTerm2) and tmux-256color
+(unless (display-graphic-p)
+  (when (and (fboundp 'xterm-mouse-mode)
+             (string-match-p "\\(xterm\\|tmux\\)" (or (tty-type) "")))
+    (xterm-mouse-mode 1)    ; mouse clicks, selection, and events
+    (mouse-wheel-mode 1)))  ; scroll wheel up/down
 #+END_SRC
 
 *** Folder
@@ -1881,6 +1887,22 @@ Visible bookmarks
   )
 #+END_SRC
 
+*** clipetty                                                   :EDIT:
+
+OSC 52 clipboard integration for terminal Emacs
+
+#+BEGIN_SRC emacs-lisp
+(use-package clipetty
+  :unless (display-graphic-p)
+  :hook (after-init . global-clipetty-mode)
+  :config
+  (setq interprogram-paste-function
+        (lambda ()
+          (let ((clip (shell-command-to-string "pbpaste")))
+            (unless (string= clip (car kill-ring))
+              clip)))))
+#+END_SRC
+
 *** drag-stuff                                                       :EDIT:
 
 moving word/line/region around
@@ -2993,32 +3015,36 @@ To configure the org-page site variables, put the below settings into =~/.emacs.
 Selective copy and paste
 
 #+BEGIN_SRC emacs-lisp
-;; require xsel
 (defun copy-to-clipboard ()
   (interactive)
   (if (display-graphic-p)
       (progn
         (message "Yanked region to x-clipboard!")
-        (call-interactively 'clipboard-kill-ring-save)
-        )
+        (call-interactively 'clipboard-kill-ring-save))
     (if (region-active-p)
         (progn
-          (shell-command-on-region (region-beginning) (region-end) "xsel -i -b")
+          (shell-command-on-region (region-beginning) (region-end)
+                                  (cond
+                                   ((eq system-type 'darwin) "pbcopy")
+                                   ((executable-find "xsel") "xsel -i -b")
+                                   ((executable-find "xclip") "xclip -selection clipboard")
+                                   (t (error "No clipboard program found"))))
           (message "Yanked region to clipboard!")
           (deactivate-mark))
-      (message "No region active; can't yank to clipboard!")))
-  )
+      (message "No region active; can't yank to clipboard!"))))
 
 (defun paste-from-clipboard ()
   (interactive)
   (if (display-graphic-p)
       (progn
         (clipboard-yank)
-        (message "graphics active")
-        )
-    (insert (shell-command-to-string "xsel -o -b"))
-    )
-  )
+        (message "graphics active"))
+    (insert (shell-command-to-string
+             (cond
+              ((eq system-type 'darwin) "pbpaste")
+              ((executable-find "xsel") "xsel -o -b")
+              ((executable-find "xclip") "xclip -selection clipboard -o")
+              (t (error "No clipboard program found")))))))
 #+END_SRC
 
 *** Dired                                                            :FILE:
