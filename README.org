@@ -261,7 +261,7 @@ OSX-only key bindings
           (with-eval-after-load `switch-window
             (advice-add #'windmove-do-window-select
                         :after
-                        #'(lambda (&rest args)
+                        #'(lambda (&rest _args)
                             "Auto-reszie the window size"
                             (switch-window--auto-resize-window)))))
         (setq eval-expression-print-length nil  ; do not truncate output in the echo area
@@ -304,7 +304,7 @@ OSX-only key bindings
 
 ; https://emacs.stackexchange.com/questions/32150/how-to-add-a-timestamp-to-each-entry-in-emacs-messages-buffer
 (advice-add 'message :before                    ; add timestamp in *Messages* buffer
-            #'(lambda (&rest args)
+            #'(lambda (&rest _args)
                 "Advice to run before `message' that prepends a timestamp to each message."
                 (if message-log-max
                     (let ((deactivate-mark nil)
@@ -1747,6 +1747,7 @@ Different from Claude Code which acts as an agent involving very limited coding,
 
 #+BEGIN_SRC emacs-lisp
 (use-package claude-code
+  :disabled
   :straight (:type git :host github :repo "stevemolitor/claude-code.el" :branch "main" :depth 1
                    :files ("*.el" (:exclude "images/*")))
   :commands claude-code-transient
@@ -1804,12 +1805,14 @@ Different from Claude Code which acts as an agent involving very limited coding,
 
 #+begin_src emacs-lisp
 (use-package ai-code-interface
+  :disabled
   :straight (:host github :repo "tninja/ai-code-interface.el" :branch "main" :depth 1)
   :commands ai-code-menu
+  :init
+  (unless (= 0 (shell-command "command -v opencode > /dev/null 2>&1"))
+    (shell-command "npm i -g opencode-ai@latest"))
   :config
-  (require 'claude-code)
-  (ai-code-set-backend  'opencode)
-  :ensure-system-package (opencode . "npm i -g opencode-ai@latest"))
+  (ai-code-set-backend  'opencode))
 #+end_src
 
 ** Mode Setting
@@ -2191,7 +2194,7 @@ Show the key pressed on the modeline
         (meow-insert-exit))))
   (advice-add #'save-buffers-kill-terminal
               :before
-              (lambda (&rest args)
+              (lambda (&rest _args)
                 (exit-meow-insert-mode))))
 #+END_SRC
 
@@ -2522,7 +2525,7 @@ Diff between directories
    )
   :config
   (with-eval-after-load `perspective
-    (consult-customize consult--source-buffer :hidden t :default nil)
+    (consult-customize consult-source-buffer :hidden t :default nil)
     (defvar consult--source-perspective
       (list :name     "Perspective"
             :narrow   ?s
@@ -2664,11 +2667,7 @@ Diff between directories
         org-src-tab-acts-natively t             ; mative tab in SRC block
         org-use-speed-commands t                ; speed keys
         org-startup-indented t
-        org-hide-leading-stars t)
-
-  (org-indent-mode t)                           ; list-oriented
-  (diminish 'org-indent-mode)
-  )
+        org-hide-leading-stars t))
 #+END_SRC
 
 **** org-page                                                   :DISABLED:
