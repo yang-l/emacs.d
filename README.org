@@ -1767,56 +1767,17 @@ Different from Claude Code which acts as an agent involving very limited coding,
   :straight (:type git :host github :repo "manzaltu/claude-code-ide.el" :branch "main" :depth 1 :files ("*.el"))
   :commands claude-code-ide-menu
   :config
-  ; Avoid Claude Code inputbox flickering when typing under vterm
-  ; copied from https://github.com/stevemolitor/claude-code.el/blob/0197f15d592befd7d2550bb3376e983af412ba90/claude-code.el#L1426
-  (defvar-local claude-code-vterm-multiline-delay 0.01)
-  (defvar-local claude-code--vterm-multiline-buffer nil)
-  (defvar-local claude-code--vterm-multiline-buffer-timer nil)
-  (defun claude-code--vterm-multiline-buffer-filter (orig-fun process input)
-    (if (not (string-match "claude-code" (buffer-name (process-buffer process))))
-        (funcall orig-fun process input)
-      (with-current-buffer (process-buffer process)
-        (let ((has-clear-line (string-match-p "\033\\[K" input))
-              (has-cursor-pos (string-match-p "\033\\[[0-9]+;[0-9]+H" input))
-              (has-cursor-move (string-match-p "\033\\[[0-9]*[ABCD]" input))
-              (escape-count (cl-count ?\033 input)))
-          (if (or (and (>= escape-count 3)
-                       (or has-clear-line has-cursor-pos has-cursor-move))
-                  claude-code--vterm-multiline-buffer)
-              (progn
-                (setq claude-code--vterm-multiline-buffer
-                      (concat claude-code--vterm-multiline-buffer input))
-                (when claude-code--vterm-multiline-buffer-timer
-                  (cancel-timer claude-code--vterm-multiline-buffer-timer))
-                (setq claude-code--vterm-multiline-buffer-timer
-                      (run-at-time claude-code-vterm-multiline-delay nil
-                                   (lambda (buf)
-                                     (when (buffer-live-p buf)
-                                       (with-current-buffer buf
-                                         (when claude-code--vterm-multiline-buffer
-                                           (let ((inhibit-redisplay t)
-                                                 (data claude-code--vterm-multiline-buffer))
-                                             (setq claude-code--vterm-multiline-buffer nil
-                                                   claude-code--vterm-multiline-buffer-timer nil)
-                                             (funcall orig-fun
-                                                      (get-buffer-process buf)
-                                                      data))))))
-                                   (current-buffer))))
-            (funcall orig-fun process input))))))
-  (advice-add 'vterm--filter :around #'claude-code--vterm-multiline-buffer-filter)
-
   (claude-code-ide-emacs-tools-setup)   ; enable mcp
   :custom
   (claude-code-ide-cli-extra-flags "--permission-mode plan")
   (claude-code-ide-focus-claude-after-ediff nil)
   (claude-code-ide-focus-on-open nil)
+  (claude-code-ide-no-flicker t)
   :ensure-system-package (claude . "npm install -g @anthropic-ai/claude-code")
   :hook (buffer-list-update
          . (lambda ()
              (when (and (derived-mode-p 'vterm-mode)
                         (string-match "claude-code" (buffer-name)))
-               (setq-local global-hl-line-mode nil)                     ; no more last line flashing when typing
-               (face-remap-add-relative 'nobreak-space :underline nil)  ; remove underlines from _>_
                (balance-windows))))
   :init
   (setenv "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "1"))
