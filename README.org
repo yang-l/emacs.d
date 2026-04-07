@@ -321,8 +321,9 @@ OSX-only key bindings
 (unless (display-graphic-p)
   (when (and (fboundp 'xterm-mouse-mode)
              (string-match-p "\\(xterm\\|tmux\\)" (or (tty-type) "")))
-    (xterm-mouse-mode 1)    ; mouse clicks, selection, and events
-    (mouse-wheel-mode 1)))  ; scroll wheel up/down
+    (xterm-mouse-mode 1)                        ; mouse clicks, selection, and events
+    (mouse-wheel-mode 1)                        ; scroll wheel up/down
+    (setq mouse-drag-copy-region t)))           ; auto-copy selection to kill ring → clipetty → system clipboard
 #+END_SRC
 
 *** Folder
@@ -1768,7 +1769,7 @@ Different from Claude Code which acts as an agent involving very limited coding,
   :straight (:type git :host github :repo "manzaltu/claude-code-ide.el" :branch "main" :depth 1 :files ("*.el"))
   :commands claude-code-ide-menu
   :config
-  (claude-code-ide-emacs-tools-setup)   ; enable mcp
+  (claude-code-ide-emacs-tools-setup)
   :custom
   (claude-code-ide-cli-extra-flags "--permission-mode plan")
   (claude-code-ide-focus-claude-after-ediff nil)
@@ -1781,7 +1782,12 @@ Different from Claude Code which acts as an agent involving very limited coding,
                         (string-match "claude-code" (buffer-name)))
                (balance-windows))))
   :init
-  (setenv "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "1"))
+  (setenv "CLAUDE_CODE_DISABLE_MOUSE" "1")
+  (setenv "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "1")
+  (add-hook 'vterm-mode-hook
+            (lambda () (setq-local mouse-drag-copy-region nil)))
+  (add-hook 'vterm-copy-mode-hook
+            (lambda () (setq-local mouse-drag-copy-region vterm-copy-mode))))
 #+END_SRC
 
 **** gptel
