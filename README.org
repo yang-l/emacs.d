@@ -1782,12 +1782,29 @@ Different from Claude Code which acts as an agent involving very limited coding,
                         (string-match "claude-code" (buffer-name)))
                (balance-windows))))
   :init
-  (setenv "CLAUDE_CODE_DISABLE_MOUSE" "1")
   (setenv "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "1")
+  (setq vterm-enable-manipulate-selection-data-by-osc52 t)
+  (defun claude-code-ide--vterm-mwheel-scroll (orig-fun event &rest args)
+    "In vterm buffers, send wheel as PgUp/PgDn to process. Otherwise default."
+    (let ((win (mwheel-event-window event)))
+      (if (with-selected-window win (derived-mode-p 'vterm-mode))
+          (with-selected-window win
+            (let ((type (event-basic-type event)))
+              (cond
+               ((memq type '(wheel-up mouse-4)) (vterm-send-key "<up>"))
+               ((memq type '(wheel-down mouse-5)) (vterm-send-key "<down>"))
+               (t (apply orig-fun event args)))))
+        (apply orig-fun event args))))
+  (advice-add 'mwheel-scroll :around #'claude-code-ide--vterm-mwheel-scroll)
   (add-hook 'vterm-mode-hook
-            (lambda () (setq-local mouse-drag-copy-region nil)))
-  (add-hook 'vterm-copy-mode-hook
-            (lambda () (setq-local mouse-drag-copy-region vterm-copy-mode))))
+            (lambda ()
+              ;; auto-deactivate mark after mouse release to prevent visual expansion
+              ;; (clipboard copy already happened, mark is no longer needed)
+              (add-hook 'post-command-hook
+                        (lambda ()
+                          (when (and (not vterm-copy-mode) (region-active-p))
+                            (run-with-idle-timer 0.3 nil #'deactivate-mark)))
+                        nil t))))
 #+END_SRC
 
 **** gptel
