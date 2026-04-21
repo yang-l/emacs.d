@@ -1770,8 +1770,27 @@ Different from Claude Code which acts as an agent involving very limited coding,
   :commands claude-code-ide-menu
   :config
   (claude-code-ide-emacs-tools-setup)
+  ;; ctrl+o v in Claude Code opens $EDITOR; use emacsclient with a named server
+  (defvar claude-code-ide--saved-editor (getenv "EDITOR"))
+  (advice-add 'claude-code-ide--start-session :before
+              (lambda (&rest _)
+                (require 'server)
+                (unless (server-running-p "claude-code-ide")
+                  (with-no-warnings
+                    (let ((server-name "claude-code-ide"))
+                      (server-start))))
+                (setenv "EDITOR" "emacsclient -q -s claude-code-ide")))
+  (advice-add 'claude-code-ide--cleanup-on-exit :after
+              (lambda (&rest _)
+                (when (= (hash-table-count claude-code-ide--processes) 0)
+                  (setenv "EDITOR" claude-code-ide--saved-editor)
+                  (when (and (featurep 'server)
+                             (server-running-p "claude-code-ide"))
+                    (with-no-warnings
+                      (let ((server-name "claude-code-ide"))
+                        (server-force-delete)))))))
   :custom
-  (claude-code-ide-cli-extra-flags "--permission-mode plan")
+  (claude-code-ide-cli-extra-flags "--permission-mode plan --effort max --thinking-display summarized")
   (claude-code-ide-focus-claude-after-ediff nil)
   (claude-code-ide-focus-on-open nil)
   (claude-code-ide-no-flicker t)
@@ -1782,7 +1801,6 @@ Different from Claude Code which acts as an agent involving very limited coding,
                         (string-match "claude-code" (buffer-name)))
                (balance-windows))))
   :init
-  (setenv "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "1")
   (setq vterm-enable-manipulate-selection-data-by-osc52 t)
   (defun claude-code-ide--vterm-mwheel-scroll (orig-fun event &rest args)
     "In vterm buffers, send wheel as PgUp/PgDn to process. Otherwise default."
@@ -1831,11 +1849,9 @@ Different from Claude Code which acts as an agent involving very limited coding,
   :disabled
   :straight (:host github :repo "tninja/ai-code-interface.el" :branch "main" :depth 1)
   :commands ai-code-menu
-  :init
-  (unless (= 0 (shell-command "command -v opencode > /dev/null 2>&1"))
-    (shell-command "npm i -g opencode-ai@latest"))
   :config
-  (ai-code-set-backend  'opencode))
+  (with-eval-after-load 'magit
+    (ai-code-magit-setup-transients)))
 #+end_src
 
 ** Mode Setting
@@ -2025,6 +2041,15 @@ Comment code block
         flycheck-idle-change-delay (if flycheck-current-errors 0.5 15.0)
         flycheck-python-pylint-executable "pyright")
   (flymake-mode -1)                             ; disable flymake
+  ;; org-lint returns propertized strings for line numbers in newer org-mode
+  (advice-add 'org-lint :filter-return
+              (lambda (reports)
+                (dolist (r reports)
+                  (let ((v (cadr r)))
+                    (when (and (vectorp v) (stringp (aref v 0)))
+                      (aset v 0 (string-to-number
+                                 (substring-no-properties (aref v 0)))))))
+                reports))
   )
 #+END_SRC
 
