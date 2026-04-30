@@ -1825,6 +1825,151 @@ Different from Claude Code which acts as an agent involving very limited coding,
                         nil t))))
 #+END_SRC
 
+**** agent-deck
+
+#+BEGIN_SRC emacs-lisp
+(use-package agent-deck
+  :if (executable-find "agent-deck")
+  :straight nil
+  :no-require t
+  :commands (agent-deck-menu)
+  :init
+  (defvar agent-deck--process-environment
+    '("AGENTDECK_SUPPRESS_TMUX_WARNING=1"
+      "AGENT_DECK_ALLOW_OUTER_TMUX=1"))
+
+  (defun agent-deck--run (cmd)
+    "Run agent-deck CMD, display output in *agent-deck* buffer."
+    (let ((buf (get-buffer-create "*agent-deck*"))
+          (process-environment (append agent-deck--process-environment process-environment)))
+      (with-current-buffer buf
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (call-process-shell-command cmd nil buf)
+          (special-mode)))
+      (pop-to-buffer buf)
+      (fit-window-to-buffer)))
+
+  (defun agent-deck--session-titles ()
+    "Return list of session titles from agent-deck."
+    (let ((process-environment (append agent-deck--process-environment process-environment)))
+      (when-let ((json-str (with-temp-buffer
+                             (call-process "agent-deck" nil t nil "list" "--json")
+                             (buffer-string)))
+                 (parsed (ignore-errors (json-parse-string json-str :array-type 'list))))
+        (mapcar (lambda (s) (gethash "title" s)) parsed))))
+
+  (defun agent-deck--read-session (prompt)
+    "Prompt for a session title with completing-read."
+    (let ((sessions (agent-deck--session-titles)))
+      (unless sessions (user-error "No agent-deck sessions found"))
+      (completing-read prompt sessions nil t)))
+
+  (defun agent-deck--project-root-and-title ()
+    "Return (ROOT . TITLE) for the current project."
+    (let ((root (expand-file-name
+                 (or (when-let ((proj (project-current)))
+                       (project-root proj))
+                     default-directory))))
+      (cons root (file-name-nondirectory (directory-file-name root)))))
+
+  (defun agent-deck-status ()
+    "Show agent-deck session list."
+    (interactive)
+    (agent-deck--run "agent-deck list"))
+
+  (defun agent-deck-add ()
+    "Add current project as an agent-deck session."
+    (interactive)
+    (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title)))
+      (agent-deck--run (format "agent-deck add %s -c claude -t %s"
+                               (shell-quote-argument root)
+                               (shell-quote-argument title)))))
+
+  (defun agent-deck-start ()
+    "Start an agent-deck session."
+    (interactive)
+    (let ((session (agent-deck--read-session "Start session: ")))
+      (agent-deck--run (format "agent-deck session start %s" (shell-quote-argument session)))))
+
+  (defun agent-deck-stop ()
+    "Stop an agent-deck session."
+    (interactive)
+    (let ((session (agent-deck--read-session "Stop session: ")))
+      (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument session)))))
+
+  (defun agent-deck-delete ()
+    "Remove an agent-deck session."
+    (interactive)
+    (let ((session (agent-deck--read-session "Delete session: ")))
+      (when (yes-or-no-p (format "Delete session '%s'?" session))
+        (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument session))))))
+
+  (defun agent-deck-fork ()
+    "Fork an agent-deck session."
+    (interactive)
+    (let ((session (agent-deck--read-session "Fork session: ")))
+      (agent-deck--run (format "agent-deck session fork %s" (shell-quote-argument session)))))
+
+  (defun agent-deck-launch ()
+    "Add current project, start session, and open TUI."
+    (interactive)
+    (unless (getenv "TMUX")
+      (user-error "Not inside tmux — launch agent-deck from a terminal instead"))
+    (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title)))
+      (let ((process-environment (append agent-deck--process-environment process-environment)))
+        (call-process-shell-command
+         (format "agent-deck launch %s -c claude -t %s"
+                 (shell-quote-argument root)
+                 (shell-quote-argument title)))
+        (agent-deck-tui))))
+
+  (defun agent-deck-tui ()
+    "Launch agent-deck TUI in a tmux window."
+    (interactive)
+    (if (not (getenv "TMUX"))
+        (user-error "Not inside tmux — launch agent-deck from a terminal instead")
+      (call-process-shell-command
+       "tmux set-hook -g 'client-session-changed[99]' 'bind-key -T root C-q send-keys C-q'")
+      (call-process-shell-command
+       (concat "tmux select-window -t agent-deck 2>/dev/null || "
+               "tmux new-window -n agent-deck '"
+               "stty -ixon; " (string-join agent-deck--process-environment " ") " agent-deck'"))))
+
+  (defun agent-deck-web ()
+    "Start agent-deck web UI and open in browser."
+    (interactive)
+    (when-let ((existing (get-process "agent-deck-web")))
+      (delete-process existing))
+    (let ((process-environment (append agent-deck--process-environment process-environment)))
+      (start-process "agent-deck-web" nil "agent-deck" "web"))
+    (run-at-time 1 nil #'browse-url "http://127.0.0.1:8420"))
+
+  (defun agent-deck-menu ()
+    "Agent Deck - AI agent session manager."
+    (interactive)
+    (eval-and-compile (require 'transient))
+    (transient-define-prefix agent-deck-menu ()
+      "Agent Deck - AI agent session manager."
+      ["Sessions"
+       ("l" "List sessions" agent-deck-status)
+       ("L" "Launch project & switch" agent-deck-launch)
+       ("a" "Add current project" agent-deck-add)
+       ("s" "Start session" agent-deck-start)
+       ("S" "Stop session" agent-deck-stop)
+       ("d" "Delete session" agent-deck-delete)
+       ("f" "Fork session" agent-deck-fork)]
+      ["Actions"
+       ("t" "Launch TUI (tmux)" agent-deck-tui)
+       ("w" "Open web UI" agent-deck-web)])
+    (call-interactively #'agent-deck-menu))
+
+  (dolist (cmd '(agent-deck-status agent-deck-add agent-deck-start
+                 agent-deck-stop agent-deck-delete agent-deck-fork
+                 agent-deck-launch agent-deck-tui agent-deck-web))
+    (put cmd 'completion-predicate #'ignore)))
+#+END_SRC
+
 **** gptel
 
 #+begin_src emacs-lisp
