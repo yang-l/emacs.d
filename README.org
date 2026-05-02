@@ -1838,6 +1838,21 @@ Different from Claude Code which acts as an agent involving very limited coding,
     '("AGENTDECK_SUPPRESS_TMUX_WARNING=1"
       "AGENT_DECK_ALLOW_OUTER_TMUX=1"))
 
+  (defvar agent-deck--tool "claude"
+    "AI CLI tool used for new sessions (e.g. claude, codex).")
+
+  (defun agent-deck-set-tool ()
+    "Select the AI tool used for new sessions."
+    (interactive)
+    (setq agent-deck--tool
+          (completing-read (format "AI CLI (current: %s): " agent-deck--tool)
+                           '("claude" "codex") nil t nil nil agent-deck--tool)))
+
+  (defun agent-deck--quit-to-menu ()
+    (interactive)
+    (quit-window)
+    (agent-deck-menu))
+
   (defun agent-deck--run (cmd)
     "Run agent-deck CMD, display output in *agent-deck* buffer."
     (let ((buf (get-buffer-create "*agent-deck*"))
@@ -1846,7 +1861,8 @@ Different from Claude Code which acts as an agent involving very limited coding,
         (let ((inhibit-read-only t))
           (erase-buffer)
           (call-process-shell-command cmd nil buf)
-          (special-mode)))
+          (special-mode)
+          (local-set-key (kbd "q") #'agent-deck--quit-to-menu)))
       (pop-to-buffer buf)
       (fit-window-to-buffer)))
 
@@ -1871,7 +1887,9 @@ Different from Claude Code which acts as an agent involving very limited coding,
                  (or (when-let ((proj (project-current)))
                        (project-root proj))
                      default-directory))))
-      (cons root (file-name-nondirectory (directory-file-name root)))))
+      (cons root (format "%s (%s)"
+                         (file-name-nondirectory (directory-file-name root))
+                         agent-deck--tool))))
 
   (defun agent-deck-status ()
     "Show agent-deck session list."
@@ -1882,8 +1900,9 @@ Different from Claude Code which acts as an agent involving very limited coding,
     "Add current project as an agent-deck session."
     (interactive)
     (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title)))
-      (agent-deck--run (format "agent-deck add %s -c claude -t %s"
+      (agent-deck--run (format "agent-deck add %s -c %s -t %s"
                                (shell-quote-argument root)
+                               (shell-quote-argument agent-deck--tool)
                                (shell-quote-argument title)))))
 
   (defun agent-deck-start ()
@@ -1919,8 +1938,9 @@ Different from Claude Code which acts as an agent involving very limited coding,
     (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title)))
       (let ((process-environment (append agent-deck--process-environment process-environment)))
         (call-process-shell-command
-         (format "agent-deck launch %s -c claude -t %s"
+         (format "agent-deck launch %s -c %s -t %s"
                  (shell-quote-argument root)
+                 (shell-quote-argument agent-deck--tool)
                  (shell-quote-argument title)))
         (agent-deck-tui))))
 
@@ -1961,12 +1981,15 @@ Different from Claude Code which acts as an agent involving very limited coding,
        ("f" "Fork session" agent-deck-fork)]
       ["Actions"
        ("t" "Launch TUI (tmux)" agent-deck-tui)
-       ("w" "Open web UI" agent-deck-web)])
+       ("w" "Open web UI" agent-deck-web)]
+      ["Config"
+       ("c" (lambda () (format "AI CLI: %s" agent-deck--tool)) agent-deck-set-tool :transient t)])
     (call-interactively #'agent-deck-menu))
 
   (dolist (cmd '(agent-deck-status agent-deck-add agent-deck-start
                  agent-deck-stop agent-deck-delete agent-deck-fork
-                 agent-deck-launch agent-deck-tui agent-deck-web))
+                 agent-deck-launch agent-deck-tui agent-deck-web
+                 agent-deck-set-tool))
     (put cmd 'completion-predicate #'ignore)))
 #+END_SRC
 
