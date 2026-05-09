@@ -1009,7 +1009,23 @@ Available in Emacs 29+
     (apply orig-fun args)
     (delete-other-windows))
   (advice-add 'magit-status :around #'magit-status--magit-fullscreen)
-  )
+
+  (require 'server)
+  (unless (server-running-p)
+    (setq server-name "magit")
+    (server-start))
+
+  (defun magit--maybe-stop-server ()
+    (when (and (equal server-name "magit")
+               (server-running-p)
+               (not (seq-some (lambda (b)
+                                (and (not (eq b (current-buffer)))
+                                     (with-current-buffer b
+                                       (derived-mode-p 'magit-mode))))
+                              (buffer-list))))
+      (server-force-delete)))
+  (add-hook 'magit-mode-hook
+            (lambda () (add-hook 'kill-buffer-hook #'magit--maybe-stop-server nil t))))
 
 (use-package autorevert :diminish auto-revert-mode :hook (after-init . global-auto-revert-mode))
 #+END_SRC
