@@ -1841,11 +1841,30 @@ Different from Claude Code which acts as an agent involving very limited coding,
   (defvar agent-deck--tool "claude"
     "AI CLI tool used for new sessions (e.g. claude, codex).")
 
+  (defvar agent-deck--watchers (make-hash-table :test 'equal)
+    "Map project root to (PROCESS . SESSIONS) cons.
+SESSIONS is a list of session titles sharing this watcher.")
+
+  (defvar agent-deck--watch-excludes
+    '("\\.git/" "\\.elc$" "__pycache__/" "node_modules/" "\\.DS_Store$" "~$" "#.*#$")
+    "Regex patterns to exclude from fswatch.")
+
+  (defvar agent-deck--claude-extra-args
+    '("--append-system-prompt"
+      "When you want the user to look at a specific file location, run: emacsclient -n +LINE FILE")
+    "Extra CLI args passed to Claude Code sessions via --extra-arg.")
+
+  (defun agent-deck--prompt-worktree ()
+    "Prompt for worktree branch. Return (BRANCH . NEW-P) or nil for empty input."
+    (let ((b (read-string "Worktree branch (empty for none): ")))
+      (when (not (string-empty-p b))
+        (cons b (y-or-n-p "Create new branch? ")))))
+
   (defun agent-deck-set-tool ()
     "Select the AI tool used for new sessions."
     (interactive)
     (setq agent-deck--tool
-          (completing-read (format "AI CLI (current: %s): " agent-deck--tool)
+          (completing-read (format "CLI (current: %s): " agent-deck--tool)
                            '("claude" "codex") nil t nil nil agent-deck--tool)))
 
   (defun agent-deck--quit-to-menu ()
@@ -1854,42 +1873,56 @@ Different from Claude Code which acts as an agent involving very limited coding,
     (agent-deck-menu))
 
   (defun agent-deck--run (cmd)
-    "Run agent-deck CMD, display output in *agent-deck* buffer."
+    "Run agent-deck CMD, display output in *agent-deck* buffer. Return exit code."
     (let ((buf (get-buffer-create "*agent-deck*"))
-          (process-environment (append agent-deck--process-environment process-environment)))
+          (process-environment (append agent-deck--process-environment process-environment))
+          (exit-code 0))
       (with-current-buffer buf
         (let ((inhibit-read-only t))
           (erase-buffer)
-          (call-process-shell-command cmd nil buf)
+          (setq exit-code (call-process-shell-command cmd nil buf))
           (special-mode)
           (local-set-key (kbd "q") #'agent-deck--quit-to-menu)))
       (pop-to-buffer buf)
-      (fit-window-to-buffer)))
+      (fit-window-to-buffer)
+      exit-code))
 
-  (defun agent-deck--session-titles ()
-    "Return list of session titles from agent-deck."
+  (defun agent-deck--sessions ()
+    "Return alist of (TITLE . PATH) from agent-deck."
     (let ((process-environment (append agent-deck--process-environment process-environment)))
       (when-let ((json-str (with-temp-buffer
                              (call-process "agent-deck" nil t nil "list" "--json")
                              (buffer-string)))
                  (parsed (ignore-errors (json-parse-string json-str :array-type 'list))))
-        (mapcar (lambda (s) (gethash "title" s)) parsed))))
+        (mapcar (lambda (s) (cons (gethash "title" s) (gethash "path" s))) parsed))))
 
   (defun agent-deck--read-session (prompt)
-    "Prompt for a session title with completing-read."
-    (let ((sessions (agent-deck--session-titles)))
+    "Prompt for a session, return (TITLE . PATH)."
+    (let ((sessions (agent-deck--sessions)))
       (unless sessions (user-error "No agent-deck sessions found"))
-      (completing-read prompt sessions nil t)))
+      (let ((title (completing-read prompt (mapcar #'car sessions) nil t)))
+        (assoc title sessions))))
 
-  (defun agent-deck--project-root-and-title ()
-    "Return (ROOT . TITLE) for the current project."
+  (defun agent-deck--extra-args ()
+    "Return extra-arg flags string for Claude sessions, empty for others."
+    (if (equal agent-deck--tool "claude")
+        (mapconcat (lambda (a) (format " --extra-arg %s" (shell-quote-argument a)))
+                   agent-deck--claude-extra-args "")
+      ""))
+
+  (defun agent-deck--project-root-and-title (&optional worktree)
+    "Return (ROOT . TITLE) for the current project.
+WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
     (let ((root (expand-file-name
                  (or (when-let ((proj (project-current)))
                        (project-root proj))
                      default-directory))))
-      (cons root (format "%s (%s)"
+      (cons root (format "%s (%s%s)"
                          (file-name-nondirectory (directory-file-name root))
-                         agent-deck--tool))))
+                         agent-deck--tool
+                         (if worktree
+                             (format " %s" (car worktree))
+                           "")))))
 
   (defun agent-deck-status ()
     "Show agent-deck session list."
@@ -1899,50 +1932,81 @@ Different from Claude Code which acts as an agent involving very limited coding,
   (defun agent-deck-add ()
     "Add current project as an agent-deck session."
     (interactive)
-    (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title)))
-      (agent-deck--run (format "agent-deck add %s -c %s -t %s"
-                               (shell-quote-argument root)
-                               (shell-quote-argument agent-deck--tool)
-                               (shell-quote-argument title)))))
+    (let ((wt (agent-deck--prompt-worktree)))
+      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt)))
+        (agent-deck--run (format "agent-deck add %s -c %s -t %s%s%s"
+                                 (shell-quote-argument root)
+                                 (shell-quote-argument agent-deck--tool)
+                                 (shell-quote-argument title)
+                                 (if wt
+                                     (format " --worktree %s%s"
+                                             (shell-quote-argument (car wt))
+                                             (if (cdr wt) " --new-branch" ""))
+                                   "")
+                                 (agent-deck--extra-args))))))
 
   (defun agent-deck-start ()
     "Start an agent-deck session."
     (interactive)
-    (let ((session (agent-deck--read-session "Start session: ")))
-      (agent-deck--run (format "agent-deck session start %s" (shell-quote-argument session)))))
+    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Start session: ")))
+      (when (zerop (agent-deck--run (format "agent-deck session start %s" (shell-quote-argument title))))
+        (when path (agent-deck--watch-start path title)))))
 
   (defun agent-deck-stop ()
     "Stop an agent-deck session."
     (interactive)
-    (let ((session (agent-deck--read-session "Stop session: ")))
-      (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument session)))))
+    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Stop session: ")))
+      (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
+      (when path (agent-deck--watch-stop path title))))
 
   (defun agent-deck-delete ()
     "Remove an agent-deck session."
     (interactive)
-    (let ((session (agent-deck--read-session "Delete session: ")))
-      (when (yes-or-no-p (format "Delete session '%s'?" session))
-        (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument session))))))
+    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Delete session: ")))
+      (when (yes-or-no-p (format "Delete session '%s'?" title))
+        (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
+        (when path (agent-deck--watch-stop path title)))))
 
   (defun agent-deck-fork ()
     "Fork an agent-deck session."
     (interactive)
-    (let ((session (agent-deck--read-session "Fork session: ")))
-      (agent-deck--run (format "agent-deck session fork %s" (shell-quote-argument session)))))
+    (let ((title (car (agent-deck--read-session "Fork session: "))))
+      (agent-deck--run (format "agent-deck session fork %s" (shell-quote-argument title)))))
+
+  (defun agent-deck-worktree-finish ()
+    "Finish a worktree session (merge, remove worktree, delete session)."
+    (interactive)
+    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Finish worktree: ")))
+      (when (yes-or-no-p (format "Finish worktree '%s'? (merge + cleanup)" title))
+        (when (zerop (agent-deck--run (format "echo y | agent-deck worktree finish %s" (shell-quote-argument title))))
+          (when path (agent-deck--watch-stop path title))))))
 
   (defun agent-deck-launch ()
     "Add current project, start session, and open TUI."
     (interactive)
     (unless (getenv "TMUX")
       (user-error "Not inside tmux — launch agent-deck from a terminal instead"))
-    (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title)))
-      (let ((process-environment (append agent-deck--process-environment process-environment)))
-        (call-process-shell-command
-         (format "agent-deck launch %s -c %s -t %s"
-                 (shell-quote-argument root)
-                 (shell-quote-argument agent-deck--tool)
-                 (shell-quote-argument title)))
-        (agent-deck-tui))))
+    (let ((wt (agent-deck--prompt-worktree)))
+      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt)))
+        (let ((process-environment (append agent-deck--process-environment process-environment)))
+          (when (zerop (call-process-shell-command
+                        (format "agent-deck launch %s -c %s -t %s%s%s"
+                                (shell-quote-argument root)
+                                (shell-quote-argument agent-deck--tool)
+                                (shell-quote-argument title)
+                                (if wt
+                                    (format " --worktree %s%s"
+                                            (shell-quote-argument (car wt))
+                                            (if (cdr wt) " --new-branch" ""))
+                                  "")
+                                (agent-deck--extra-args))))
+            (agent-deck-tui)
+            (let ((watch-path (if wt
+                                  (or (cdr (seq-find (lambda (s) (equal (car s) title))
+                                                     (agent-deck--sessions)))
+                                      root)
+                                root)))
+              (agent-deck--watch-start watch-path title)))))))
 
   (defun agent-deck-tui ()
     "Launch agent-deck TUI in a tmux window."
@@ -1965,6 +2029,120 @@ Different from Claude Code which acts as an agent involving very limited coding,
       (start-process "agent-deck-web" nil "agent-deck" "web"))
     (run-at-time 1 nil #'browse-url "http://127.0.0.1:8420"))
 
+  (defun agent-deck--watch-filter (proc output)
+    "Process filter for fswatch output. Debounces and batches file events."
+    (let* ((prev (or (process-get proc :partial) ""))
+           (combined (concat prev output))
+           (lines (split-string combined "\n"))
+           (partial (car (last lines)))
+           (complete (butlast lines))
+           (pending (or (process-get proc :pending)
+                        (make-hash-table :test 'equal)))
+           (root (process-get proc :root)))
+      (process-put proc :partial partial)
+      (dolist (path complete)
+        (unless (string-empty-p path)
+          (puthash path t pending)))
+      (process-put proc :pending pending)
+      (when-let ((old-timer (process-get proc :timer)))
+        (cancel-timer old-timer))
+      (process-put proc :timer
+                   (run-at-time 0.2 nil #'agent-deck--watch-process pending root))))
+
+  (defun agent-deck--watch-process (pending root)
+    "Process accumulated file change events for ROOT."
+    (let ((files (let (ks) (maphash (lambda (k _) (push k ks)) pending) ks)))
+      (clrhash pending)
+      (dolist (file files)
+        (when-let ((buf (find-buffer-visiting file)))
+          (with-current-buffer buf
+            (cond
+             ((and (not (buffer-modified-p))
+                   (file-exists-p file)
+                   (not (verify-visited-file-modtime buf)))
+              (revert-buffer t t t)
+              (when (bound-and-true-p flycheck-mode)
+                (flycheck-buffer))
+              (when (bound-and-true-p flymake-mode)
+                (flymake-start)))
+             ((not (file-exists-p file))
+              (setq buffer-file-number nil))))))
+      (when (and files (fboundp 'magit-get-mode-buffer))
+        (ignore-errors
+          (let ((default-directory root))
+            (when-let ((magit-buf (magit-get-mode-buffer 'magit-status-mode)))
+              (with-current-buffer magit-buf
+                (magit-refresh))))))))
+
+  (defun agent-deck--watch-sentinel (proc event)
+    "Sentinel for fswatch process. Cleans up on unexpected exit."
+    (when-let ((timer (process-get proc :timer)))
+      (cancel-timer timer))
+    (unless (or (string-prefix-p "finished" event)
+                (string-prefix-p "killed" event))
+      (message "agent-deck: fswatch exited unexpectedly: %s" (string-trim event)))
+    (when-let ((root (process-get proc :root))
+               (entry (gethash root agent-deck--watchers)))
+      (when (eq proc (car entry))
+        (remhash root agent-deck--watchers))))
+
+  (defun agent-deck--watch-start (root session-title)
+    "Start or register SESSION-TITLE for fswatch watcher on ROOT."
+    (setq root (directory-file-name root))
+    (let ((entry (gethash root agent-deck--watchers)))
+      (if (and entry (process-live-p (car entry)))
+          (unless (member session-title (cdr entry))
+            (puthash root (cons (car entry) (cons session-title (cdr entry))) agent-deck--watchers))
+        (when entry (agent-deck--watch-stop root nil))
+        (if (not (executable-find "fswatch"))
+            (message "agent-deck: fswatch not found, file watching disabled")
+          (let* ((excludes (mapcan (lambda (pat) (list "-e" pat))
+                                   agent-deck--watch-excludes))
+                 (args (append (list "agent-deck-watch" nil "fswatch"
+                                     "-r" "-l" "0.5"
+                                     "--event" "Updated"
+                                     "--event" "Created"
+                                     "--event" "Renamed"
+                                     "--event" "Removed")
+                               excludes
+                               (list root)))
+                 (proc (apply #'start-process args)))
+            (process-put proc :root root)
+            (process-put proc :partial "")
+            (set-process-filter proc #'agent-deck--watch-filter)
+            (set-process-sentinel proc #'agent-deck--watch-sentinel)
+            (set-process-query-on-exit-flag proc nil)
+            (puthash root (cons proc (list session-title)) agent-deck--watchers)
+            (message "agent-deck: watching %s" root))))))
+
+  (defun agent-deck--watch-stop (root session-title)
+    "Unregister SESSION-TITLE from ROOT watcher, stop when no sessions left."
+    (setq root (directory-file-name root))
+    (when-let ((entry (gethash root agent-deck--watchers)))
+      (let* ((proc (car entry))
+             (remaining (if session-title (delete session-title (cdr entry)) nil)))
+        (if remaining
+            (puthash root (cons proc remaining) agent-deck--watchers)
+          (when (process-live-p proc)
+            (when-let ((timer (process-get proc :timer)))
+              (cancel-timer timer))
+            (delete-process proc))
+          (remhash root agent-deck--watchers)))))
+
+  (defun agent-deck-watch-stop-all ()
+    "Stop all active fswatch watchers."
+    (interactive)
+    (maphash (lambda (_root entry)
+               (when (process-live-p (car entry))
+                 (when-let ((timer (process-get (car entry) :timer)))
+                   (cancel-timer timer))
+                 (delete-process (car entry))))
+             agent-deck--watchers)
+    (clrhash agent-deck--watchers)
+    (message "agent-deck: all watchers stopped"))
+
+  (add-hook 'kill-emacs-hook #'agent-deck-watch-stop-all)
+
   (defun agent-deck-menu ()
     "Agent Deck - AI agent session manager."
     (interactive)
@@ -1978,18 +2156,20 @@ Different from Claude Code which acts as an agent involving very limited coding,
        ("s" "Start session" agent-deck-start)
        ("S" "Stop session" agent-deck-stop)
        ("d" "Delete session" agent-deck-delete)
-       ("f" "Fork session" agent-deck-fork)]
+       ("f" "Fork session" agent-deck-fork)
+       ("F" "Finish worktree" agent-deck-worktree-finish)]
       ["Actions"
        ("t" "Launch TUI (tmux)" agent-deck-tui)
        ("w" "Open web UI" agent-deck-web)]
       ["Config"
-       ("c" (lambda () (format "AI CLI: %s" agent-deck--tool)) agent-deck-set-tool :transient t)])
+       ("c" (lambda () (format "CLI: %s" agent-deck--tool)) agent-deck-set-tool :transient t)])
     (call-interactively #'agent-deck-menu))
 
   (dolist (cmd '(agent-deck-status agent-deck-add agent-deck-start
                  agent-deck-stop agent-deck-delete agent-deck-fork
                  agent-deck-launch agent-deck-tui agent-deck-web
-                 agent-deck-set-tool))
+                 agent-deck-set-tool
+                 agent-deck-worktree-finish agent-deck-watch-stop-all))
     (put cmd 'completion-predicate #'ignore)))
 #+END_SRC
 
