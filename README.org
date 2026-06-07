@@ -669,7 +669,8 @@ Terminal emulator inside Emacs
   :bind (:map vterm-mode-map                    ; `C-h k` for key sequence
               ("DEL" . vterm-send-backspace)
               ("<deletechar>" . vterm-send-delete))
-  :commands vterm)
+  :commands vterm
+  :hook (vterm-mode . (lambda () (hl-line-mode -1))))
 
 (use-package vterm-toggle
   :disabled
@@ -1891,7 +1892,11 @@ SESSIONS is a list of session titles sharing this watcher.")
   (defun agent-deck--run (cmd)
     "Run agent-deck CMD, display output in *agent-deck* buffer. Return exit code."
     (let ((buf (get-buffer-create "*agent-deck*"))
-          (process-environment (append agent-deck--process-environment process-environment))
+          (process-environment (append
+                                (let ((s (agent-deck--server-socket)))
+                                  (when s (list (concat "TMUX=" s ",0,0"))))
+                                agent-deck--process-environment
+                                process-environment))
           (exit-code 0))
       (with-current-buffer buf
         (let ((inhibit-read-only t))
@@ -1925,6 +1930,50 @@ SESSIONS is a list of session titles sharing this watcher.")
         (mapconcat (lambda (a) (format " --extra-arg %s" (shell-quote-argument a)))
                    agent-deck--claude-extra-args "")
       ""))
+
+  (defun agent-deck--ensure-server ()
+    "Start the dedicated agent-deck tmux server if not already running."
+    (unless (= 0 (call-process-shell-command "tmux -L agent-deck-tui has-session 2>/dev/null"))
+      (call-process-shell-command
+       "tmux -L agent-deck-tui new-session -d -s _ad_srv -x 220 -y 50")))
+
+  (defun agent-deck--server-socket ()
+    "Return the socket path for the agent-deck-tui server, or nil."
+    (let ((s (string-trim (shell-command-to-string
+                           "tmux -L agent-deck-tui display-message -p '#{socket_path}' 2>/dev/null"))))
+      (unless (string-empty-p s) s)))
+
+  (defun agent-deck--tmux-session-snapshot ()
+    "Return the current set of agent-deck tmux session names as a list."
+    (agent-deck--ensure-server)
+    (split-string
+     (shell-command-to-string "tmux -L agent-deck-tui list-sessions -F '#{session_name}' 2>/dev/null")
+     "\n" t))
+
+  (defun agent-deck--schedule-shell-pane (snapshot path)
+    "Add a 70/30 shell pane at PATH to any new tmux session not in SNAPSHOT.
+Polls every 0.3 s for up to ~5 s; logs a message if no new session is found."
+    (let ((attempts 0))
+      (cl-labels ((try ()
+                    (setq attempts (1+ attempts))
+                    (let* ((current (agent-deck--tmux-session-snapshot))
+                           (new (cl-set-difference current snapshot :test #'equal)))
+                      (cond
+                       (new
+                        (dolist (sess new)
+                          (unless (string-prefix-p "_" sess)
+                            (call-process-shell-command
+                             (format "tmux -L agent-deck-tui split-window -h -p 30 -t %s: -c %s"
+                                     (shell-quote-argument sess)
+                                     (shell-quote-argument path)))
+                            (call-process-shell-command
+                             (format "tmux -L agent-deck-tui select-pane -L -t %s:"
+                                     (shell-quote-argument sess))))))
+                       ((< attempts 17)
+                        (run-at-time 0.3 nil #'try))
+                       (t
+                        (message "agent-deck: no new tmux session found after shell-pane setup"))))))
+        (run-at-time 0.3 nil #'try))))
 
   (defun agent-deck--project-root-and-title (&optional worktree)
     "Return (ROOT . TITLE) for the current project.
@@ -1965,8 +2014,11 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
     "Start an agent-deck session."
     (interactive)
     (pcase-let ((`(,title . ,path) (agent-deck--read-session "Start session: ")))
-      (when (zerop (agent-deck--run (format "agent-deck session start %s" (shell-quote-argument title))))
-        (when path (agent-deck--watch-start path title)))))
+      (let ((snapshot (agent-deck--tmux-session-snapshot)))
+        (when (zerop (agent-deck--run (format "agent-deck session start %s" (shell-quote-argument title))))
+          (when path
+            (agent-deck--schedule-shell-pane snapshot path)
+            (agent-deck--watch-start path title))))))
 
   (defun agent-deck-stop ()
     "Stop an agent-deck session."
@@ -1989,13 +2041,60 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
     (let ((title (car (agent-deck--read-session "Fork session: "))))
       (agent-deck--run (format "agent-deck session fork %s" (shell-quote-argument title)))))
 
-  (defun agent-deck-worktree-finish ()
-    "Finish a worktree session (merge, remove worktree, delete session)."
+  (defun agent-deck-worktree-cleanup ()
+    "Stop and delete a worktree session, then remove the orphaned worktree.
+Does not merge — use a PR for that."
     (interactive)
-    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Finish worktree: ")))
-      (when (yes-or-no-p (format "Finish worktree '%s'? (merge + cleanup)" title))
-        (when (zerop (agent-deck--run (format "echo y | agent-deck worktree finish %s" (shell-quote-argument title))))
-          (when path (agent-deck--watch-stop path title))))))
+    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Cleanup worktree: ")))
+      (when (yes-or-no-p (format "Cleanup worktree '%s'? (stop + delete session, remove worktree, no merge)" title))
+        (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
+        (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
+        (agent-deck--run "echo y | agent-deck worktree cleanup --force")
+        (when path (agent-deck--watch-stop path title))
+        (let ((root (car (agent-deck--project-root-and-title))))
+          (when path
+            (agent-deck--run (format "git -C %s worktree remove --force %s"
+                                     (shell-quote-argument root)
+                                     (shell-quote-argument path))))
+          (agent-deck--run (format "git -C %s worktree prune -v" (shell-quote-argument root)))))))
+
+  (defun agent-deck--parse-worktrees (raw)
+    "Parse `git worktree list --porcelain` output.
+Returns alist of (label . path); first entry is the main worktree."
+    (let (entries path branch)
+      (dolist (line (split-string raw "\n"))
+        (cond
+         ((string-prefix-p "worktree " line) (setq path (substring line 9)))
+         ((string-prefix-p "branch " line)
+          (setq branch (file-name-nondirectory (substring line 7))))
+         ((string= line "")
+          (when path
+            (push (cons (or branch path) path) entries)
+            (setq path nil branch nil)))))
+      (nreverse entries)))
+
+  (defun agent-deck-worktree-prune ()
+    "Force-remove a selected worktree and prune stale git metadata.
+Use when a worktree directory still exists but branch deletion fails with
+\='used by worktree\='."
+    (interactive)
+    (let* ((root (car (agent-deck--project-root-and-title)))
+           (raw (shell-command-to-string
+                 (format "git -C %s worktree list --porcelain"
+                         (shell-quote-argument root))))
+           (all (agent-deck--parse-worktrees raw))
+           (others (cdr all)))
+      (if (null others)
+          (message "No non-main worktrees found.")
+        (let* ((choice (completing-read "Force-remove worktree: "
+                                        (mapcar #'car others) nil t))
+               (path (cdr (assoc choice others))))
+          (when (yes-or-no-p (format "Force-remove worktree '%s' at %s?" choice path))
+            (agent-deck--run (format "git -C %s worktree remove --force %s"
+                                     (shell-quote-argument root)
+                                     (shell-quote-argument path)))
+            (agent-deck--run (format "git -C %s worktree prune -v"
+                                     (shell-quote-argument root))))))))
 
   (defun agent-deck-launch ()
     "Add current project, start session, and open TUI."
@@ -2004,7 +2103,12 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
       (user-error "Not inside tmux — launch agent-deck from a terminal instead"))
     (let ((wt (agent-deck--prompt-worktree)))
       (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt)))
-        (let ((process-environment (append agent-deck--process-environment process-environment)))
+        (let* ((snapshot (agent-deck--tmux-session-snapshot))
+               (process-environment
+                (append (let ((s (agent-deck--server-socket)))
+                          (when s (list (concat "TMUX=" s ",0,0"))))
+                        agent-deck--process-environment
+                        process-environment)))
           (when (zerop (call-process-shell-command
                         (format "agent-deck launch %s -c %s -t %s%s%s"
                                 (shell-quote-argument root)
@@ -2016,25 +2120,40 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
                                             (if (cdr wt) " --new-branch" ""))
                                   "")
                                 (agent-deck--extra-args))))
-            (agent-deck-tui)
             (let ((watch-path (if wt
                                   (or (cdr (seq-find (lambda (s) (equal (car s) title))
                                                      (agent-deck--sessions)))
                                       root)
                                 root)))
+              (agent-deck--schedule-shell-pane snapshot watch-path)
+              (agent-deck-tui)
               (agent-deck--watch-start watch-path title)))))))
 
   (defun agent-deck-tui ()
-    "Launch agent-deck TUI in a tmux window."
+    "Launch agent-deck TUI in a dedicated tmux server."
     (interactive)
-    (if (not (getenv "TMUX"))
-        (user-error "Not inside tmux — launch agent-deck from a terminal instead")
-      (call-process-shell-command
-       "tmux set-hook -g 'client-session-changed[99]' 'bind-key -T root C-q send-keys C-q'")
-      (call-process-shell-command
-       (concat "tmux select-window -t agent-deck 2>/dev/null || "
-               "tmux new-window -n agent-deck '"
-               "stty -ixon; " (string-join agent-deck--process-environment " ") " agent-deck'"))))
+    (unless (getenv "TMUX")
+      (user-error "Not inside tmux — launch agent-deck from a terminal instead"))
+    (let ((env-str (string-join agent-deck--process-environment " ")))
+      (agent-deck--ensure-server)
+      (call-process-shell-command "tmux -L agent-deck-tui set-option -g status off")
+      (call-process-shell-command "tmux -L agent-deck-tui set-option -g mouse on")
+      (call-process-shell-command "tmux -L agent-deck-tui bind-key -T root C-q if-shell '[ #{session_name} = _ad_tui ]' 'send-keys C-q' 'switch-client -t _ad_tui'")
+      (if (= 0 (call-process-shell-command "tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null"))
+          (call-process-shell-command
+           "tmux select-window -t agent-deck 2>/dev/null || tmux new-window -n agent-deck 'stty -ixon; tmux -L agent-deck-tui attach-session -t _ad_tui'")
+        (let ((wrapper (make-temp-file "agent-deck-wrap" nil ".sh")))
+          (with-temp-file wrapper
+            (insert "#!/bin/sh\n")
+            (insert (format "trap 'rm -f %s' EXIT HUP TERM INT\n" (shell-quote-argument wrapper)))
+            (insert (format "stty -ixon; %s agent-deck\n" env-str))
+            (insert "tmux kill-session -t _ad_tui 2>/dev/null\n"))
+          (set-file-modes wrapper #o700)
+          (when (= 0 (call-process-shell-command
+                      (concat "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck "
+                              (shell-quote-argument wrapper))))
+            (call-process-shell-command
+             "tmux new-window -n agent-deck 'stty -ixon; tmux -L agent-deck-tui attach-session -t _ad_tui'"))))))
 
   (defun agent-deck-web ()
     "Start agent-deck web UI and open in browser."
@@ -2173,7 +2292,8 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
        ("S" "Stop session" agent-deck-stop)
        ("d" "Delete session" agent-deck-delete)
        ("f" "Fork session" agent-deck-fork)
-       ("F" "Finish worktree" agent-deck-worktree-finish)]
+       ("C" "Cleanup worktree" agent-deck-worktree-cleanup)
+       ("P" "Prune stale worktrees" agent-deck-worktree-prune)]
       ["Actions"
        ("t" "Launch TUI (tmux)" agent-deck-tui)
        ("w" "Open web UI" agent-deck-web)]
@@ -2185,7 +2305,7 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
                  agent-deck-stop agent-deck-delete agent-deck-fork
                  agent-deck-launch agent-deck-tui agent-deck-web
                  agent-deck-set-tool
-                 agent-deck-worktree-finish agent-deck-watch-stop-all))
+                 agent-deck-worktree-cleanup agent-deck-worktree-prune agent-deck-watch-stop-all))
     (put cmd 'completion-predicate #'ignore)))
 #+END_SRC
 
