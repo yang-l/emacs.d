@@ -1917,6 +1917,20 @@ SESSIONS is a list of session titles sharing this watcher.")
                  (parsed (ignore-errors (json-parse-string json-str :array-type 'list))))
         (mapcar (lambda (s) (cons (gethash "title" s) (gethash "path" s))) parsed))))
 
+  (defun agent-deck--empty-groups ()
+    "Return list of group names that currently have 0 sessions."
+    (let ((process-environment (append agent-deck--process-environment process-environment)))
+      (when-let ((json-str (with-temp-buffer
+                             (when (= 0 (call-process "agent-deck" nil t nil "group" "list" "--json"))
+                               (buffer-string))))
+                 (parsed (ignore-errors (json-parse-string json-str :array-type 'list)))
+                 (groups (gethash "groups" parsed)))
+        (delq nil (mapcar (lambda (g)
+                            (when (and (= 0 (gethash "session_count" g 0))
+                                       (not (equal (gethash "path" g) "my-sessions")))
+                              (gethash "name" g)))
+                          groups)))))
+
   (defun agent-deck--read-session (prompt)
     "Prompt for a session, return (TITLE . PATH)."
     (let ((sessions (agent-deck--sessions)))
@@ -2047,16 +2061,36 @@ Does not merge — use a PR for that."
     (interactive)
     (pcase-let ((`(,title . ,path) (agent-deck--read-session "Cleanup worktree: ")))
       (when (yes-or-no-p (format "Cleanup worktree '%s'? (stop + delete session, remove worktree, no merge)" title))
-        (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
-        (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
-        (agent-deck--run "echo y | agent-deck worktree cleanup --force")
-        (when path (agent-deck--watch-stop path title))
-        (let ((root (car (agent-deck--project-root-and-title))))
+        (let* ((root (car (agent-deck--project-root-and-title)))
+               (branch-name (when path
+                              (string-trim
+                               (shell-command-to-string
+                                (format "git -C %s symbolic-ref --short HEAD 2>/dev/null"
+                                        (shell-quote-argument path)))))))
+          (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
+          (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
+          (agent-deck--run "echo y | agent-deck worktree cleanup --force")
+          (when path (agent-deck--watch-stop path title))
           (when path
             (agent-deck--run (format "git -C %s worktree remove --force %s"
                                      (shell-quote-argument root)
                                      (shell-quote-argument path))))
-          (agent-deck--run (format "git -C %s worktree prune -v" (shell-quote-argument root)))))))
+          (agent-deck--run (format "git -C %s worktree prune -v" (shell-quote-argument root)))
+          (when (and branch-name (not (string-empty-p branch-name))
+                     (yes-or-no-p (format "Also delete branch '%s'?" branch-name)))
+            (agent-deck--run (format "git -C %s branch -D %s"
+                                     (shell-quote-argument root)
+                                     (shell-quote-argument branch-name))))
+          (dolist (g (agent-deck--empty-groups))
+            (when (yes-or-no-p (format "Group '%s' is now empty — delete it?" g))
+              (let* ((process-environment (append agent-deck--process-environment process-environment))
+                     (tmp (generate-new-buffer " *ad-group-delete*"))
+                     (code (call-process "agent-deck" nil (list tmp t) nil "group" "delete" g))
+                     (out (with-current-buffer tmp (string-trim (buffer-string)))))
+                (kill-buffer tmp)
+                (if (= code 0)
+                    (message "Deleted group '%s'." g)
+                  (message "Cannot delete group '%s': %s" g out)))))))))
 
   (defun agent-deck--parse-worktrees (raw)
     "Parse `git worktree list --porcelain` output.
@@ -2066,7 +2100,7 @@ Returns alist of (label . path); first entry is the main worktree."
         (cond
          ((string-prefix-p "worktree " line) (setq path (substring line 9)))
          ((string-prefix-p "branch " line)
-          (setq branch (file-name-nondirectory (substring line 7))))
+          (setq branch (replace-regexp-in-string "^refs/heads/" "" (substring line 7))))
          ((string= line "")
           (when path
             (push (cons (or branch path) path) entries)
@@ -2094,7 +2128,12 @@ Use when a worktree directory still exists but branch deletion fails with
                                      (shell-quote-argument root)
                                      (shell-quote-argument path)))
             (agent-deck--run (format "git -C %s worktree prune -v"
-                                     (shell-quote-argument root))))))))
+                                     (shell-quote-argument root)))
+            (when (and (not (string-empty-p choice))
+                       (yes-or-no-p (format "Also delete branch '%s'?" choice)))
+              (agent-deck--run (format "git -C %s branch -D %s"
+                                       (shell-quote-argument root)
+                                       (shell-quote-argument choice)))))))))
 
   (defun agent-deck-launch ()
     "Add current project, start session, and open TUI."
@@ -2109,7 +2148,7 @@ Use when a worktree directory still exists but branch deletion fails with
                           (when s (list (concat "TMUX=" s ",0,0"))))
                         agent-deck--process-environment
                         process-environment)))
-          (when (zerop (call-process-shell-command
+          (when (zerop (agent-deck--run
                         (format "agent-deck launch %s -c %s -t %s%s%s"
                                 (shell-quote-argument root)
                                 (shell-quote-argument agent-deck--tool)
