@@ -1712,6 +1712,9 @@ so using Black to implement the same function"
 #+BEGIN_SRC emacs-lisp
 (use-package copilot
   :custom (copilot-idle-delay 1)
+  :config
+  (add-to-list 'copilot-indentation-alist '(enh-ruby-mode enh-ruby-indent-level))
+  (add-to-list 'copilot-indentation-alist '(terraform-mode terraform-indent-level))
   :hook ((enh-ruby-mode
           go-mode
           python-mode
@@ -1796,7 +1799,7 @@ Different from Claude Code which acts as an agent involving very limited coding,
                   (with-no-warnings
                     (let ((server-name "claude-code-ide"))
                       (server-start))))
-                (setenv "EDITOR" "emacsclient -q -s claude-code-ide")))
+                (setenv "EDITOR" "emacsclient -q -s claude-code-ide -a 'emacs -nw'")))
   (advice-add 'claude-code-ide--cleanup-on-exit :after
               (lambda (&rest _)
                 (when (= (hash-table-count claude-code-ide--processes) 0)
@@ -1917,6 +1920,21 @@ SESSIONS is a list of session titles sharing this watcher.")
                  (parsed (ignore-errors (json-parse-string json-str :array-type 'list))))
         (mapcar (lambda (s) (cons (gethash "title" s) (gethash "path" s))) parsed))))
 
+  (defun agent-deck--sessions-by-tmux ()
+    "Return alist of (TMUX-SESSION . PATH) from agent-deck list --json."
+    (let ((process-environment (append agent-deck--process-environment process-environment)))
+      (when-let ((json-str (with-temp-buffer
+                             (call-process "agent-deck" nil t nil "list" "--json")
+                             (buffer-string)))
+                 (parsed (ignore-errors (json-parse-string json-str :array-type 'list))))
+        (delq nil
+              (mapcar (lambda (s)
+                        (let ((tsess (gethash "tmux_session" s))
+                              (path  (gethash "path" s)))
+                          (when (and tsess path (not (string-empty-p tsess)))
+                            (cons tsess path))))
+                      parsed)))))
+
   (defun agent-deck--empty-groups ()
     "Return list of group names that currently have 0 sessions."
     (let ((process-environment (append agent-deck--process-environment process-environment)))
@@ -1964,6 +1982,22 @@ SESSIONS is a list of session titles sharing this watcher.")
      (shell-command-to-string "tmux -L agent-deck-tui list-sessions -F '#{session_name}' 2>/dev/null")
      "\n" t))
 
+  (defun agent-deck--ensure-shell-pane (session path)
+    "Add a 70/30 shell pane at PATH to SESSION if it has only one pane."
+    (let ((count (string-to-number
+                  (string-trim
+                   (shell-command-to-string
+                    (format "tmux -L agent-deck-tui list-panes -t %s: 2>/dev/null | wc -l"
+                            (shell-quote-argument session)))))))
+      (when (= count 1)
+        (call-process-shell-command
+         (format "tmux -L agent-deck-tui split-window -h -p 30 -t %s: -c %s"
+                 (shell-quote-argument session)
+                 (shell-quote-argument path)))
+        (call-process-shell-command
+         (format "tmux -L agent-deck-tui select-pane -L -t %s:"
+                 (shell-quote-argument session))))))
+
   (defun agent-deck--schedule-shell-pane (snapshot path)
     "Add a 70/30 shell pane at PATH to any new tmux session not in SNAPSHOT.
 Polls every 0.3 s for up to ~5 s; logs a message if no new session is found."
@@ -1976,18 +2010,51 @@ Polls every 0.3 s for up to ~5 s; logs a message if no new session is found."
                        (new
                         (dolist (sess new)
                           (unless (string-prefix-p "_" sess)
-                            (call-process-shell-command
-                             (format "tmux -L agent-deck-tui split-window -h -p 30 -t %s: -c %s"
-                                     (shell-quote-argument sess)
-                                     (shell-quote-argument path)))
-                            (call-process-shell-command
-                             (format "tmux -L agent-deck-tui select-pane -L -t %s:"
-                                     (shell-quote-argument sess))))))
+                            (agent-deck--ensure-shell-pane sess path))))
                        ((< attempts 17)
                         (run-at-time 0.3 nil #'try))
                        (t
                         (message "agent-deck: no new tmux session found after shell-pane setup"))))))
         (run-at-time 0.3 nil #'try))))
+
+  (defun agent-deck-restore-shell-panes ()
+    "Restore missing shell panes for all running agent-deck tmux sessions.
+Useful after a machine restart when sessions are re-created without the shell pane."
+    (interactive)
+    (let ((by-tmux (agent-deck--sessions-by-tmux))
+          (tmux-sessions (agent-deck--tmux-session-snapshot)))
+      (dolist (sess tmux-sessions)
+        (unless (string-prefix-p "_" sess)
+          (let ((path (or (cdr (assoc sess by-tmux))
+                          (string-trim
+                           (shell-command-to-string
+                            (format "tmux -L agent-deck-tui display-message -t %s: -p '#{pane_current_path}' 2>/dev/null"
+                                    (shell-quote-argument sess)))))))
+            (when (and path (not (string-empty-p path)))
+              (agent-deck--ensure-shell-pane sess path)))))))
+
+  (defvar agent-deck--restore-poll-active nil
+    "Non-nil while a restore-poll timer chain is active.")
+
+  (defun agent-deck--start-restore-poll ()
+    "Repair existing shell panes immediately, then watch for new sessions for 60 s.
+Guards against stacking when called repeatedly (e.g. multiple `t' presses)."
+    (unless agent-deck--restore-poll-active
+      (setq agent-deck--restore-poll-active t)
+      (agent-deck-restore-shell-panes)
+      (let ((snapshot (agent-deck--tmux-session-snapshot))
+            (attempts 0))
+        (cl-labels ((poll ()
+                      (setq attempts (1+ attempts))
+                      (let* ((current (agent-deck--tmux-session-snapshot))
+                             (new (cl-set-difference current snapshot :test #'equal)))
+                        (when new
+                          (agent-deck-restore-shell-panes)
+                          (setq snapshot current)))
+                      (if (< attempts 20)
+                          (run-at-time 3 nil #'poll)
+                        (setq agent-deck--restore-poll-active nil))))
+          (run-at-time 3 nil #'poll)))))
 
   (defun agent-deck--project-root-and-title (&optional worktree)
     "Return (ROOT . TITLE) for the current project.
@@ -2168,6 +2235,20 @@ Use when a worktree directory still exists but branch deletion fails with
               (agent-deck-tui)
               (agent-deck--watch-start watch-path title)))))))
 
+  (defun agent-deck--apply-server-options ()
+    "Apply tmux options and C-q key binding to the agent-deck-tui server."
+    (call-process-shell-command "tmux -L agent-deck-tui set-option -g status off")
+    (call-process-shell-command "tmux -L agent-deck-tui set-option -g mouse on")
+    ;; call-process bypasses the shell so the nested quoting only needs one
+    ;; level of Emacs string escaping rather than shell + tmux levels.
+    (call-process "tmux" nil nil nil
+                  "-L" "agent-deck-tui"
+                  "bind-key" "-T" "root" "C-q"
+                  "if-shell"
+                  "[ #{session_name} = _ad_tui ]"
+                  "send-keys C-q"
+                  "if-shell \"tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null\" \"switch-client -t _ad_tui\" \"run-shell 'emacsclient -e \\\"(agent-deck-tui)\\\" 2>/dev/null; tmux -L agent-deck-tui switch-client -t _ad_tui 2>/dev/null'\""))
+
   (defun agent-deck-tui ()
     "Launch agent-deck TUI in a dedicated tmux server."
     (interactive)
@@ -2175,9 +2256,8 @@ Use when a worktree directory still exists but branch deletion fails with
       (user-error "Not inside tmux — launch agent-deck from a terminal instead"))
     (let ((env-str (string-join agent-deck--process-environment " ")))
       (agent-deck--ensure-server)
-      (call-process-shell-command "tmux -L agent-deck-tui set-option -g status off")
-      (call-process-shell-command "tmux -L agent-deck-tui set-option -g mouse on")
-      (call-process-shell-command "tmux -L agent-deck-tui bind-key -T root C-q if-shell '[ #{session_name} = _ad_tui ]' 'send-keys C-q' 'switch-client -t _ad_tui'")
+      (agent-deck--apply-server-options)
+      (agent-deck--start-restore-poll)
       (if (= 0 (call-process-shell-command "tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null"))
           (call-process-shell-command
            "tmux select-window -t agent-deck 2>/dev/null || tmux new-window -n agent-deck 'stty -ixon; tmux -L agent-deck-tui attach-session -t _ad_tui'")
@@ -2332,6 +2412,7 @@ Use when a worktree directory still exists but branch deletion fails with
        ("d" "Delete session" agent-deck-delete)
        ("f" "Fork session" agent-deck-fork)
        ("C" "Cleanup worktree" agent-deck-worktree-cleanup)
+       ("r" "Restore shell panes" agent-deck-restore-shell-panes)
        ("P" "Prune stale worktrees" agent-deck-worktree-prune)]
       ["Actions"
        ("t" "Launch TUI (tmux)" agent-deck-tui)
@@ -2340,11 +2421,19 @@ Use when a worktree directory still exists but branch deletion fails with
        ("c" (lambda () (format "CLI: %s" agent-deck--tool)) agent-deck-set-tool :transient t)])
     (call-interactively #'agent-deck-menu))
 
+  (add-hook 'after-init-hook
+            (lambda ()
+              (when (and (getenv "TMUX")
+                         (= 0 (call-process-shell-command
+                               "tmux -L agent-deck-tui has-session 2>/dev/null")))
+                (agent-deck--apply-server-options))))
+
   (dolist (cmd '(agent-deck-status agent-deck-add agent-deck-start
                  agent-deck-stop agent-deck-delete agent-deck-fork
                  agent-deck-launch agent-deck-tui agent-deck-web
                  agent-deck-set-tool
-                 agent-deck-worktree-cleanup agent-deck-worktree-prune agent-deck-watch-stop-all))
+                 agent-deck-worktree-cleanup agent-deck-worktree-prune agent-deck-watch-stop-all
+                 agent-deck-restore-shell-panes))
     (put cmd 'completion-predicate #'ignore)))
 #+END_SRC
 
