@@ -1211,8 +1211,7 @@ Language Server Protocol
   :commands (lsp lsp-deferred)
   :hook ((lsp-mode
           . (lambda ()
-              (let ((lsp-keymap-prefix "C-c l"))
-                #'lsp-enable-which-key-integration)
+              (lsp-enable-which-key-integration)
               (advice-add 'lsp-completion--enable :after
                           #'(lambda ()
                               (setq-local completion-at-point-functions
@@ -1251,6 +1250,7 @@ Language Server Protocol
   (lsp-clients-typescript-server-args '("--stdio"))
   (lsp-completion-provider :none)               ; handled by corfu
   (lsp-idle-delay 0.7)
+  (lsp-keymap-prefix "C-c l")
   (lsp-log-io nil)
   (lsp-prefer-flymake nil)
   (lsp-response-timeout 3)
@@ -2021,7 +2021,8 @@ Polls every 0.3 s for up to ~5 s; logs a message if no new session is found."
 
   (defun agent-deck-restore-shell-panes ()
     "Restore missing shell panes for all running agent-deck tmux sessions.
-Useful after a machine restart when sessions are re-created without the shell pane."
+Useful after a machine restart when sessions are re-created without the shell
+pane."
     (interactive)
     (let ((by-tmux (agent-deck--sessions-by-tmux))
           (tmux-sessions (agent-deck--tmux-session-snapshot)))
