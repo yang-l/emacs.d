@@ -1272,9 +1272,6 @@ Language Server Protocol
                    (concat (expand-file-name (shell-command-to-string "( git rev-parse --show-toplevel 2> /dev/null || echo $(pwd) ) | tr -d $'\n'")) "/vendor/bundle/"))
       ))
 
-  ;; Use lsp servers from PATH installed by Nix
-  (with-eval-after-load 'lsp-json (lsp-dependency 'vscode-json-languageserver `(:system ,(executable-find "vscode-json-languageserver"))))
-
   ;; ignore directories on lsp file watcher
   (with-eval-after-load 'lsp-mode
     (let* ((proj-root (lsp-workspace-root))
