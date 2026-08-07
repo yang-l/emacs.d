@@ -1807,7 +1807,7 @@ Different from Claude Code which acts as an agent involving very limited coding,
                       (let ((server-name "claude-code-ide"))
                         (server-force-delete)))))))
   :custom
-  (claude-code-ide-cli-extra-flags "--permission-mode plan --effort max --thinking-display summarized")
+  (claude-code-ide-cli-extra-flags "--permission-mode plan --thinking-display summarized")
   (claude-code-ide-focus-claude-after-ediff nil)
   (claude-code-ide-focus-on-open nil)
   (claude-code-ide-no-flicker t)
@@ -1868,9 +1868,7 @@ SESSIONS is a list of session titles sharing this watcher.")
 
   (defvar agent-deck--claude-extra-args
     '("--append-system-prompt"
-      "When you want the user to look at a specific file location, run: emacsclient -n +LINE FILE"
-      "--effort"
-      "max")
+      "When you want the user to look at a specific file location, run: emacsclient -n +LINE FILE")
     "Extra CLI args passed to Claude Code sessions via --extra-arg.")
 
   (defun agent-deck--prompt-worktree ()
@@ -1973,6 +1971,25 @@ SESSIONS is a list of session titles sharing this watcher.")
     (let ((s (string-trim (shell-command-to-string
                            "tmux -L agent-deck-tui display-message -p '#{socket_path}' 2>/dev/null"))))
       (unless (string-empty-p s) s)))
+
+  (defvar agent-deck--tui-bootstrap-script
+    (expand-file-name "agent-deck-tui-bootstrap.sh" user-emacs-directory)
+    "Path to the standalone script that (re)creates the _ad_tui session.
+Regenerated on every Emacs startup so it stays in sync with
+`agent-deck--process-environment'. Lets the C-q tmux fallback recreate
+_ad_tui without depending on any specific running Emacs process --
+this config never runs a persistent daemon, so no Emacs process is a
+reliable target.")
+
+  (defun agent-deck--write-tui-bootstrap-script ()
+    "(Re)write the standalone _ad_tui bootstrap script to disk."
+    (with-temp-file agent-deck--tui-bootstrap-script
+      (insert "#!/bin/sh\n")
+      (insert "tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null && exit 0\n")
+      (insert (format "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck '%s'\n"
+                      (format "stty -ixon; %s agent-deck; tmux -L agent-deck-tui kill-session -t _ad_tui 2>/dev/null"
+                              (string-join agent-deck--process-environment " ")))))
+    (set-file-modes agent-deck--tui-bootstrap-script #o700))
 
   (defun agent-deck--tmux-session-snapshot ()
     "Return the current set of agent-deck tmux session names as a list."
@@ -2239,6 +2256,7 @@ Use when a worktree directory still exists but branch deletion fails with
     "Apply tmux options and C-q key binding to the agent-deck-tui server."
     (call-process-shell-command "tmux -L agent-deck-tui set-option -g status off")
     (call-process-shell-command "tmux -L agent-deck-tui set-option -g mouse on")
+    (agent-deck--write-tui-bootstrap-script)
     ;; call-process bypasses the shell so the nested quoting only needs one
     ;; level of Emacs string escaping rather than shell + tmux levels.
     (call-process "tmux" nil nil nil
@@ -2247,7 +2265,8 @@ Use when a worktree directory still exists but branch deletion fails with
                   "if-shell"
                   "[ #{session_name} = _ad_tui ]"
                   "send-keys C-q"
-                  "if-shell \"tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null\" \"switch-client -t _ad_tui\" \"run-shell 'emacsclient -e \\\"(agent-deck-tui)\\\" 2>/dev/null; tmux -L agent-deck-tui switch-client -t _ad_tui 2>/dev/null'\""))
+                  (format "if-shell \"tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null\" \"switch-client -t _ad_tui\" \"run-shell '%s; tmux -L agent-deck-tui switch-client -t _ad_tui 2>/dev/null'\""
+                          agent-deck--tui-bootstrap-script)))
 
   (defun agent-deck-tui ()
     "Launch agent-deck TUI in a dedicated tmux server."
@@ -2423,9 +2442,8 @@ Use when a worktree directory still exists but branch deletion fails with
 
   (add-hook 'after-init-hook
             (lambda ()
-              (when (and (getenv "TMUX")
-                         (= 0 (call-process-shell-command
-                               "tmux -L agent-deck-tui has-session 2>/dev/null")))
+              (when (getenv "TMUX")
+                (agent-deck--ensure-server)
                 (agent-deck--apply-server-options))))
 
   (dolist (cmd '(agent-deck-status agent-deck-add agent-deck-start
