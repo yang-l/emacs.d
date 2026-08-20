@@ -1787,6 +1787,15 @@ Different from Claude Code which acts as an agent involving very limited coding,
   :commands claude-code-ide-menu
   :config
   (claude-code-ide-emacs-tools-setup)
+  (define-error 'json-rpc-error "JSON-RPC error" 'error)
+  (advice-add 'claude-code-ide-mcp-http-server--dispatch :around
+              (lambda (orig method params)
+                (pcase method
+                  ("ping" (make-hash-table :test 'equal))
+                  ("resources/list" '((resources . [])))
+                  ("resources/templates/list" '((resourceTemplates . [])))
+                  ("prompts/list" '((prompts . [])))
+                  (_ (funcall orig method params)))))
   ;; ctrl+o v in Claude Code opens $EDITOR; use emacsclient with a named server
   (defvar claude-code-ide--saved-editor (getenv "EDITOR"))
   (advice-add 'claude-code-ide--start-session :before
