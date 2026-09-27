@@ -1920,7 +1920,7 @@ SESSIONS is a list of session titles sharing this watcher.")
   (defun agent-deck--sessions ()
     "Return alist of (TITLE . PATH) from agent-deck."
     (let ((process-environment (append agent-deck--process-environment process-environment)))
-      (when-let ((json-str (with-temp-buffer
+      (when-let* ((json-str (with-temp-buffer
                              (call-process "agent-deck" nil t nil "list" "--json")
                              (buffer-string)))
                  (parsed (ignore-errors (json-parse-string json-str :array-type 'list))))
@@ -1929,7 +1929,7 @@ SESSIONS is a list of session titles sharing this watcher.")
   (defun agent-deck--sessions-by-tmux ()
     "Return alist of (TMUX-SESSION . PATH) from agent-deck list --json."
     (let ((process-environment (append agent-deck--process-environment process-environment)))
-      (when-let ((json-str (with-temp-buffer
+      (when-let* ((json-str (with-temp-buffer
                              (call-process "agent-deck" nil t nil "list" "--json")
                              (buffer-string)))
                  (parsed (ignore-errors (json-parse-string json-str :array-type 'list))))
@@ -1944,7 +1944,7 @@ SESSIONS is a list of session titles sharing this watcher.")
   (defun agent-deck--empty-groups ()
     "Return list of group names that currently have 0 sessions."
     (let ((process-environment (append agent-deck--process-environment process-environment)))
-      (when-let ((json-str (with-temp-buffer
+      (when-let* ((json-str (with-temp-buffer
                              (when (= 0 (call-process "agent-deck" nil t nil "group" "list" "--json"))
                                (buffer-string))))
                  (parsed (ignore-errors (json-parse-string json-str :array-type 'list)))
@@ -2086,7 +2086,7 @@ Guards against stacking when called repeatedly (e.g. multiple `t' presses)."
     "Return (ROOT . TITLE) for the current project.
 WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
     (let ((root (expand-file-name
-                 (or (when-let ((proj (project-current)))
+                 (or (when-let* ((proj (project-current)))
                        (project-root proj))
                      default-directory))))
       (cons root (format "%s (%s%s)"
@@ -2305,7 +2305,7 @@ Use when a worktree directory still exists but branch deletion fails with
   (defun agent-deck-web ()
     "Start agent-deck web UI and open in browser."
     (interactive)
-    (when-let ((existing (get-process "agent-deck-web")))
+    (when-let* ((existing (get-process "agent-deck-web")))
       (delete-process existing))
     (let ((process-environment (append agent-deck--process-environment process-environment)))
       (start-process "agent-deck-web" nil "agent-deck" "web"))
@@ -2326,7 +2326,7 @@ Use when a worktree directory still exists but branch deletion fails with
         (unless (string-empty-p path)
           (puthash path t pending)))
       (process-put proc :pending pending)
-      (when-let ((old-timer (process-get proc :timer)))
+      (when-let* ((old-timer (process-get proc :timer)))
         (cancel-timer old-timer))
       (process-put proc :timer
                    (run-at-time 0.2 nil #'agent-deck--watch-process pending root))))
@@ -2336,7 +2336,7 @@ Use when a worktree directory still exists but branch deletion fails with
     (let ((files (let (ks) (maphash (lambda (k _) (push k ks)) pending) ks)))
       (clrhash pending)
       (dolist (file files)
-        (when-let ((buf (find-buffer-visiting file)))
+        (when-let* ((buf (find-buffer-visiting file)))
           (with-current-buffer buf
             (cond
              ((and (not (buffer-modified-p))
@@ -2352,18 +2352,18 @@ Use when a worktree directory still exists but branch deletion fails with
       (when (and files (fboundp 'magit-get-mode-buffer))
         (ignore-errors
           (let ((default-directory root))
-            (when-let ((magit-buf (magit-get-mode-buffer 'magit-status-mode)))
+            (when-let* ((magit-buf (magit-get-mode-buffer 'magit-status-mode)))
               (with-current-buffer magit-buf
                 (magit-refresh))))))))
 
   (defun agent-deck--watch-sentinel (proc event)
     "Sentinel for fswatch process. Cleans up on unexpected exit."
-    (when-let ((timer (process-get proc :timer)))
+    (when-let* ((timer (process-get proc :timer)))
       (cancel-timer timer))
     (unless (or (string-prefix-p "finished" event)
                 (string-prefix-p "killed" event))
       (message "agent-deck: fswatch exited unexpectedly: %s" (string-trim event)))
-    (when-let ((root (process-get proc :root))
+    (when-let* ((root (process-get proc :root))
                (entry (gethash root agent-deck--watchers)))
       (when (eq proc (car entry))
         (remhash root agent-deck--watchers))))
@@ -2400,13 +2400,13 @@ Use when a worktree directory still exists but branch deletion fails with
   (defun agent-deck--watch-stop (root session-title)
     "Unregister SESSION-TITLE from ROOT watcher, stop when no sessions left."
     (setq root (directory-file-name root))
-    (when-let ((entry (gethash root agent-deck--watchers)))
+    (when-let* ((entry (gethash root agent-deck--watchers)))
       (let* ((proc (car entry))
              (remaining (if session-title (delete session-title (cdr entry)) nil)))
         (if remaining
             (puthash root (cons proc remaining) agent-deck--watchers)
           (when (process-live-p proc)
-            (when-let ((timer (process-get proc :timer)))
+            (when-let* ((timer (process-get proc :timer)))
               (cancel-timer timer))
             (delete-process proc))
           (remhash root agent-deck--watchers)))))
@@ -2416,7 +2416,7 @@ Use when a worktree directory still exists but branch deletion fails with
     (interactive)
     (maphash (lambda (_root entry)
                (when (process-live-p (car entry))
-                 (when-let ((timer (process-get (car entry) :timer)))
+                 (when-let* ((timer (process-get (car entry) :timer)))
                    (cancel-timer timer))
                  (delete-process (car entry))))
              agent-deck--watchers)
@@ -3263,8 +3263,6 @@ Diff between directories
                                   (select-frame frame))
                                 (unless (bound-and-true-p corfu-mode)
                                   (corfu-mode)                ; corfu
-                                  (unless (display-graphic-p) ; corfu-terminal
-                                    (corfu-terminal-mode 1))
                                   (add-to-list                ; kind-icon
                                    'corfu-margin-formatters #'kind-icon-margin-formatter)))))))
   :init
@@ -3276,16 +3274,6 @@ Diff between directories
   :after corfu
   :hook (corfu-mode . corfu-prescient-mode)
   :config (add-to-list 'prescient-filter-method 'fuzzy))
-
-(use-package popon
-  :after corfu
-  :straight (popon :type git :repo "https://codeberg.org/akib/emacs-popon.git")
-  :unless (display-graphic-p))
-
-(use-package corfu-terminal
-  :after (corfu popon)
-  :straight (corfu-terminal :type git :repo "https://codeberg.org/akib/emacs-corfu-terminal.git")
-  :unless (display-graphic-p))
 
 (use-package kind-icon
   :after corfu
@@ -3344,7 +3332,7 @@ Diff between directories
          (org-mode . (lambda () (setq-local tab-width 8))))
   :config
   (setq truncate-lines nil                      ; line wrap
-        org-edit-src-content-indentation 0      ; no indentation in SRC block
+        org-src-content-indentation 0           ; no indentation in SRC block
         org-export-with-smart-quotes t
         org-log-done 'time
         org-html-doctype "html5"

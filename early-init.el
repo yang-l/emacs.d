@@ -1,4 +1,4 @@
-;;; Package --- Summary
+;;; early-init.el --- Early init file  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
