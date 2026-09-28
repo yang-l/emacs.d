@@ -1820,6 +1820,7 @@ Different from Claude Code which acts as an agent involving very limited coding,
   (claude-code-ide-focus-claude-after-ediff nil)
   (claude-code-ide-focus-on-open nil)
   (claude-code-ide-no-flicker t)
+  (claude-code-ide-show-backend-recommendation nil)
   :ensure-system-package (claude . "npm install -g @anthropic-ai/claude-code")
   :hook (buffer-list-update
          . (lambda ()
@@ -1874,11 +1875,6 @@ SESSIONS is a list of session titles sharing this watcher.")
   (defvar agent-deck--watch-excludes
     '("\\.git/" "\\.elc$" "__pycache__/" "node_modules/" "\\.DS_Store$" "~$" "#.*#$")
     "Regex patterns to exclude from fswatch.")
-
-  (defvar agent-deck--claude-extra-args
-    '("--append-system-prompt"
-      "When you want the user to look at a specific file location, run: emacsclient -n +LINE FILE")
-    "Extra CLI args passed to Claude Code sessions via --extra-arg.")
 
   (defun agent-deck--prompt-worktree ()
     "Prompt for worktree branch. Return (BRANCH . NEW-P) or nil for empty input."
@@ -1962,18 +1958,23 @@ SESSIONS is a list of session titles sharing this watcher.")
       (let ((title (completing-read prompt (mapcar #'car sessions) nil t)))
         (assoc title sessions))))
 
-  (defun agent-deck--extra-args ()
-    "Return extra-arg flags string for Claude sessions, empty for others."
-    (if (equal agent-deck--tool "claude")
-        (mapconcat (lambda (a) (format " --extra-arg %s" (shell-quote-argument a)))
-                   agent-deck--claude-extra-args "")
-      ""))
+  (defvar agent-deck--server-cwd (expand-file-name "~")
+    "Working directory for the agent-deck-tui tmux server.
+A tmux server keeps its working directory for its whole life, and a pane
+whose own -c does not take effect inherits it. Emacs used to hand the
+server whatever `default-directory' it had, and that was sometimes a git
+worktree. A later worktree cleanup deleted the directory, so every new
+pane started where getcwd fails. Name a path no cleanup removes.")
 
   (defun agent-deck--ensure-server ()
     "Start the dedicated agent-deck tmux server if not already running."
     (unless (= 0 (call-process-shell-command "tmux -L agent-deck-tui has-session 2>/dev/null"))
-      (call-process-shell-command
-       "tmux -L agent-deck-tui new-session -d -s _ad_srv -x 220 -y 50")))
+      ;; default-directory sets what the forked SERVER inherits.
+      ;; -c sets the _ad_srv session's own pane. Both are needed.
+      (let ((default-directory agent-deck--server-cwd))
+        (call-process-shell-command
+         (format "tmux -L agent-deck-tui new-session -d -s _ad_srv -x 220 -y 50 -c %s"
+                 (shell-quote-argument agent-deck--server-cwd))))))
 
   (defun agent-deck--server-socket ()
     "Return the socket path for the agent-deck-tui server, or nil."
@@ -1994,11 +1995,39 @@ reliable target.")
     "(Re)write the standalone _ad_tui bootstrap script to disk."
     (with-temp-file agent-deck--tui-bootstrap-script
       (insert "#!/bin/sh\n")
+      (insert (format "cd %s || cd /\n" (shell-quote-argument agent-deck--server-cwd)))
       (insert "tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null && exit 0\n")
-      (insert (format "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck '%s'\n"
+      (insert (format "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck -c %s '%s'\n"
+                      (shell-quote-argument agent-deck--server-cwd)
                       (format "stty -ixon; %s agent-deck; tmux -L agent-deck-tui kill-session -t _ad_tui 2>/dev/null"
                               (string-join agent-deck--process-environment " ")))))
     (set-file-modes agent-deck--tui-bootstrap-script #o700))
+
+  (defvar agent-deck--tui-rebind-script
+    (expand-file-name "agent-deck-tui-rebind.sh" user-emacs-directory)
+    "Path to the standalone script that installs the C-q root binding.
+agent-deck rewrites `bind-key -T root C-q' to detach-client on every
+session start (internal/tmux/tmux.go:2801), and a tmux key binding is
+server-wide, so the last writer wins. tmux server hooks re-run this
+script after each start.
+
+Keep the binding in a script file. tmux format-expands a hook command
+string when the hook fires, so an inlined bind-key would bake whatever
+`#{session_name}' held at that moment into the binding. A script file
+keeps the format out of the hook string. It also holds the hook command
+to one level of quoting, and depends on no running Emacs process.")
+
+  (defun agent-deck--write-tui-rebind-script ()
+    "(Re)write the standalone C-q rebind script to disk."
+    (with-temp-file agent-deck--tui-rebind-script
+      (insert "#!/bin/sh\n")
+      (insert (format "cd %s || cd /\n"
+                      (shell-quote-argument agent-deck--server-cwd)))
+      (insert (format "BOOT=%s\n"
+                      (shell-quote-argument agent-deck--tui-bootstrap-script)))
+      (insert "ELSE=\"if-shell \\\"tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null\\\" \\\"switch-client -t _ad_tui\\\" \\\"run-shell '$BOOT; tmux -L agent-deck-tui switch-client -t _ad_tui 2>/dev/null'\\\"\"\n")
+      (insert "tmux -L agent-deck-tui bind-key -T root C-q if-shell '[ #{session_name} = _ad_tui ]' 'send-keys C-q' \"$ELSE\"\n"))
+    (set-file-modes agent-deck--tui-rebind-script #o700))
 
   (defun agent-deck--tmux-session-snapshot ()
     "Return the current set of agent-deck tmux session names as a list."
@@ -2006,6 +2035,24 @@ reliable target.")
     (split-string
      (shell-command-to-string "tmux -L agent-deck-tui list-sessions -F '#{session_name}' 2>/dev/null")
      "\n" t))
+
+  (defun agent-deck--usable-dir (path)
+    "Return PATH when it is a directory, else the nearest usable ancestor.
+agent-deck keeps a worktree path that a later cleanup can delete.
+Walk up to the first ancestor that exists, then prefer the git root at
+or above it, so the pane lands in the main repository."
+    (let ((dir (and path (not (string-empty-p path))
+                    (directory-file-name (expand-file-name path)))))
+      (cond
+       ((null dir) agent-deck--server-cwd)
+       ((file-directory-p dir) dir)
+       (t (while (and (not (file-directory-p dir))
+                      (not (string= dir "/")))
+            (setq dir (directory-file-name (file-name-directory dir))))
+          (if (not (file-directory-p dir))
+              agent-deck--server-cwd
+            (directory-file-name
+             (expand-file-name (or (locate-dominating-file dir ".git") dir))))))))
 
   (defun agent-deck--ensure-shell-pane (session path)
     "Add a 70/30 shell pane at PATH to SESSION if it has only one pane."
@@ -2018,7 +2065,7 @@ reliable target.")
         (call-process-shell-command
          (format "tmux -L agent-deck-tui split-window -h -p 30 -t %s: -c %s"
                  (shell-quote-argument session)
-                 (shell-quote-argument path)))
+                 (shell-quote-argument (agent-deck--usable-dir path))))
         (call-process-shell-command
          (format "tmux -L agent-deck-tui select-pane -L -t %s:"
                  (shell-quote-argument session))))))
@@ -2106,7 +2153,7 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
     (interactive)
     (let ((wt (agent-deck--prompt-worktree)))
       (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt)))
-        (agent-deck--run (format "agent-deck add %s -c %s -t %s%s%s"
+        (agent-deck--run (format "agent-deck add %s -c %s -t %s%s"
                                  (shell-quote-argument root)
                                  (shell-quote-argument agent-deck--tool)
                                  (shell-quote-argument title)
@@ -2114,8 +2161,7 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
                                      (format " --worktree %s%s"
                                              (shell-quote-argument (car wt))
                                              (if (cdr wt) " --new-branch" ""))
-                                   "")
-                                 (agent-deck--extra-args))))))
+                                   ""))))))
 
   (defun agent-deck-start ()
     "Start an agent-deck session."
@@ -2154,12 +2200,15 @@ Does not merge — use a PR for that."
     (interactive)
     (pcase-let ((`(,title . ,path) (agent-deck--read-session "Cleanup worktree: ")))
       (when (yes-or-no-p (format "Cleanup worktree '%s'? (stop + delete session, remove worktree, no merge)" title))
-        (let* ((root (car (agent-deck--project-root-and-title)))
+        (let* ((root (or (agent-deck--worktree-repo-root path)
+                         (car (agent-deck--project-root-and-title))))
+               (default-directory (file-name-as-directory root))
                (branch-name (when path
                               (string-trim
                                (shell-command-to-string
                                 (format "git -C %s symbolic-ref --short HEAD 2>/dev/null"
                                         (shell-quote-argument path)))))))
+          (message "agent-deck: cleanup targets repo %s" root)
           (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
           (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
           (agent-deck--run "echo y | agent-deck worktree cleanup --force")
@@ -2199,6 +2248,19 @@ Returns alist of (label . path); first entry is the main worktree."
             (push (cons (or branch path) path) entries)
             (setq path nil branch nil)))))
       (nreverse entries)))
+
+  (defun agent-deck--worktree-repo-root (path)
+    "Return the main repository root that owns worktree PATH, or nil.
+`git worktree list --porcelain' names the main worktree first, even when
+it runs inside a linked worktree. Call this before the worktree is
+removed, because it needs PATH to still exist."
+    (when (and path (file-directory-p path))
+      (let* ((default-directory agent-deck--server-cwd)
+             (entries (agent-deck--parse-worktrees
+                       (shell-command-to-string
+                        (format "git -C %s worktree list --porcelain 2>/dev/null"
+                                (shell-quote-argument path))))))
+        (cdr (car entries)))))
 
   (defun agent-deck-worktree-prune ()
     "Force-remove a selected worktree and prune stale git metadata.
@@ -2242,7 +2304,7 @@ Use when a worktree directory still exists but branch deletion fails with
                         agent-deck--process-environment
                         process-environment)))
           (when (zerop (agent-deck--run
-                        (format "agent-deck launch %s -c %s -t %s%s%s"
+                        (format "agent-deck launch %s -c %s -t %s%s"
                                 (shell-quote-argument root)
                                 (shell-quote-argument agent-deck--tool)
                                 (shell-quote-argument title)
@@ -2250,8 +2312,7 @@ Use when a worktree directory still exists but branch deletion fails with
                                     (format " --worktree %s%s"
                                             (shell-quote-argument (car wt))
                                             (if (cdr wt) " --new-branch" ""))
-                                  "")
-                                (agent-deck--extra-args))))
+                                  ""))))
             (let ((watch-path (if wt
                                   (or (cdr (seq-find (lambda (s) (equal (car s) title))
                                                      (agent-deck--sessions)))
@@ -2262,20 +2323,20 @@ Use when a worktree directory still exists but branch deletion fails with
               (agent-deck--watch-start watch-path title)))))))
 
   (defun agent-deck--apply-server-options ()
-    "Apply tmux options and C-q key binding to the agent-deck-tui server."
+    "Apply tmux options, the C-q binding and its rebind hooks."
     (call-process-shell-command "tmux -L agent-deck-tui set-option -g status off")
     (call-process-shell-command "tmux -L agent-deck-tui set-option -g mouse on")
     (agent-deck--write-tui-bootstrap-script)
-    ;; call-process bypasses the shell so the nested quoting only needs one
-    ;; level of Emacs string escaping rather than shell + tmux levels.
-    (call-process "tmux" nil nil nil
-                  "-L" "agent-deck-tui"
-                  "bind-key" "-T" "root" "C-q"
-                  "if-shell"
-                  "[ #{session_name} = _ad_tui ]"
-                  "send-keys C-q"
-                  (format "if-shell \"tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null\" \"switch-client -t _ad_tui\" \"run-shell '%s; tmux -L agent-deck-tui switch-client -t _ad_tui 2>/dev/null'\""
-                          agent-deck--tui-bootstrap-script)))
+    (agent-deck--write-tui-rebind-script)
+    (call-process agent-deck--tui-rebind-script nil nil nil)
+    ;; Index 100 keeps this entry separate from any other hook in the array.
+    ;; agent-deck owns after-new-window[2259] and neither of these two.
+    (dolist (hook '("client-session-changed" "client-attached"))
+      (call-process "tmux" nil nil nil
+                    "-L" "agent-deck-tui"
+                    "set-hook" "-g" (format "%s[100]" hook)
+                    (format "run-shell %s"
+                            (shell-quote-argument agent-deck--tui-rebind-script)))))
 
   (defun agent-deck-tui ()
     "Launch agent-deck TUI in a dedicated tmux server."
@@ -2297,7 +2358,8 @@ Use when a worktree directory still exists but branch deletion fails with
             (insert "tmux kill-session -t _ad_tui 2>/dev/null\n"))
           (set-file-modes wrapper #o700)
           (when (= 0 (call-process-shell-command
-                      (concat "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck "
+                      (concat "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck -c "
+                              (shell-quote-argument agent-deck--server-cwd) " "
                               (shell-quote-argument wrapper))))
             (call-process-shell-command
              "tmux new-window -n agent-deck 'stty -ixon; tmux -L agent-deck-tui attach-session -t _ad_tui'"))))))
@@ -2468,6 +2530,7 @@ Use when a worktree directory still exists but branch deletion fails with
 
 #+begin_src emacs-lisp
 (use-package gptel
+  :disabled
   :commands (gptel gptel-menu gptel-send)
   :config
   (add-hook 'gptel-post-response-functions 'gptel-end-of-response)

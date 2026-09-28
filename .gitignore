@@ -1,6 +1,6 @@
 README.el*
 private.el
-agent-deck-tui-bootstrap.sh
+agent-deck-tui-*.sh
 eln-cache/
 elpa/
 files/rubylsp.sh
