@@ -1877,10 +1877,57 @@ SESSIONS is a list of session titles sharing this watcher.")
     "Regex patterns to exclude from fswatch.")
 
   (defun agent-deck--prompt-worktree ()
-    "Prompt for worktree branch. Return (BRANCH . NEW-P) or nil for empty input."
+    "Prompt for worktree branch. Return (BRANCH . NEW-P) or nil for empty input.
+NEW-P is always t. `agent-deck--run-worktree-create' downgrades it when
+agent-deck reports the branch already exists. Asking up front cannot
+help, because each answer is wrong in one of the two cases: -b fails on
+an existing branch, and its absence fails on a missing one."
     (let ((b (read-string "Worktree branch (empty for none): ")))
       (when (not (string-empty-p b))
-        (cons b (y-or-n-p "Create new branch? ")))))
+        (cons b t))))
+
+  (defconst agent-deck--branch-clash-regexp
+    "branch '\\([^']+\\)' already exists"
+    "Match agent-deck refusing to create a branch that exists.
+agent-deck prints this from cmd/agent-deck/main.go:2246 and
+launch_cmd.go:413. The name it reports already carries the
+`[worktree] branch_prefix' agent-deck applied, so reading it here avoids
+repeating that rule. A reworded message stops the retry offer and leaves
+the plain error.")
+
+  (defun agent-deck--branch-clash ()
+    "Return the clashing branch name from the *agent-deck* buffer, or nil."
+    (when-let* ((buf (get-buffer "*agent-deck*")))
+      (with-current-buffer buf
+        (save-excursion
+          (goto-char (point-min))
+          (when (re-search-forward agent-deck--branch-clash-regexp nil t)
+            (match-string 1))))))
+
+  (defun agent-deck--run-worktree-create (make-cmd root)
+    "Run (funcall MAKE-CMD NEW-P) and resolve a branch clash in ROOT.
+MAKE-CMD takes one argument and returns an agent-deck command string.
+Return the exit code of the last command run."
+    (let ((code (funcall make-cmd t)))
+      (if (zerop code)
+          code
+        (let ((branch (agent-deck--branch-clash)))
+          (if (null branch)
+              code
+            (pcase (completing-read
+                    (format "Branch '%s' exists. Action: " branch)
+                    '("reuse" "delete and recreate" "cancel")
+                    nil t nil nil "reuse")
+              ("reuse" (funcall make-cmd nil))
+              ("delete and recreate"
+               (if (zerop (agent-deck--run
+                           (format "git -C %s branch -D %s"
+                                   (shell-quote-argument root)
+                                   (shell-quote-argument branch))))
+                   (funcall make-cmd t)
+                 (message "agent-deck: could not delete branch %s" branch)
+                 code))
+              (_ code)))))))
 
   (defun agent-deck-set-tool ()
     "Select the AI tool used for new sessions."
@@ -2153,15 +2200,18 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
     (interactive)
     (let ((wt (agent-deck--prompt-worktree)))
       (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt)))
-        (agent-deck--run (format "agent-deck add %s -c %s -t %s%s"
-                                 (shell-quote-argument root)
-                                 (shell-quote-argument agent-deck--tool)
-                                 (shell-quote-argument title)
-                                 (if wt
-                                     (format " --worktree %s%s"
-                                             (shell-quote-argument (car wt))
-                                             (if (cdr wt) " --new-branch" ""))
-                                   ""))))))
+        (agent-deck--run-worktree-create
+         (lambda (new-p)
+           (agent-deck--run (format "agent-deck add %s -c %s -t %s%s"
+                                    (shell-quote-argument root)
+                                    (shell-quote-argument agent-deck--tool)
+                                    (shell-quote-argument title)
+                                    (if wt
+                                        (format " --worktree %s%s"
+                                                (shell-quote-argument (car wt))
+                                                (if new-p " --new-branch" ""))
+                                      ""))))
+         root))))
 
   (defun agent-deck-start ()
     "Start an agent-deck session."
@@ -2194,31 +2244,53 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
     (let ((title (car (agent-deck--read-session "Fork session: "))))
       (agent-deck--run (format "agent-deck session fork %s" (shell-quote-argument title)))))
 
+  (defun agent-deck--worktree-info (title)
+    "Return agent-deck's worktree record for TITLE, or nil.
+nil means the session has no worktree, or agent-deck could not resolve
+it. `agent-deck worktree info' exits non-zero with \"is not in a
+worktree\" in that case (cmd/agent-deck/worktree_cmd.go:363). Keys:
+branch, main_repo, worktree_path, worktree_exists.
+
+Call this before `agent-deck remove', because it resolves TITLE from
+agent-deck's own database."
+    (let* ((process-environment (append agent-deck--process-environment
+                                        process-environment))
+           (default-directory agent-deck--server-cwd)
+           (buf (generate-new-buffer " *ad-worktree-info*"))
+           (code (call-process "agent-deck" nil buf nil
+                               "worktree" "info" title "--json"))
+           (out (with-current-buffer buf (buffer-string))))
+      (kill-buffer buf)
+      (when (= code 0)
+        (ignore-errors (json-parse-string out)))))
+
   (defun agent-deck-worktree-cleanup ()
     "Stop and delete a worktree session, then remove the orphaned worktree.
 Does not merge — use a PR for that."
     (interactive)
     (pcase-let ((`(,title . ,path) (agent-deck--read-session "Cleanup worktree: ")))
       (when (yes-or-no-p (format "Cleanup worktree '%s'? (stop + delete session, remove worktree, no merge)" title))
-        (let* ((root (or (agent-deck--worktree-repo-root path)
+        (let* ((info (agent-deck--worktree-info title))
+               (main-repo (and info (gethash "main_repo" info)))
+               (root (or (and main-repo (not (string-empty-p main-repo)) main-repo)
+                         (agent-deck--worktree-repo-root path)
                          (car (agent-deck--project-root-and-title))))
                (default-directory (file-name-as-directory root))
-               (branch-name (when path
-                              (string-trim
-                               (shell-command-to-string
-                                (format "git -C %s symbolic-ref --short HEAD 2>/dev/null"
-                                        (shell-quote-argument path)))))))
-          (message "agent-deck: cleanup targets repo %s" root)
+               (branch-name (and info (gethash "branch" info))))
+          (if info
+              (message "agent-deck: cleanup targets repo %s" root)
+            (message "agent-deck: '%s' has no worktree, removing the session only" title))
           (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
           (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
           (agent-deck--run "echo y | agent-deck worktree cleanup --force")
           (when path (agent-deck--watch-stop path title))
-          (when path
+          (when (and info path)
             (agent-deck--run (format "git -C %s worktree remove --force %s"
                                      (shell-quote-argument root)
                                      (shell-quote-argument path))))
-          (agent-deck--run (format "git -C %s worktree prune -v" (shell-quote-argument root)))
-          (when (and branch-name (not (string-empty-p branch-name))
+          (when info
+            (agent-deck--run (format "git -C %s worktree prune -v" (shell-quote-argument root))))
+          (when (and info branch-name (not (string-empty-p branch-name))
                      (yes-or-no-p (format "Also delete branch '%s'?" branch-name)))
             (agent-deck--run (format "git -C %s branch -D %s"
                                      (shell-quote-argument root)
@@ -2303,16 +2375,19 @@ Use when a worktree directory still exists but branch deletion fails with
                           (when s (list (concat "TMUX=" s ",0,0"))))
                         agent-deck--process-environment
                         process-environment)))
-          (when (zerop (agent-deck--run
-                        (format "agent-deck launch %s -c %s -t %s%s"
-                                (shell-quote-argument root)
-                                (shell-quote-argument agent-deck--tool)
-                                (shell-quote-argument title)
-                                (if wt
-                                    (format " --worktree %s%s"
-                                            (shell-quote-argument (car wt))
-                                            (if (cdr wt) " --new-branch" ""))
-                                  ""))))
+          (when (zerop (agent-deck--run-worktree-create
+                        (lambda (new-p)
+                          (agent-deck--run
+                           (format "agent-deck launch %s -c %s -t %s%s"
+                                   (shell-quote-argument root)
+                                   (shell-quote-argument agent-deck--tool)
+                                   (shell-quote-argument title)
+                                   (if wt
+                                       (format " --worktree %s%s"
+                                               (shell-quote-argument (car wt))
+                                               (if new-p " --new-branch" ""))
+                                     ""))))
+                        root))
             (let ((watch-path (if wt
                                   (or (cdr (seq-find (lambda (s) (equal (car s) title))
                                                      (agent-deck--sessions)))
