@@ -1886,6 +1886,11 @@ an existing branch, and its absence fails on a missing one."
       (when (not (string-empty-p b))
         (cons b t))))
 
+  (defun agent-deck--prompt-session-name ()
+    "Prompt for a session-name suffix. Return the string, or nil when empty."
+    (let ((n (read-string "Session name (empty for default): ")))
+      (unless (string-empty-p n) n)))
+
   (defconst agent-deck--branch-clash-regexp
     "branch '\\([^']+\\)' already exists"
     "Match agent-deck refusing to create a branch that exists.
@@ -2176,9 +2181,12 @@ Guards against stacking when called repeatedly (e.g. multiple `t' presses)."
                         (setq agent-deck--restore-poll-active nil))))
           (run-at-time 3 nil #'poll)))))
 
-  (defun agent-deck--project-root-and-title (&optional worktree)
+  (defun agent-deck--project-root-and-title (&optional worktree name)
     "Return (ROOT . TITLE) for the current project.
-WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
+WORKTREE is an optional (BRANCH . NEW-P) cons whose branch goes in the title.
+NAME is an optional suffix for a session that has no worktree. Without
+either, every session in one repository gets the same title and the
+second one clashes."
     (let ((root (expand-file-name
                  (or (when-let* ((proj (project-current)))
                        (project-root proj))
@@ -2186,9 +2194,9 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
       (cons root (format "%s (%s%s)"
                          (file-name-nondirectory (directory-file-name root))
                          agent-deck--tool
-                         (if worktree
-                             (format " %s" (car worktree))
-                           "")))))
+                         (cond (worktree (format " %s" (car worktree)))
+                               (name (format " %s" name))
+                               (t ""))))))
 
   (defun agent-deck-status ()
     "Show agent-deck session list."
@@ -2198,8 +2206,9 @@ WORKTREE is an optional (BRANCH . NEW-P) cons to include in the title."
   (defun agent-deck-add ()
     "Add current project as an agent-deck session."
     (interactive)
-    (let ((wt (agent-deck--prompt-worktree)))
-      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt)))
+    (let* ((wt (agent-deck--prompt-worktree))
+           (name (unless wt (agent-deck--prompt-session-name))))
+      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt name)))
         (agent-deck--run-worktree-create
          (lambda (new-p)
            (agent-deck--run (format "agent-deck add %s -c %s -t %s%s"
@@ -2367,8 +2376,9 @@ Use when a worktree directory still exists but branch deletion fails with
     (interactive)
     (unless (getenv "TMUX")
       (user-error "Not inside tmux — launch agent-deck from a terminal instead"))
-    (let ((wt (agent-deck--prompt-worktree)))
-      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt)))
+    (let* ((wt (agent-deck--prompt-worktree))
+           (name (unless wt (agent-deck--prompt-session-name))))
+      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt name)))
         (let* ((snapshot (agent-deck--tmux-session-snapshot))
                (process-environment
                 (append (let ((s (agent-deck--server-socket)))
