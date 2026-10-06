@@ -198,6 +198,94 @@ Run Emacs as a daemon, and edit via =emacsclient=. =emacsclient -t= for terminal
     (server-start)))
 #+END_SRC
 
+One server named =emacs= shared by magit, claude-code-ide, agent-deck and the shell =EDITOR=. It stops when nothing uses it.
+
+#+BEGIN_SRC emacs-lisp
+(defvar my-server-name "emacs"
+  "Server name shared by magit, claude-code-ide, agent-deck and the shell EDITOR.")
+
+(defvar my-emacs-editor "emacsclient -q -s emacs -a 'emacs -nw'"
+  "EDITOR for Claude Code sessions. Opens files in this Emacs.")
+
+(defvar my-server--stop-timer nil
+  "Timer that runs `my-server-maybe-stop' while this Emacs owns the server.")
+
+(defvar my-server--launching nil
+  "Non-nil while a claude-code-ide launch runs, including its name prompt.")
+
+(defun my-server--owned-p ()
+  "Return non-nil when this Emacs owns a live server process.
+`server-running-p' is also t for a server another Emacs owns."
+  (and (boundp 'server-process) server-process (process-live-p server-process)))
+
+(defun my-server-ensure ()
+  "Start the shared server unless one already runs."
+  (require 'server)
+  (unless (server-running-p my-server-name)
+    (setq server-name my-server-name)
+    (server-start))
+  (when (and (my-server--owned-p) (not (timerp my-server--stop-timer)))
+    (setq my-server--stop-timer (run-with-timer 60 60 #'my-server-maybe-stop))))
+
+(defun my-server--magit-p (dying-buffer)
+  "Return non-nil when a magit buffer other than DYING-BUFFER is live."
+  (seq-some (lambda (b)
+              (and (not (eq b dying-buffer))
+                   (with-current-buffer b (derived-mode-p 'magit-mode))))
+            (buffer-list)))
+
+(defun my-server--claude-p (&optional dying-session)
+  "Return non-nil when a claude-code-ide session other than DYING-SESSION is live."
+  (and (fboundp 'claude-code-ide-mcp--active-sessions)
+       (seq-some (lambda (s)
+                   (and (not (eq s dying-session))
+                        (process-live-p (claude-code-ide-mcp-session-process s))))
+                 (claude-code-ide-mcp--active-sessions))))
+
+(defun my-server--agent-deck-p ()
+  "Return non-nil when the agent-deck tmux server has a session other than _ad_srv.
+`agent-deck--ensure-server' creates _ad_srv and never removes it."
+  ;; the magit kill hook runs in a buffer whose worktree may be gone, and
+  ;; a subprocess started from a deleted directory aborts `kill-buffer'
+  (let ((default-directory (expand-file-name "~")))
+    (and (executable-find "tmux")
+         (with-temp-buffer
+           (and (eql 0 (call-process "tmux" nil '(t nil) nil
+                                     "-L" "agent-deck-tui" "list-sessions"
+                                     "-F" "#{session_name}"))
+                (seq-some (lambda (s) (not (equal s "_ad_srv")))
+                          (split-string (buffer-string) "\n" t)))))))
+
+(defun my-server--other-emacs-p ()
+  "Return non-nil when another Emacs process runs on this machine.
+This Emacs cannot see the magit buffers or Claude sessions inside it.
+The Nix terminal Emacs reports its comm as emacs-31.1."
+  (let ((self (emacs-pid)))
+    (seq-some (lambda (pid)
+                (and (/= pid self)
+                     (let ((comm (alist-get 'comm (process-attributes pid))))
+                       (and comm (string-match-p "\\`[Ee]macs\\(-[0-9.]+\\)?\\'" comm)))))
+              (list-system-processes))))
+
+(defun my-server-maybe-stop (&optional dying-buffer dying-session)
+  "Stop the shared server when nothing uses it.
+DYING-BUFFER and DYING-SESSION are being removed and do not count."
+  (if (not (my-server--owned-p))
+      (when (timerp my-server--stop-timer)
+        (cancel-timer my-server--stop-timer)
+        (setq my-server--stop-timer nil))
+    (unless (or server-clients
+                my-server--launching
+                (my-server--magit-p dying-buffer)
+                (my-server--claude-p dying-session)
+                (my-server--agent-deck-p)
+                (my-server--other-emacs-p))
+      (server-force-delete)
+      (when (timerp my-server--stop-timer)
+        (cancel-timer my-server--stop-timer))
+      (setq my-server--stop-timer nil))))
+#+END_SRC
+
 ** Customisation
 
 *** Key binding
@@ -1011,22 +1099,14 @@ Available in Emacs 29+
     (delete-other-windows))
   (advice-add 'magit-status :around #'magit-status--magit-fullscreen)
 
-  (require 'server)
-  (unless (server-running-p)
-    (setq server-name "magit")
-    (server-start))
+  (my-server-ensure)
 
   (defun magit--maybe-stop-server ()
-    (when (and (equal server-name "magit")
-               (server-running-p)
-               (not (seq-some (lambda (b)
-                                (and (not (eq b (current-buffer)))
-                                     (with-current-buffer b
-                                       (derived-mode-p 'magit-mode))))
-                              (buffer-list))))
-      (server-force-delete)))
+    (my-server-maybe-stop (current-buffer)))
   (add-hook 'magit-mode-hook
-            (lambda () (add-hook 'kill-buffer-hook #'magit--maybe-stop-server nil t))))
+            (lambda ()
+              (my-server-ensure)                ; :config runs once; the server may have stopped since
+              (add-hook 'kill-buffer-hook #'magit--maybe-stop-server nil t))))
 
 (use-package autorevert :diminish auto-revert-mode :hook (after-init . global-auto-revert-mode))
 #+END_SRC
@@ -1796,25 +1876,28 @@ Different from Claude Code which acts as an agent involving very limited coding,
                   ("resources/templates/list" '((resourceTemplates . [])))
                   ("prompts/list" '((prompts . [])))
                   (_ (funcall orig method params)))))
-  ;; ctrl+o v in Claude Code opens $EDITOR; use emacsclient with a named server
+  ;; ctrl+g / ctrl+o v in Claude Code open $VISUAL, then $EDITOR; point both at the shared server
   (defvar claude-code-ide--saved-editor (getenv "EDITOR"))
+  (defvar claude-code-ide--saved-visual (getenv "VISUAL"))
+  ;; the launch can wait at the instance-name prompt longer than the stop timer
+  (advice-add 'claude-code-ide--start-session :around
+              (lambda (orig &rest args)
+                (let ((my-server--launching t))
+                  (apply orig args))))
   (advice-add 'claude-code-ide--start-session :before
               (lambda (&rest _)
-                (require 'server)
-                (unless (server-running-p "claude-code-ide")
-                  (with-no-warnings
-                    (let ((server-name "claude-code-ide"))
-                      (server-start))))
-                (setenv "EDITOR" "emacsclient -q -s claude-code-ide -a 'emacs -nw'")))
-  (advice-add 'claude-code-ide--cleanup-on-exit :after
-              (lambda (&rest _)
-                (when (= (hash-table-count claude-code-ide--processes) 0)
+                ;; the package runs this sweep after this advice; running it first stops
+                ;; the cleanup advice from restoring the editor just before the new spawn
+                (claude-code-ide--cleanup-dead-sessions)
+                (my-server-ensure)
+                (setenv "EDITOR" my-emacs-editor)
+                (setenv "VISUAL" my-emacs-editor)))
+  (advice-add 'claude-code-ide--cleanup-session :after
+              (lambda (session &rest _)
+                (unless (or my-server--launching (my-server--claude-p session))
                   (setenv "EDITOR" claude-code-ide--saved-editor)
-                  (when (and (featurep 'server)
-                             (server-running-p "claude-code-ide"))
-                    (with-no-warnings
-                      (let ((server-name "claude-code-ide"))
-                        (server-force-delete)))))))
+                  (setenv "VISUAL" claude-code-ide--saved-visual))
+                (my-server-maybe-stop nil session)))
   :custom
   (claude-code-ide-cli-extra-flags "--permission-mode plan --thinking-display summarized")
   (claude-code-ide-focus-claude-after-ediff nil)
@@ -1948,6 +2031,8 @@ Return the exit code of the last command run."
 
   (defun agent-deck--run (cmd)
     "Run agent-deck CMD, display output in *agent-deck* buffer. Return exit code."
+    ;; add/start/fork create sessions here; Emacs started outside tmux has not set EDITOR yet
+    (agent-deck--apply-editor-env)
     (let ((buf (get-buffer-create "*agent-deck*"))
           (process-environment (append
                                 (let ((s (agent-deck--server-socket)))
@@ -2003,6 +2088,16 @@ Return the exit code of the last command run."
                               (gethash "name" g)))
                           groups)))))
 
+  (defun agent-deck--delete-group (g)
+    "Delete agent-deck group G and report the result."
+    (let* ((process-environment (append agent-deck--process-environment process-environment))
+           (tmp (generate-new-buffer " *ad-group-delete*"))
+           (code (call-process "agent-deck" nil (list tmp t) nil "group" "delete" g))
+           (out (with-current-buffer tmp (string-trim (buffer-string)))))
+      (kill-buffer tmp)
+      (if (= code 0)
+          (message "Deleted group '%s'." g)
+        (message "Cannot delete group '%s': %s" g out))))
   (defun agent-deck--read-session (prompt)
     "Prompt for a session, return (TITLE . PATH)."
     (let ((sessions (agent-deck--sessions)))
@@ -2034,6 +2129,16 @@ pane started where getcwd fails. Name a path no cleanup removes.")
                            "tmux -L agent-deck-tui display-message -p '#{socket_path}' 2>/dev/null"))))
       (unless (string-empty-p s) s)))
 
+  (defun agent-deck--apply-editor-env ()
+    "Point EDITOR and VISUAL in the agent-deck tmux server at the shared Emacs server.
+tmux copies its global environment into each new pane."
+    (my-server-ensure)
+    (agent-deck--ensure-server)
+    (let ((default-directory agent-deck--server-cwd))
+      (dolist (var '("EDITOR" "VISUAL"))
+        (call-process "tmux" nil nil nil "-L" "agent-deck-tui"
+                      "set-environment" "-g" var my-emacs-editor))))
+
   (defvar agent-deck--tui-bootstrap-script
     (expand-file-name "agent-deck-tui-bootstrap.sh" user-emacs-directory)
     "Path to the standalone script that (re)creates the _ad_tui session.
@@ -2052,7 +2157,11 @@ reliable target.")
       (insert (format "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck -c %s '%s'\n"
                       (shell-quote-argument agent-deck--server-cwd)
                       (format "stty -ixon; %s agent-deck; tmux -L agent-deck-tui kill-session -t _ad_tui 2>/dev/null"
-                              (string-join agent-deck--process-environment " ")))))
+                              (string-join agent-deck--process-environment " "))))
+      ;; this script runs without Emacs, so a fresh tmux server has no EDITOR otherwise
+      (dolist (var '("EDITOR" "VISUAL"))
+        (insert (format "tmux -L agent-deck-tui set-environment -g %s %s\n"
+                        var (shell-quote-argument my-emacs-editor)))))
     (set-file-modes agent-deck--tui-bootstrap-script #o700))
 
   (defvar agent-deck--tui-rebind-script
@@ -2245,7 +2354,8 @@ second one clashes."
     (pcase-let ((`(,title . ,path) (agent-deck--read-session "Delete session: ")))
       (when (yes-or-no-p (format "Delete session '%s'?" title))
         (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
-        (when path (agent-deck--watch-stop path title)))))
+        (when path (agent-deck--watch-stop path title))
+        (mapc #'agent-deck--delete-group (agent-deck--empty-groups)))))
 
   (defun agent-deck-fork ()
     "Fork an agent-deck session."
@@ -2274,46 +2384,42 @@ agent-deck's own database."
         (ignore-errors (json-parse-string out)))))
 
   (defun agent-deck-worktree-cleanup ()
-    "Stop and delete a worktree session, then remove the orphaned worktree.
-Does not merge — use a PR for that."
+    "Stop and delete a session, then ask before removing its git worktree.
+Answering no keeps the worktree, its uncommitted files and its branch.
+Does not merge — use a PR for that. Does not run `agent-deck worktree
+cleanup --force', because it removes every worktree no session points
+to, including the ones kept here."
     (interactive)
-    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Cleanup worktree: ")))
-      (when (yes-or-no-p (format "Cleanup worktree '%s'? (stop + delete session, remove worktree, no merge)" title))
-        (let* ((info (agent-deck--worktree-info title))
-               (main-repo (and info (gethash "main_repo" info)))
-               (root (or (and main-repo (not (string-empty-p main-repo)) main-repo)
-                         (agent-deck--worktree-repo-root path)
-                         (car (agent-deck--project-root-and-title))))
-               (default-directory (file-name-as-directory root))
-               (branch-name (and info (gethash "branch" info))))
-          (if info
-              (message "agent-deck: cleanup targets repo %s" root)
-            (message "agent-deck: '%s' has no worktree, removing the session only" title))
-          (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
-          (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
-          (agent-deck--run "echo y | agent-deck worktree cleanup --force")
-          (when path (agent-deck--watch-stop path title))
-          (when (and info path)
-            (agent-deck--run (format "git -C %s worktree remove --force %s"
-                                     (shell-quote-argument root)
-                                     (shell-quote-argument path))))
-          (when info
-            (agent-deck--run (format "git -C %s worktree prune -v" (shell-quote-argument root))))
-          (when (and info branch-name (not (string-empty-p branch-name))
-                     (yes-or-no-p (format "Also delete branch '%s'?" branch-name)))
+    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Cleanup (stop + delete session): ")))
+      (let* ((info (agent-deck--worktree-info title))
+             (main-repo (and info (gethash "main_repo" info)))
+             (root (or (and main-repo (not (string-empty-p main-repo)) main-repo)
+                       (agent-deck--worktree-repo-root path)
+                       (car (agent-deck--project-root-and-title))))
+             (default-directory (file-name-as-directory root))
+             (branch-name (and info (gethash "branch" info))))
+        (if info
+            (message "agent-deck: cleanup targets repo %s" root)
+          (message "agent-deck: '%s' has no worktree, removing the session only" title))
+        (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
+        (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
+        (when path (agent-deck--watch-stop path title))
+        (mapc #'agent-deck--delete-group (agent-deck--empty-groups))
+        (when (and info path
+                   (yes-or-no-p
+                    (format "Remove worktree %s, uncommitted files%s? (no merge) "
+                            path
+                            (if (and branch-name (not (string-empty-p branch-name)))
+                                (format " and branch '%s'" branch-name)
+                              ""))))
+          (agent-deck--run (format "git -C %s worktree remove --force %s"
+                                   (shell-quote-argument root)
+                                   (shell-quote-argument path)))
+          (agent-deck--run (format "git -C %s worktree prune -v" (shell-quote-argument root)))
+          (when (and branch-name (not (string-empty-p branch-name)))
             (agent-deck--run (format "git -C %s branch -D %s"
                                      (shell-quote-argument root)
-                                     (shell-quote-argument branch-name))))
-          (dolist (g (agent-deck--empty-groups))
-            (when (yes-or-no-p (format "Group '%s' is now empty — delete it?" g))
-              (let* ((process-environment (append agent-deck--process-environment process-environment))
-                     (tmp (generate-new-buffer " *ad-group-delete*"))
-                     (code (call-process "agent-deck" nil (list tmp t) nil "group" "delete" g))
-                     (out (with-current-buffer tmp (string-trim (buffer-string)))))
-                (kill-buffer tmp)
-                (if (= code 0)
-                    (message "Deleted group '%s'." g)
-                  (message "Cannot delete group '%s': %s" g out)))))))))
+                                     (shell-quote-argument branch-name))))))))
 
   (defun agent-deck--parse-worktrees (raw)
     "Parse `git worktree list --porcelain` output.
@@ -2343,19 +2449,60 @@ removed, because it needs PATH to still exist."
                                 (shell-quote-argument path))))))
         (cdr (car entries)))))
 
+  (defun agent-deck--orphan-worktrees (root)
+    "Return (LABEL . PATH) for each linked worktree of ROOT with no session.
+Reads the default agent-deck profile only."
+    (let ((norm (lambda (p) (directory-file-name (file-truename p))))
+          (sessions nil))
+      (dolist (s (agent-deck--sessions))
+        (when (cdr s) (push (funcall norm (cdr s)) sessions)))
+      (seq-remove (lambda (wt) (member (funcall norm (cdr wt)) sessions))
+                  (cdr (agent-deck--parse-worktrees
+                        (shell-command-to-string
+                         (format "git -C %s worktree list --porcelain"
+                                 (shell-quote-argument root))))))))
+
+  (defun agent-deck--prune-orphans (root)
+    "Ask about each orphan worktree of ROOT and force-remove the chosen ones.
+Replaces `agent-deck worktree cleanup --force', which removes all
+orphans or none. Deletes no branch."
+    (let ((all nil) (removed nil))
+      (catch 'quit
+        (dolist (wt (agent-deck--orphan-worktrees root))
+          (let ((key (if all ?y
+                       (car (read-multiple-choice
+                             (format "Remove orphan worktree '%s' at %s (uncommitted files too)?"
+                                     (car wt) (cdr wt))
+                             '((?y "yes" "Remove this worktree")
+                               (?n "no" "Keep this worktree")
+                               (?r "rest" "Remove this and all remaining orphans")
+                               (?q "quit" "Keep this and all remaining orphans")))))))
+            (when (eq key ?q) (throw 'quit nil))
+            (when (eq key ?r) (setq all t))
+            (unless (eq key ?n)
+              (agent-deck--run (format "git -C %s worktree remove --force %s"
+                                       (shell-quote-argument root)
+                                       (shell-quote-argument (cdr wt))))
+              (setq removed t)))))
+      (when removed
+        (agent-deck--run (format "git -C %s worktree prune -v" (shell-quote-argument root))))))
+
   (defun agent-deck-worktree-prune ()
-    "Force-remove a selected worktree and prune stale git metadata.
-Use when a worktree directory still exists but branch deletion fails with
+    "Remove orphaned worktrees, then optionally force-remove a selected one.
+Orphans are worktrees no agent-deck session points to, which includes
+the ones `agent-deck-worktree-cleanup' kept. Use the second step when a
+worktree directory still exists but branch deletion fails with
 \='used by worktree\='."
     (interactive)
     (let* ((root (car (agent-deck--project-root-and-title)))
+           (_ (agent-deck--prune-orphans root))
            (raw (shell-command-to-string
                  (format "git -C %s worktree list --porcelain"
                          (shell-quote-argument root))))
            (all (agent-deck--parse-worktrees raw))
            (others (cdr all)))
-      (if (null others)
-          (message "No non-main worktrees found.")
+      (cond
+       ((and others (yes-or-no-p "Pick another worktree to force-remove? "))
         (let* ((choice (completing-read "Force-remove worktree: "
                                         (mapcar #'car others) nil t))
                (path (cdr (assoc choice others))))
@@ -2369,7 +2516,7 @@ Use when a worktree directory still exists but branch deletion fails with
                        (yes-or-no-p (format "Also delete branch '%s'?" choice)))
               (agent-deck--run (format "git -C %s branch -D %s"
                                        (shell-quote-argument root)
-                                       (shell-quote-argument choice)))))))))
+                                       (shell-quote-argument choice))))))))))
 
   (defun agent-deck-launch ()
     "Add current project, start session, and open TUI."
@@ -2409,6 +2556,7 @@ Use when a worktree directory still exists but branch deletion fails with
 
   (defun agent-deck--apply-server-options ()
     "Apply tmux options, the C-q binding and its rebind hooks."
+    (agent-deck--apply-editor-env)
     (call-process-shell-command "tmux -L agent-deck-tui set-option -g status off")
     (call-process-shell-command "tmux -L agent-deck-tui set-option -g mouse on")
     (agent-deck--write-tui-bootstrap-script)
