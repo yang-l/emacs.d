@@ -198,92 +198,11 @@ Run Emacs as a daemon, and edit via =emacsclient=. =emacsclient -t= for terminal
     (server-start)))
 #+END_SRC
 
-One server named =emacs= shared by magit, claude-code-ide, agent-deck and the shell =EDITOR=. It stops when nothing uses it.
+Each Emacs names its server =emacs-<pid>=, so the shell =emacsclient= never reaches it.
+claude-code-ide starts the server. It runs until this Emacs exits.
 
 #+BEGIN_SRC emacs-lisp
-(defvar my-server-name "emacs"
-  "Server name shared by magit, claude-code-ide, agent-deck and the shell EDITOR.")
-
-(defvar my-emacs-editor "emacsclient -q -s emacs -a 'emacs -nw'"
-  "EDITOR for Claude Code sessions. Opens files in this Emacs.")
-
-(defvar my-server--stop-timer nil
-  "Timer that runs `my-server-maybe-stop' while this Emacs owns the server.")
-
-(defvar my-server--launching nil
-  "Non-nil while a claude-code-ide launch runs, including its name prompt.")
-
-(defun my-server--owned-p ()
-  "Return non-nil when this Emacs owns a live server process.
-`server-running-p' is also t for a server another Emacs owns."
-  (and (boundp 'server-process) server-process (process-live-p server-process)))
-
-(defun my-server-ensure ()
-  "Start the shared server unless one already runs."
-  (require 'server)
-  (unless (server-running-p my-server-name)
-    (setq server-name my-server-name)
-    (server-start))
-  (when (and (my-server--owned-p) (not (timerp my-server--stop-timer)))
-    (setq my-server--stop-timer (run-with-timer 60 60 #'my-server-maybe-stop))))
-
-(defun my-server--magit-p (dying-buffer)
-  "Return non-nil when a magit buffer other than DYING-BUFFER is live."
-  (seq-some (lambda (b)
-              (and (not (eq b dying-buffer))
-                   (with-current-buffer b (derived-mode-p 'magit-mode))))
-            (buffer-list)))
-
-(defun my-server--claude-p (&optional dying-session)
-  "Return non-nil when a claude-code-ide session other than DYING-SESSION is live."
-  (and (fboundp 'claude-code-ide-mcp--active-sessions)
-       (seq-some (lambda (s)
-                   (and (not (eq s dying-session))
-                        (process-live-p (claude-code-ide-mcp-session-process s))))
-                 (claude-code-ide-mcp--active-sessions))))
-
-(defun my-server--agent-deck-p ()
-  "Return non-nil when the agent-deck tmux server has a session other than _ad_srv.
-`agent-deck--ensure-server' creates _ad_srv and never removes it."
-  ;; the magit kill hook runs in a buffer whose worktree may be gone, and
-  ;; a subprocess started from a deleted directory aborts `kill-buffer'
-  (let ((default-directory (expand-file-name "~")))
-    (and (executable-find "tmux")
-         (with-temp-buffer
-           (and (eql 0 (call-process "tmux" nil '(t nil) nil
-                                     "-L" "agent-deck-tui" "list-sessions"
-                                     "-F" "#{session_name}"))
-                (seq-some (lambda (s) (not (equal s "_ad_srv")))
-                          (split-string (buffer-string) "\n" t)))))))
-
-(defun my-server--other-emacs-p ()
-  "Return non-nil when another Emacs process runs on this machine.
-This Emacs cannot see the magit buffers or Claude sessions inside it.
-The Nix terminal Emacs reports its comm as emacs-31.1."
-  (let ((self (emacs-pid)))
-    (seq-some (lambda (pid)
-                (and (/= pid self)
-                     (let ((comm (alist-get 'comm (process-attributes pid))))
-                       (and comm (string-match-p "\\`[Ee]macs\\(-[0-9.]+\\)?\\'" comm)))))
-              (list-system-processes))))
-
-(defun my-server-maybe-stop (&optional dying-buffer dying-session)
-  "Stop the shared server when nothing uses it.
-DYING-BUFFER and DYING-SESSION are being removed and do not count."
-  (if (not (my-server--owned-p))
-      (when (timerp my-server--stop-timer)
-        (cancel-timer my-server--stop-timer)
-        (setq my-server--stop-timer nil))
-    (unless (or server-clients
-                my-server--launching
-                (my-server--magit-p dying-buffer)
-                (my-server--claude-p dying-session)
-                (my-server--agent-deck-p)
-                (my-server--other-emacs-p))
-      (server-force-delete)
-      (when (timerp my-server--stop-timer)
-        (cancel-timer my-server--stop-timer))
-      (setq my-server--stop-timer nil))))
+(setq server-name (format "emacs-%d" (emacs-pid)))
 #+END_SRC
 
 ** Customisation
@@ -1097,16 +1016,7 @@ Available in Emacs 29+
     (window-configuration-to-register :magit-fullscreen)
     (apply orig-fun args)
     (delete-other-windows))
-  (advice-add 'magit-status :around #'magit-status--magit-fullscreen)
-
-  (my-server-ensure)
-
-  (defun magit--maybe-stop-server ()
-    (my-server-maybe-stop (current-buffer)))
-  (add-hook 'magit-mode-hook
-            (lambda ()
-              (my-server-ensure)                ; :config runs once; the server may have stopped since
-              (add-hook 'kill-buffer-hook #'magit--maybe-stop-server nil t))))
+  (advice-add 'magit-status :around #'magit-status--magit-fullscreen))
 
 (use-package autorevert :diminish auto-revert-mode :hook (after-init . global-auto-revert-mode))
 #+END_SRC
@@ -1876,28 +1786,20 @@ Different from Claude Code which acts as an agent involving very limited coding,
                   ("resources/templates/list" '((resourceTemplates . [])))
                   ("prompts/list" '((prompts . [])))
                   (_ (funcall orig method params)))))
-  ;; ctrl+g / ctrl+o v in Claude Code open $VISUAL, then $EDITOR; point both at the shared server
-  (defvar claude-code-ide--saved-editor (getenv "EDITOR"))
-  (defvar claude-code-ide--saved-visual (getenv "VISUAL"))
-  ;; the launch can wait at the instance-name prompt longer than the stop timer
+  ;; ctrl+g / ctrl+o v in Claude Code open $VISUAL, then $EDITOR; open them in this
+  ;; Emacs. The plan hook reads EMACS_SOCKET_NAME to find this Emacs.
   (advice-add 'claude-code-ide--start-session :around
               (lambda (orig &rest args)
-                (let ((my-server--launching t))
+                (require 'server)
+                (unless (server-running-p server-name)
+                  (server-start))
+                (let* ((editor (format "emacsclient -q -s %s -a 'emacs -nw'" server-name))
+                       (process-environment
+                        (append (list (concat "EDITOR=" editor)
+                                      (concat "VISUAL=" editor)
+                                      (concat "EMACS_SOCKET_NAME=" server-name))
+                                process-environment)))
                   (apply orig args))))
-  (advice-add 'claude-code-ide--start-session :before
-              (lambda (&rest _)
-                ;; the package runs this sweep after this advice; running it first stops
-                ;; the cleanup advice from restoring the editor just before the new spawn
-                (claude-code-ide--cleanup-dead-sessions)
-                (my-server-ensure)
-                (setenv "EDITOR" my-emacs-editor)
-                (setenv "VISUAL" my-emacs-editor)))
-  (advice-add 'claude-code-ide--cleanup-session :after
-              (lambda (session &rest _)
-                (unless (or my-server--launching (my-server--claude-p session))
-                  (setenv "EDITOR" claude-code-ide--saved-editor)
-                  (setenv "VISUAL" claude-code-ide--saved-visual))
-                (my-server-maybe-stop nil session)))
   :custom
   (claude-code-ide-cli-extra-flags "--permission-mode plan --thinking-display summarized")
   (claude-code-ide-focus-claude-after-ediff nil)
@@ -1983,12 +1885,17 @@ launch_cmd.go:413. The name it reports already carries the
 repeating that rule. A reworded message stops the retry offer and leaves
 the plain error.")
 
+  (defvar agent-deck--run-start 1
+    "Position in *agent-deck* where the output of the last command starts.
+The buffer keeps every earlier command, so `agent-deck--branch-clash'
+searches from here to read only the latest output.")
+
   (defun agent-deck--branch-clash ()
     "Return the clashing branch name from the *agent-deck* buffer, or nil."
     (when-let* ((buf (get-buffer "*agent-deck*")))
       (with-current-buffer buf
         (save-excursion
-          (goto-char (point-min))
+          (goto-char (min agent-deck--run-start (point-max)))
           (when (re-search-forward agent-deck--branch-clash-regexp nil t)
             (match-string 1))))))
 
@@ -2030,9 +1937,7 @@ Return the exit code of the last command run."
     (agent-deck-menu))
 
   (defun agent-deck--run (cmd)
-    "Run agent-deck CMD, display output in *agent-deck* buffer. Return exit code."
-    ;; add/start/fork create sessions here; Emacs started outside tmux has not set EDITOR yet
-    (agent-deck--apply-editor-env)
+    "Run agent-deck CMD, append output to *agent-deck* buffer. Return exit code."
     (let ((buf (get-buffer-create "*agent-deck*"))
           (process-environment (append
                                 (let ((s (agent-deck--server-socket)))
@@ -2041,13 +1946,21 @@ Return the exit code of the last command run."
                                 process-environment))
           (exit-code 0))
       (with-current-buffer buf
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (setq exit-code (call-process-shell-command cmd nil buf))
+        ;; special-mode kills local variables, so set it up only once
+        (unless (derived-mode-p 'special-mode)
           (special-mode)
-          (local-set-key (kbd "q") #'agent-deck--quit-to-menu)))
+          (local-set-key (kbd "q") #'agent-deck--quit-to-menu))
+        (let ((inhibit-read-only t))
+          (goto-char (point-max))
+          (insert (format "$ %s\n" cmd))
+          (setq agent-deck--run-start (point))
+          (setq exit-code (call-process-shell-command cmd nil buf))
+          (goto-char (point-max))
+          (unless (bolp) (insert "\n"))
+          (insert (format "[exit %s]\n\n%s\n\n" exit-code (make-string 40 ?-)))))
       (pop-to-buffer buf)
-      (fit-window-to-buffer)
+      (fit-window-to-buffer nil (/ (frame-height) 3))
+      (goto-char (point-max))
       exit-code))
 
   (defun agent-deck--sessions ()
@@ -2118,7 +2031,9 @@ pane started where getcwd fails. Name a path no cleanup removes.")
     (unless (= 0 (call-process-shell-command "tmux -L agent-deck-tui has-session 2>/dev/null"))
       ;; default-directory sets what the forked SERVER inherits.
       ;; -c sets the _ad_srv session's own pane. Both are needed.
-      (let ((default-directory agent-deck--server-cwd))
+      (let ((default-directory agent-deck--server-cwd)
+            ;; a nix shell sets SHELL to its bash, and ~/.tmux.conf makes SHELL the default-shell
+            (process-environment (cons "SHELL=/bin/zsh" process-environment)))
         (call-process-shell-command
          (format "tmux -L agent-deck-tui new-session -d -s _ad_srv -x 220 -y 50 -c %s"
                  (shell-quote-argument agent-deck--server-cwd))))))
@@ -2128,16 +2043,6 @@ pane started where getcwd fails. Name a path no cleanup removes.")
     (let ((s (string-trim (shell-command-to-string
                            "tmux -L agent-deck-tui display-message -p '#{socket_path}' 2>/dev/null"))))
       (unless (string-empty-p s) s)))
-
-  (defun agent-deck--apply-editor-env ()
-    "Point EDITOR and VISUAL in the agent-deck tmux server at the shared Emacs server.
-tmux copies its global environment into each new pane."
-    (my-server-ensure)
-    (agent-deck--ensure-server)
-    (let ((default-directory agent-deck--server-cwd))
-      (dolist (var '("EDITOR" "VISUAL"))
-        (call-process "tmux" nil nil nil "-L" "agent-deck-tui"
-                      "set-environment" "-g" var my-emacs-editor))))
 
   (defvar agent-deck--tui-bootstrap-script
     (expand-file-name "agent-deck-tui-bootstrap.sh" user-emacs-directory)
@@ -2157,11 +2062,7 @@ reliable target.")
       (insert (format "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck -c %s '%s'\n"
                       (shell-quote-argument agent-deck--server-cwd)
                       (format "stty -ixon; %s agent-deck; tmux -L agent-deck-tui kill-session -t _ad_tui 2>/dev/null"
-                              (string-join agent-deck--process-environment " "))))
-      ;; this script runs without Emacs, so a fresh tmux server has no EDITOR otherwise
-      (dolist (var '("EDITOR" "VISUAL"))
-        (insert (format "tmux -L agent-deck-tui set-environment -g %s %s\n"
-                        var (shell-quote-argument my-emacs-editor)))))
+                              (string-join agent-deck--process-environment " ")))))
     (set-file-modes agent-deck--tui-bootstrap-script #o700))
 
   (defvar agent-deck--tui-rebind-script
@@ -2401,8 +2302,7 @@ to, including the ones kept here."
         (if info
             (message "agent-deck: cleanup targets repo %s" root)
           (message "agent-deck: '%s' has no worktree, removing the session only" title))
-        (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
-        (agent-deck--run (format "agent-deck remove %s" (shell-quote-argument title)))
+        (agent-deck--run (format "agent-deck session remove --force %s" (shell-quote-argument title)))
         (when path (agent-deck--watch-stop path title))
         (mapc #'agent-deck--delete-group (agent-deck--empty-groups))
         (when (and info path
@@ -2556,7 +2456,6 @@ worktree directory still exists but branch deletion fails with
 
   (defun agent-deck--apply-server-options ()
     "Apply tmux options, the C-q binding and its rebind hooks."
-    (agent-deck--apply-editor-env)
     (call-process-shell-command "tmux -L agent-deck-tui set-option -g status off")
     (call-process-shell-command "tmux -L agent-deck-tui set-option -g mouse on")
     (agent-deck--write-tui-bootstrap-script)
