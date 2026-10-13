@@ -2125,7 +2125,7 @@ or above it, so the pane lands in the main repository."
                             (shell-quote-argument session)))))))
       (when (= count 1)
         (call-process-shell-command
-         (format "tmux -L agent-deck-tui split-window -h -p 30 -t %s: -c %s"
+         (format "tmux -L agent-deck-tui split-window -h -p 30 -e EDITOR='emacs -nw' -e VISUAL='emacs -nw' -t %s: -c %s"
                  (shell-quote-argument session)
                  (shell-quote-argument (agent-deck--usable-dir path))))
         (call-process-shell-command
