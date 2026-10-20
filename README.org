@@ -1876,6 +1876,13 @@ an existing branch, and its absence fails on a missing one."
     (let ((n (read-string "Session name (empty for default): ")))
       (unless (string-empty-p n) n)))
 
+  (defun agent-deck--prompt-pane-dir (root)
+    "Ask where the shell pane starts. Return \"~/\" or ROOT. \"~/\" is the default."
+    (let ((root (abbreviate-file-name root)))
+      (if (string= root "~/")
+          root
+        (completing-read "Shell pane folder: " (list "~/" root) nil t nil nil "~/"))))
+
   (defconst agent-deck--branch-clash-regexp
     "branch '\\([^']+\\)' already exists"
     "Match agent-deck refusing to create a branch that exists.
@@ -2149,7 +2156,7 @@ Polls every 0.3 s for up to ~5 s; logs a message if no new session is found."
                         (run-at-time 0.3 nil #'try))
                        (t
                         (message "agent-deck: no new tmux session found after shell-pane setup"))))))
-        (run-at-time 0.3 nil #'try))))
+        (try))))
 
   (defun agent-deck-restore-shell-panes ()
     "Restore missing shell panes for all running agent-deck tmux sessions.
@@ -2426,7 +2433,8 @@ worktree directory still exists but branch deletion fails with
     (let* ((wt (agent-deck--prompt-worktree))
            (name (unless wt (agent-deck--prompt-session-name))))
       (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt name)))
-        (let* ((snapshot (agent-deck--tmux-session-snapshot))
+        (let* ((pane-dir (unless wt (agent-deck--prompt-pane-dir root)))
+               (snapshot (agent-deck--tmux-session-snapshot))
                (process-environment
                 (append (let ((s (agent-deck--server-socket)))
                           (when s (list (concat "TMUX=" s ",0,0"))))
@@ -2450,7 +2458,7 @@ worktree directory still exists but branch deletion fails with
                                                      (agent-deck--sessions)))
                                       root)
                                 root)))
-              (agent-deck--schedule-shell-pane snapshot watch-path)
+              (agent-deck--schedule-shell-pane snapshot (or pane-dir watch-path))
               (agent-deck-tui)
               (agent-deck--watch-start watch-path title)))))))
 
