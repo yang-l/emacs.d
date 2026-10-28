@@ -1850,6 +1850,23 @@ Different from Claude Code which acts as an agent involving very limited coding,
     '("AGENTDECK_SUPPRESS_TMUX_WARNING=1"
       "AGENT_DECK_ALLOW_OUTER_TMUX=1"))
 
+  ;; Depth 90 runs after exec-path-from-shell sets PATH.
+  (add-hook 'after-init-hook
+            (lambda ()
+              (push (concat "PATH=" (expand-file-name "~/personal/configs/.agent-deck/bin")
+                            ":" (getenv "PATH"))
+                    agent-deck--process-environment))
+            90)
+
+  (defun agent-deck--env-shell-string ()
+    "Return `agent-deck--process-environment' as shell assignments."
+    ;; shell-quote-argument escapes `=', so quote only the value.
+    (mapconcat (lambda (e)
+                 (let ((i (string-search "=" e)))
+                   (concat (substring e 0 (1+ i))
+                           (shell-quote-argument (substring e (1+ i))))))
+               agent-deck--process-environment " "))
+
   (defvar agent-deck--tool "claude"
     "AI CLI tool used for new sessions (e.g. claude, codex).")
 
@@ -1906,9 +1923,11 @@ searches from here to read only the latest output.")
           (when (re-search-forward agent-deck--branch-clash-regexp nil t)
             (match-string 1))))))
 
-  (defun agent-deck--run-worktree-create (make-cmd root)
+  (defun agent-deck--run-worktree-create (make-cmd root &optional before-reuse)
     "Run (funcall MAKE-CMD NEW-P) and resolve a branch clash in ROOT.
 MAKE-CMD takes one argument and returns an agent-deck command string.
+BEFORE-REUSE, when non-nil, gets the clashing branch before the reuse
+retry and signals an error to stop it.
 Return the exit code of the last command run."
     (let ((code (funcall make-cmd t)))
       (if (zerop code)
@@ -1920,7 +1939,9 @@ Return the exit code of the last command run."
                     (format "Branch '%s' exists. Action: " branch)
                     '("reuse" "delete and recreate" "cancel")
                     nil t nil nil "reuse")
-              ("reuse" (funcall make-cmd nil))
+              ("reuse"
+               (when before-reuse (funcall before-reuse branch))
+               (funcall make-cmd nil))
               ("delete and recreate"
                (if (zerop (agent-deck--run
                            (format "git -C %s branch -D %s"
@@ -2066,10 +2087,11 @@ reliable target.")
       (insert "#!/bin/sh\n")
       (insert (format "cd %s || cd /\n" (shell-quote-argument agent-deck--server-cwd)))
       (insert "tmux -L agent-deck-tui has-session -t _ad_tui 2>/dev/null && exit 0\n")
-      (insert (format "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck -c %s '%s'\n"
+      (insert (format "tmux -L agent-deck-tui new-session -d -s _ad_tui -n agent-deck -c %s %s\n"
                       (shell-quote-argument agent-deck--server-cwd)
-                      (format "stty -ixon; %s agent-deck; tmux -L agent-deck-tui kill-session -t _ad_tui 2>/dev/null"
-                              (string-join agent-deck--process-environment " ")))))
+                      (shell-quote-argument
+                       (format "stty -ixon; %s agent-deck; tmux -L agent-deck-tui kill-session -t _ad_tui 2>/dev/null"
+                               (agent-deck--env-shell-string))))))
     (set-file-modes agent-deck--tui-bootstrap-script #o700))
 
   (defvar agent-deck--tui-rebind-script
@@ -2198,22 +2220,198 @@ Guards against stacking when called repeatedly (e.g. multiple `t' presses)."
                         (setq agent-deck--restore-poll-active nil))))
           (run-at-time 3 nil #'poll)))))
 
-  (defun agent-deck--project-root-and-title (&optional worktree name)
+  (defconst agent-deck--sandbox-tag " [sandbox]"
+    "Title suffix of a session that runs in a Docker sandbox.")
+
+  (defun agent-deck--project-root-and-title (&optional worktree name sandbox)
     "Return (ROOT . TITLE) for the current project.
 WORKTREE is an optional (BRANCH . NEW-P) cons whose branch goes in the title.
 NAME is an optional suffix for a session that has no worktree. Without
 either, every session in one repository gets the same title and the
-second one clashes."
+second one clashes. SANDBOX non-nil appends `agent-deck--sandbox-tag'."
     (let ((root (expand-file-name
                  (or (when-let* ((proj (project-current)))
                        (project-root proj))
                      default-directory))))
-      (cons root (format "%s (%s%s)"
+      (cons root (format "%s (%s%s)%s"
                          (file-name-nondirectory (directory-file-name root))
                          agent-deck--tool
                          (cond (worktree (format " %s" (car worktree)))
                                (name (format " %s" name))
-                               (t ""))))))
+                               (t ""))
+                         (if sandbox agent-deck--sandbox-tag "")))))
+
+  (defvar agent-deck--sandbox-image "agent-deck-sandbox-yl:latest"
+    "Docker image for sandbox sessions. `B' builds it.")
+
+  (defvar agent-deck--sandbox-dockerfile-dir "~/personal/configs/.agent-deck/sandbox"
+    "Folder that holds the Dockerfile for `agent-deck--sandbox-image'.")
+
+  (defvar agent-deck--sandbox-state-dir "~/.local/state/agent-deck-sandbox"
+    "Private folder for the staged config copy and the list of copied names.")
+
+  (defvar agent-deck--sandbox-protected-dirs
+    '("~/personal/configs" "~/.emacs.d" "~/.claude" "~/.codex"
+      "~/.local/state/agent-deck-sandbox")
+    "Folders that a sandbox session must never mount as its project.
+The config copy follows links into them, so a container could plant a
+link to a host secret there.")
+
+  (defun agent-deck--sandbox-title-p (title)
+    "Return non-nil when TITLE belongs to a sandbox session."
+    (string-suffix-p agent-deck--sandbox-tag title))
+
+  (defun agent-deck--sandbox-ask ()
+    "Ask whether the new session runs in a Docker sandbox. Only y means yes."
+    (memq (read-char-choice "Run in Docker sandbox? [y/N] " '(?y ?Y ?n ?N ?\r ?\s))
+          '(?y ?Y)))
+
+  (defun agent-deck--sandbox-flags (sandbox)
+    "Return the agent-deck flags for SANDBOX, or an empty string."
+    (if sandbox
+        (format " --sandbox --sandbox-image %s"
+                (shell-quote-argument agent-deck--sandbox-image))
+      ""))
+
+  (defun agent-deck--sandbox-check-dir (dir)
+    "Signal `user-error' when DIR is, is inside, or is above a protected folder."
+    (unless dir (user-error "agent-deck: the session has no saved folder"))
+    (let ((real (file-name-as-directory (file-truename (expand-file-name dir)))))
+      (dolist (p agent-deck--sandbox-protected-dirs)
+        (let ((protected (file-name-as-directory (file-truename (expand-file-name p)))))
+          (when (or (string-prefix-p protected real)
+                    (string-prefix-p real protected))
+            (user-error "agent-deck: no sandbox on %s, because it overlaps %s" dir p))))))
+
+  (defun agent-deck--worktree-for-branch (root branch)
+    "Return the folder where BRANCH is checked out in ROOT's repository, or nil."
+    (with-temp-buffer
+      (when (zerop (call-process "git" nil t nil "-C" root "worktree" "list" "--porcelain"))
+        (let (path found)
+          (dolist (line (split-string (buffer-string) "\n") found)
+            (cond ((string-prefix-p "worktree " line)
+                   (setq path (substring line (length "worktree "))))
+                  ((equal line (concat "branch refs/heads/" branch))
+                   (setq found path))))))))
+
+  (defun agent-deck--sandbox-check-reuse (root branch)
+    "Run `agent-deck--sandbox-check-dir' on the worktree that BRANCH reuses."
+    (when-let* ((dir (agent-deck--worktree-for-branch root branch)))
+      (agent-deck--sandbox-check-dir dir)))
+
+  (defun agent-deck--sandbox-config-names ()
+    "Return the ~/.claude names that agent-deck skips.
+These are each top-level link, plus commands."
+    (let ((dir (expand-file-name "~/.claude")))
+      (sort (delete-dups
+             (append (seq-filter (lambda (n) (file-symlink-p (expand-file-name n dir)))
+                                 (directory-files dir nil directory-files-no-dot-files-regexp))
+                     (when (file-directory-p (expand-file-name "commands" dir))
+                       (list "commands"))))
+            #'string<)))
+
+  (defun agent-deck--sandbox-safe-name-p (name)
+    "Return non-nil when NAME is a plain entry name with no folder part."
+    (and (not (string-empty-p name))
+         (not (member name '("." "..")))
+         (not (string-search "/" name))))
+
+  (defun agent-deck--sandbox-ensure-dir (dir)
+    "Create DIR with mode 0700 when it is missing. Refuse a link or a file."
+    (cond ((file-symlink-p dir)
+           (user-error "agent-deck: %s is a link, so the sandbox start stops" dir))
+          ((not (file-exists-p dir))
+           (make-directory dir t)
+           (set-file-modes dir #o700))
+          ((not (file-directory-p dir))
+           (user-error "agent-deck: %s is not a folder, so the sandbox start stops" dir))))
+
+  (defun agent-deck--sync-sandbox-config ()
+    "Copy the Claude config that agent-deck skips into ~/.claude/sandbox.
+Return the exit code.
+A container can plant links in ~/.claude/sandbox, so build the copy in
+`agent-deck--sandbox-state-dir' and swap entries in with `rename-file',
+which never writes through a link."
+    (let* ((src (expand-file-name "~/.claude"))
+           (dest (expand-file-name "sandbox" src))
+           (state (expand-file-name agent-deck--sandbox-state-dir))
+           (stage (expand-file-name "stage" state))
+           (old (expand-file-name "old" state))
+           (manifest (expand-file-name "synced" state))
+           (names (agent-deck--sandbox-config-names))
+           (previous (when (file-exists-p manifest)
+                       (with-temp-buffer
+                         (insert-file-contents manifest)
+                         (split-string (buffer-string) "\n" t)))))
+      (dolist (d (list dest state (expand-file-name "~/.local/state/claude-handoffs-sandbox")))
+        (agent-deck--sandbox-ensure-dir d))
+      ;; CODEX_HOME. Otherwise Docker creates it as root for the AGENTS.md mount.
+      (agent-deck--sandbox-ensure-dir (expand-file-name "codex" dest))
+      (dolist (d (list stage old))
+        (when (file-exists-p d) (delete-directory d t))
+        (make-directory d t))
+      (let ((code (agent-deck--run
+                   (concat
+                    (mapconcat (lambda (n)
+                                 (format "rsync -aL %s %s"
+                                         (shell-quote-argument (expand-file-name n src))
+                                         (shell-quote-argument (file-name-as-directory stage))))
+                               names " && ")
+                    ;; cp keeps the inode, so a running container's file mount updates.
+                    (format " && cp -L %s %s"
+                            (shell-quote-argument (expand-file-name "~/.codex/AGENTS.md"))
+                            (shell-quote-argument (expand-file-name "codex-AGENTS.md" state)))))))
+        (when (zerop code)
+          (dolist (n (seq-uniq (append names previous)))
+            (when (agent-deck--sandbox-safe-name-p n)
+              (let ((target (expand-file-name n dest)))
+                (when (or (file-symlink-p target) (file-exists-p target))
+                  (rename-file target (expand-file-name n old))))))
+          (dolist (n names)
+            (rename-file (expand-file-name n stage) (expand-file-name n dest)))
+          (delete-directory old t)
+          (with-temp-file manifest
+            (insert (mapconcat #'identity names "\n") "\n")))
+        code)))
+
+  (defun agent-deck--sandbox-prepare (dir)
+    "Check DIR, then copy the config. Return non-nil when the start may go on."
+    (agent-deck--sandbox-check-dir dir)
+    (zerop (agent-deck--sync-sandbox-config)))
+
+  (defun agent-deck--sandbox-with-transcript (title fn)
+    "Call FN while the sandbox transcript of TITLE is linked where agent-deck looks.
+agent-deck 1.16.26 checks only ~/.claude/projects/<encoded path>/<id>.jsonl.
+Without the link it passes --session-id for an existing id, and the pane dies."
+    (let* ((process-environment (append agent-deck--process-environment process-environment))
+           (data (ignore-errors
+                   (json-parse-string
+                    (with-temp-buffer
+                      (call-process "agent-deck" nil '(t nil) nil "session" "show" "--json" title)
+                      (buffer-string)))))
+           (id (and (hash-table-p data) (gethash "claude_session_id" data)))
+           (path (and (hash-table-p data) (gethash "path" data)))
+           (src (and (stringp id) (string-match-p "\\`[0-9a-f-]+\\'" id)
+                     (expand-file-name (concat id ".jsonl") "~/.claude/sandbox/projects/-workspace")))
+           (dir (and src (stringp path) (file-directory-p path)
+                     (expand-file-name
+                      (replace-regexp-in-string "[^a-zA-Z0-9-]" "-"
+                                                (directory-file-name (file-truename path)))
+                      "~/.claude/projects")))
+           (link (and dir (file-regular-p src) (not (file-symlink-p src))
+                      (expand-file-name (concat id ".jsonl") dir)))
+           (new-dir (and link (not (file-exists-p dir)))))
+      (if (or (not link) (file-exists-p link) (file-symlink-p link))
+          (funcall fn)
+        (make-directory dir t)
+        (make-symbolic-link src link)
+        (unwind-protect
+            (funcall fn)
+          ;; agent-deck can restore a .bak- file at this path, so delete only our link.
+          (when (equal (file-symlink-p link) src)
+            (delete-file link))
+          (when new-dir
+            (ignore-errors (delete-directory dir)))))))
 
   (defun agent-deck-status ()
     "Show agent-deck session list."
@@ -2224,36 +2422,80 @@ second one clashes."
     "Add current project as an agent-deck session."
     (interactive)
     (let* ((wt (agent-deck--prompt-worktree))
-           (name (unless wt (agent-deck--prompt-session-name))))
-      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt name)))
-        (agent-deck--run-worktree-create
-         (lambda (new-p)
-           (agent-deck--run (format "agent-deck add %s -c %s -t %s%s"
-                                    (shell-quote-argument root)
-                                    (shell-quote-argument agent-deck--tool)
-                                    (shell-quote-argument title)
-                                    (if wt
-                                        (format " --worktree %s%s"
-                                                (shell-quote-argument (car wt))
-                                                (if new-p " --new-branch" ""))
-                                      ""))))
-         root))))
+           (name (unless wt (agent-deck--prompt-session-name)))
+           (sandbox (agent-deck--sandbox-ask)))
+      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt name sandbox)))
+        (when (or (not sandbox) (agent-deck--sandbox-prepare root))
+          (agent-deck--run-worktree-create
+           (lambda (new-p)
+             (agent-deck--run (format "agent-deck add %s -c %s -t %s%s%s"
+                                      (shell-quote-argument root)
+                                      (shell-quote-argument agent-deck--tool)
+                                      (shell-quote-argument title)
+                                      (if wt
+                                          (format " --worktree %s%s"
+                                                  (shell-quote-argument (car wt))
+                                                  (if new-p " --new-branch" ""))
+                                        "")
+                                      (agent-deck--sandbox-flags sandbox))))
+           root
+           (when sandbox
+             (lambda (branch) (agent-deck--sandbox-check-reuse root branch))))))))
 
   (defun agent-deck-start ()
     "Start an agent-deck session."
     (interactive)
     (pcase-let ((`(,title . ,path) (agent-deck--read-session "Start session: ")))
-      (let ((snapshot (agent-deck--tmux-session-snapshot)))
-        (when (zerop (agent-deck--run (format "agent-deck session start %s" (shell-quote-argument title))))
-          (when path
-            (agent-deck--schedule-shell-pane snapshot path)
-            (agent-deck--watch-start path title))))))
+      (when (or (not (agent-deck--sandbox-title-p title))
+                (agent-deck--sandbox-prepare path))
+        (let* ((snapshot (agent-deck--tmux-session-snapshot))
+               (run (lambda ()
+                      (agent-deck--run (format "agent-deck session start %s" (shell-quote-argument title))))))
+          (when (zerop (if (agent-deck--sandbox-title-p title)
+                           (agent-deck--sandbox-with-transcript title run)
+                         (funcall run)))
+            (when path
+              (agent-deck--schedule-shell-pane snapshot path)
+              (agent-deck--watch-start path title)))))))
+
+  (defun agent-deck-restart ()
+    "Restart an agent-deck session. A sandbox session gets a new config copy first.
+Without --force, agent-deck skips a session started less than 60 seconds ago."
+    (interactive)
+    (pcase-let ((`(,title . ,path) (agent-deck--read-session "Restart session: ")))
+      (let ((run (lambda ()
+                   (agent-deck--run (format "agent-deck session restart --force %s"
+                                            (shell-quote-argument title))))))
+        (if (not (agent-deck--sandbox-title-p title))
+            (funcall run)
+          (when (agent-deck--sandbox-prepare path)
+            (agent-deck--sandbox-with-transcript title run))))))
+
+  (defun agent-deck-build-sandbox-image ()
+    "Build `agent-deck--sandbox-image' in *compilation*, so Emacs does not block."
+    (interactive)
+    (compile (format "docker build --build-arg HOST_HOME=%s --build-arg HOST_UID=%d --build-arg HOST_GID=%d -t %s %s"
+                     (shell-quote-argument (directory-file-name (expand-file-name "~")))
+                     (user-uid)
+                     (group-gid)
+                     (shell-quote-argument agent-deck--sandbox-image)
+                     (shell-quote-argument (expand-file-name agent-deck--sandbox-dockerfile-dir)))))
 
   (defun agent-deck-stop ()
     "Stop an agent-deck session."
     (interactive)
     (pcase-let ((`(,title . ,path) (agent-deck--read-session "Stop session: ")))
-      (agent-deck--run (format "agent-deck session stop %s" (shell-quote-argument title)))
+      (let ((cmd (format "agent-deck session stop %s" (shell-quote-argument title))))
+        ;; agent-deck 1.16.26 can fail the save with "stale concurrent Status
+        ;; conflict" when the TUI writes the session at the same time.
+        (unless (or (zerop (agent-deck--run cmd))
+                    (not (agent-deck--sandbox-title-p title))
+                    (not (with-current-buffer "*agent-deck*"
+                           (save-excursion
+                             (goto-char agent-deck--run-start)
+                             (search-forward "stale concurrent" nil t)))))
+          (sleep-for 1)
+          (agent-deck--run cmd)))
       (when path (agent-deck--watch-stop path title))))
 
   (defun agent-deck-delete ()
@@ -2431,36 +2673,41 @@ worktree directory still exists but branch deletion fails with
     (unless (getenv "TMUX")
       (user-error "Not inside tmux — launch agent-deck from a terminal instead"))
     (let* ((wt (agent-deck--prompt-worktree))
-           (name (unless wt (agent-deck--prompt-session-name))))
-      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt name)))
-        (let* ((pane-dir (unless wt (agent-deck--prompt-pane-dir root)))
-               (snapshot (agent-deck--tmux-session-snapshot))
-               (process-environment
-                (append (let ((s (agent-deck--server-socket)))
-                          (when s (list (concat "TMUX=" s ",0,0"))))
-                        agent-deck--process-environment
-                        process-environment)))
-          (when (zerop (agent-deck--run-worktree-create
-                        (lambda (new-p)
-                          (agent-deck--run
-                           (format "agent-deck launch %s -c %s -t %s%s"
-                                   (shell-quote-argument root)
-                                   (shell-quote-argument agent-deck--tool)
-                                   (shell-quote-argument title)
-                                   (if wt
-                                       (format " --worktree %s%s"
-                                               (shell-quote-argument (car wt))
-                                               (if new-p " --new-branch" ""))
-                                     ""))))
-                        root))
-            (let ((watch-path (if wt
-                                  (or (cdr (seq-find (lambda (s) (equal (car s) title))
-                                                     (agent-deck--sessions)))
-                                      root)
-                                root)))
-              (agent-deck--schedule-shell-pane snapshot (or pane-dir watch-path))
-              (agent-deck-tui)
-              (agent-deck--watch-start watch-path title)))))))
+           (name (unless wt (agent-deck--prompt-session-name)))
+           (sandbox (agent-deck--sandbox-ask)))
+      (pcase-let ((`(,root . ,title) (agent-deck--project-root-and-title wt name sandbox)))
+        (when (or (not sandbox) (agent-deck--sandbox-prepare root))
+          (let* ((pane-dir (unless wt (agent-deck--prompt-pane-dir root)))
+                 (snapshot (agent-deck--tmux-session-snapshot))
+                 (process-environment
+                  (append (let ((s (agent-deck--server-socket)))
+                            (when s (list (concat "TMUX=" s ",0,0"))))
+                          agent-deck--process-environment
+                          process-environment)))
+            (when (zerop (agent-deck--run-worktree-create
+                          (lambda (new-p)
+                            (agent-deck--run
+                             (format "agent-deck launch %s -c %s -t %s%s%s"
+                                     (shell-quote-argument root)
+                                     (shell-quote-argument agent-deck--tool)
+                                     (shell-quote-argument title)
+                                     (if wt
+                                         (format " --worktree %s%s"
+                                                 (shell-quote-argument (car wt))
+                                                 (if new-p " --new-branch" ""))
+                                       "")
+                                     (agent-deck--sandbox-flags sandbox))))
+                          root
+                          (when sandbox
+                            (lambda (branch) (agent-deck--sandbox-check-reuse root branch)))))
+              (let ((watch-path (if wt
+                                    (or (cdr (seq-find (lambda (s) (equal (car s) title))
+                                                       (agent-deck--sessions)))
+                                        root)
+                                  root)))
+                (agent-deck--schedule-shell-pane snapshot (or pane-dir watch-path))
+                (agent-deck-tui)
+                (agent-deck--watch-start watch-path title))))))))
 
   (defun agent-deck--apply-server-options ()
     "Apply tmux options, the C-q binding and its rebind hooks."
@@ -2483,7 +2730,7 @@ worktree directory still exists but branch deletion fails with
     (interactive)
     (unless (getenv "TMUX")
       (user-error "Not inside tmux — launch agent-deck from a terminal instead"))
-    (let ((env-str (string-join agent-deck--process-environment " ")))
+    (let ((env-str (agent-deck--env-shell-string)))
       (agent-deck--ensure-server)
       (agent-deck--apply-server-options)
       (agent-deck--start-restore-poll)
@@ -2639,11 +2886,13 @@ worktree directory still exists but branch deletion fails with
        ("a" "Add current project" agent-deck-add)
        ("s" "Start session" agent-deck-start)
        ("S" "Stop session" agent-deck-stop)
+       ("R" "Restart session" agent-deck-restart)
        ("d" "Delete session" agent-deck-delete)
        ("f" "Fork session" agent-deck-fork)
        ("C" "Cleanup worktree" agent-deck-worktree-cleanup)
        ("r" "Restore shell panes" agent-deck-restore-shell-panes)
-       ("P" "Prune stale worktrees" agent-deck-worktree-prune)]
+       ("P" "Prune stale worktrees" agent-deck-worktree-prune)
+       ("B" "Build sandbox image" agent-deck-build-sandbox-image)]
       ["Actions"
        ("t" "Launch TUI (tmux)" agent-deck-tui)
        ("w" "Open web UI" agent-deck-web)]
@@ -2662,7 +2911,8 @@ worktree directory still exists but branch deletion fails with
                  agent-deck-launch agent-deck-tui agent-deck-web
                  agent-deck-set-tool
                  agent-deck-worktree-cleanup agent-deck-worktree-prune agent-deck-watch-stop-all
-                 agent-deck-restore-shell-panes))
+                 agent-deck-restore-shell-panes agent-deck-restart
+                 agent-deck-build-sandbox-image))
     (put cmd 'completion-predicate #'ignore)))
 #+END_SRC
 
